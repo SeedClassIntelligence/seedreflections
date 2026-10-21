@@ -1,0 +1,15 @@
+data/
+uploads/
+transcripts/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.git/
+.pytest_cache/
+tests/
+scratch/
+*.bak
+patch_*.py
+repair_*.py
+restore_*.py

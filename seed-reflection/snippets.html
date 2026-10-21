@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snippet Library — Seed Reflection</title>
+  <meta name="description" content="7 universal prompts for seed reflection across any AI platform. Copy and paste into ChatGPT, Claude, Gemini, or any AI assistant.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .page-hero { padding: 60px 5% 40px; background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,.06) 0%, transparent 60%); }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(28px, 5vw, 48px); margin-bottom: 10px; }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 560px; }
+
+    .snippet-section { padding: 0 5% 80px; }
+    .snippet-grid { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .snippet-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: border-color .2s;
+    }
+    .snippet-card:hover { border-color: var(--border-hi); }
+    .snippet-card.purple-accent { border-left: 3px solid var(--purple); }
+    .snippet-card.green-accent { border-left: 3px solid var(--green); }
+    .snippet-card.cyan-accent { border-left: 3px solid var(--cyan); }
+
+    .snippet-head {
+      padding: 20px 24px 0;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 16px; flex-wrap: wrap;
+    }
+    .snippet-head-left { display: flex; align-items: center; gap: 12px; }
+    .snippet-emoji { font-size: 28px; flex-shrink: 0; }
+    .snippet-title { font-size: 18px; font-weight: 700; }
+    .snippet-when { font-size: 13px; color: var(--text3); margin-top: 3px; }
+    .snippet-id-badge {
+      font-family: var(--font-mono); font-size: 11px; color: var(--purple);
+      background: var(--purple-dim); border: 1px solid rgba(167,139,250,.25);
+      padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    }
+
+    .snippet-body { padding: 16px 24px 20px; }
+    .snippet-text-wrap { position: relative; }
+    .snippet-text {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 56px 16px 16px;
+      font-family: var(--font-mono); font-size: 12.5px; color: var(--text2);
+      white-space: pre-wrap; word-break: break-word; line-height: 1.7;
+      max-height: 200px; overflow: hidden; transition: max-height .3s ease;
+      cursor: pointer;
+    }
+    .snippet-text.expanded { max-height: 2000px; }
+    .snippet-text .placeholder-var {
+      background: rgba(34,197,94,.15); color: var(--green);
+      border-radius: 3px; padding: 0 3px;
+    }
+    .snippet-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .snippet-actions .expand-btn { color: var(--text3); font-size: 12px; cursor: pointer; background: none; border: none; font-family: var(--font-body); text-decoration: underline; padding: 0; }
+    .snippet-actions .expand-btn:hover { color: var(--text); }
+
+    .platform-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .platform-tag { font-size: 11px; color: var(--text3); background: var(--bg-raised); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; }
+
+    .filter-bar { max-width: 1000px; margin: 24px auto 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-btn { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text3); cursor: pointer; font-family: var(--font-body); transition: all .15s; }
+    .filter-btn:hover, .filter-btn.active { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+
+    .share-bar { max-width: 1000px; margin: 0 auto 32px; }
+    .share-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .share-card p { font-size: 14px; color: var(--text2); flex: 1; min-width: 200px; }
+
+    /* ── PREMIUM BANNER ─────────────────────── */
+    .premium-banner {
+      background: linear-gradient(135deg, rgba(167,139,250,.1) 0%, rgba(6,182,212,.06) 100%);
+      border: 1px solid rgba(167,139,250,.3);
+      border-radius: 14px; padding: 24px 28px;
+      display: flex; align-items: center; gap: 20px;
+      flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .premium-banner-icon { font-size: 40px; flex-shrink: 0; }
+    .premium-banner-body { flex: 1; min-width: 240px; }
+    .premium-banner-body h3 { font-family: var(--font-head); font-size: 20px; margin-bottom: 6px; }
+    .premium-banner-body p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 0; }
+    .premium-banner-body .banner-flow {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-top: 10px; font-size: 13px; color: var(--text3);
+    }
+    .premium-banner-body .banner-flow strong { color: var(--text); }
+    .banner-arrow { color: var(--purple); font-weight: 700; }
+    .premium-banner-cta { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; flex-shrink: 0; }
+    @media (max-width: 640px) { .premium-banner-cta { align-items: flex-start; width: 100%; } }
+
+    /* ── CONVERSION SECTION ─────────────────── */
+    .conversion-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 36px 32px; margin-top: 24px;
+    }
+    .conversion-section h2 { font-family: var(--font-head); font-size: 28px; margin-bottom: 8px; }
+    .conversion-section .conv-sub { color: var(--text2); font-size: 15px; margin-bottom: 28px; }
+    .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media (max-width: 640px) { .tier-grid { grid-template-columns: 1fr; } }
+    .tier-card {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .tier-card.tier-premium { border-color: var(--purple); background: var(--purple-dim); }
+    .tier-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text3); margin-bottom: 10px; }
+    .tier-card.tier-premium .tier-label { color: var(--purple); }
+    .tier-name { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+    .tier-points { display: flex; flex-direction: column; gap: 7px; }
+    .tier-point { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text2); line-height: 1.4; }
+    .tier-point .tp-icon { flex-shrink: 0; font-size: 14px; }
+    .conversion-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .conversion-actions .or-text { font-size: 13px; color: var(--text3); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="generator.html">Generator</a>
+    <a href="snippets.html" class="active">Snippets</a>
+    <a href="import.html" class="hide-mobile">Import</a>
+    <a href="instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+    <a href="../dashboard.html" class="nav-badge dev-link hide-mobile" title="SRT-1 Command Center (requires local middleware)" target="_blank" rel="noopener">⚙ Dev Dashboard</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container-lg">
+    <div class="badge badge-purple" style="margin-bottom:16px;">📋 7 Universal Snippets</div>
+    <h1>The Seed Reflection<br><em style="font-style:italic;color:var(--purple);">Snippet Library</em></h1>
+    <p>Copy these into any AI assistant — ChatGPT, Claude, Gemini, Copilot — to trigger seed-reflection behavior on any platform.</p>
+  </div>
+</section>
+
+<section class="snippet-section">
+  <div class="snippet-grid">
+
+    <!-- Share bar -->
+    <div class="share-bar">
+      <div class="share-card">
+        <span style="font-size:24px;">🌱</span>
+        <p>These snippets are free to copy, share, and remix. They implement the <strong>SCIA (Seed-Class Intelligence Architecture)</strong> protocol in plain language — no setup needed, works everywhere.</p>
+        <button class="btn btn-secondary btn-sm" onclick="shareSnippets()">Share Library</button>
+      </div>
+    </div>
+
+    <!-- PREMIUM BANNER -->
+    <div class="premium-banner">
+      <div class="premium-banner-icon">🚀</div>
+      <div class="premium-banner-body">
+        <h3>Want Deeper Analysis?</h3>
+        <p>Connect your API keys for unlimited cross-platform reflections across ChatGPT, Claude, and Gemini — all in one unified dashboard. No copy-paste required.</p>
+        <div class="banner-flow">
+          <strong>Upload API keys</strong>
+          <span class="banner-arrow">→</span>
+          <strong>Deep reflection across all platforms</strong>
+          <span class="banner-arrow">→</span>
+          <strong>Unified idea garden</strong>
+        </div>
+      </div>
+      <div class="premium-banner-cta">
+        <a href="dashboard.html" class="btn btn-primary btn-sm">See Cross-Platform Dashboard →</a>
+        <a href="generator.html" class="btn btn-secondary btn-sm">✨ Build a Custom Prompt</a>
+      </div>
+    </div>
+
+    <!-- SNIPPET 1 -->
+    <div class="snippet-card purple-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">🌱</span>
+          <div>
+            <div class="snippet-title">Full Seed Reflection</div>
+            <div class="snippet-when">After any long conversation to recover every idea you started.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-REFLECT-FULL</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-0" onclick="toggleExpand(0)">You are a Seed Reflection specialist. Analyze this entire conversation and produce a structured Seed Reflection Report.
+
+A "Seed" is any idea, task, goal, project, question, or plan that was introduced. For each seed you find, identify: what it is, its current status (active / completed / abandoned / drifting), and where in the conversation it appears.
+
+Your report must include these sections:
+
+## 🌱 Active Seeds
+Ideas currently being worked on.
+
+## 🌿 Completed Seeds
+Goals that reached resolution.
+
+## 🍂 Abandoned Seeds
+Ideas introduced but never developed. For each, explain WHY it was left behind and what would be needed to restart it.
+
+## 🌊 Drift Points
+Moments where the conversation moved away from the original intent. Be specific.
+
+## 🎯 Recovery Recommendations
+The top 3 abandoned seeds I should pick up next, in priority order. Tell me exactly how to restart each one.
+
+## 📊 Session Summary
+One paragraph summarizing what this session was really about and what remains unfinished.
+
+At the end, append this exact block:
+---SEED-SIGNATURE---
+Type: SCIA-REFLECT-FULL
+Timestamp: [current ISO 8601 datetime]
+Seeds Found: [n]
+Abandoned: [n]
+Drift Points: [n]
+Platform: [platform name if visible, otherwise "Unknown"]
+---END-SIGNATURE---</div>
+          <button class="copy-btn" onclick="copyById('text-0', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(0)" id="expand-btn-0">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+          <span class="platform-tag">Copilot</span>
+          <span class="platform-tag">Any AI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 2 -->
+    <div class="snippet-card cyan-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">🧭</span>
+          <div>
+            <div class="snippet-title">Quick Coherence Check</div>
+            <div class="snippet-when">Mid-conversation when you feel the AI has drifted from what you asked.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-COHERENCE</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-1" onclick="toggleExpand(1)">Stop. Perform a coherence check on our conversation.
+
+1. State my original intent in one sentence (what I asked for at the start).
+2. Describe what we are building/discussing right now.
+3. Are these aligned? Answer: YES / PARTIAL DRIFT / SIGNIFICANT DRIFT.
+4. If there is drift: name the point where we veered off and suggest how to return.
+5. What is the next action that would bring this session back to its original purpose?
+
+Keep your response under 200 words. Be direct.</div>
+          <button class="copy-btn" onclick="copyById('text-1', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(1)" id="expand-btn-1">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Any AI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 3 -->
+    <div class="snippet-card green-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">🔄</span>
+          <div>
+            <div class="snippet-title">Thread Recovery</div>
+            <div class="snippet-when">Returning to a conversation after time away. Gets the AI back up to speed.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-RECOVER</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-2" onclick="toggleExpand(2)">I am returning to this conversation after time away. Before we continue:
+
+1. **Original Goal**: State what I was originally trying to accomplish.
+2. **What Was Done**: List every decision made and everything built or written.
+3. **What Is Unfinished**: Identify everything that was started but not completed.
+4. **Recommended Next Step**: One clear action I should take right now to make progress.
+
+Then STOP and wait for my confirmation before continuing. Do not resume building until I say so.</div>
+          <button class="copy-btn" onclick="copyById('text-2', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(2)" id="expand-btn-2">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 4 -->
+    <div class="snippet-card purple-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">🌾</span>
+          <div>
+            <div class="snippet-title">Multi-Platform Harvest</div>
+            <div class="snippet-when">Extract and rank all ideas from a conversation you're pasting in.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-HARVEST</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-3" onclick="toggleExpand(3)">I am going to paste a conversation from another AI platform. Extract every idea, task, question, or goal from it.
+
+For each one, provide:
+- **The Seed**: What the core idea or task was
+- **Status**: Was it resolved, explored, or abandoned?
+- **Recovery Value**: Is this worth revisiting? (High / Medium / Low)
+- **Restart Prompt**: One sentence I could use to pick this back up
+
+Give me a clean numbered list. At the end, tell me the top 2 seeds most worth pursuing and why.
+
+Here is the conversation:
+[PASTE CONVERSATION HERE]</div>
+          <button class="copy-btn" onclick="copyById('text-3', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(3)" id="expand-btn-3">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+          <span class="platform-tag">Copilot</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 5 -->
+    <div class="snippet-card cyan-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">🪴</span>
+          <div>
+            <div class="snippet-title">Project Seed Plant</div>
+            <div class="snippet-when">Starting a new project — locks in your original intent so you don't drift.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-PLANT</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-4" onclick="toggleExpand(4)">I am starting a new project. I want to lock in my original intent so we do not drift.
+
+**My Goal**: [DESCRIBE YOUR GOAL IN 1-3 SENTENCES]
+
+Before we begin:
+1. Confirm you understand what I am trying to achieve.
+2. Ask me 2-3 clarifying questions if anything is ambiguous.
+3. Restate the core intent back to me in one sentence.
+
+After I confirm, begin working. At each major milestone, pause and check: are we still building toward this original goal? If you detect drift, flag it immediately.</div>
+          <button class="copy-btn" onclick="copyById('text-4', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(4)" id="expand-btn-4">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+          <span class="platform-tag">Any AI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 6 -->
+    <div class="snippet-card green-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">▶️</span>
+          <div>
+            <div class="snippet-title">Continue From Last Session</div>
+            <div class="snippet-when">Resuming a project across platforms or new chat windows without losing context.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-CONTINUE</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-5" onclick="toggleExpand(5)">I want to continue from my last session. Here is the context:
+
+**Project**: [PROJECT NAME]
+**Last Session Summary**: [PASTE YOUR PREVIOUS CONVERSATION SUMMARY OR KEY POINTS]
+**Current Status**: [WHERE THINGS STAND]
+**What Was Left Unfinished**: [WHAT NEEDS TO BE DONE]
+
+Please:
+1. Confirm you understand the context.
+2. State the most important unfinished item.
+3. Suggest the best next action.
+
+Then wait for my direction. Do not begin work until I confirm.</div>
+          <button class="copy-btn" onclick="copyById('text-5', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(5)" id="expand-btn-5">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+          <span class="platform-tag">Copilot</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNIPPET 7 -->
+    <div class="snippet-card purple-accent">
+      <div class="snippet-head">
+        <div class="snippet-head-left">
+          <span class="snippet-emoji">📥</span>
+          <div>
+            <div class="snippet-title">JSON Import Analysis</div>
+            <div class="snippet-when">When you have exported conversation data and need to triage what's worth revisiting.</div>
+          </div>
+        </div>
+        <span class="snippet-id-badge">SCIA-IMPORT</span>
+      </div>
+      <div class="snippet-body">
+        <div class="snippet-text-wrap">
+          <div class="snippet-text" id="text-6" onclick="toggleExpand(6)">I am going to share conversation data from my AI export. Please:
+
+1. List all conversation topics you can identify.
+2. Find the conversations with unfinished ideas or incomplete tasks.
+3. Rank the top 5 conversations most worth revisiting, with a one-sentence reason for each.
+4. For my top 3, give a 2-sentence summary of what was discussed and what was left unresolved.
+
+I will then tell you which ones to dig into deeply.
+
+[PASTE YOUR CONVERSATION DATA OR TRANSCRIPT HERE]</div>
+          <button class="copy-btn" onclick="copyById('text-6', this)">Copy</button>
+        </div>
+        <div class="snippet-actions">
+          <button class="expand-btn" onclick="toggleExpand(6)" id="expand-btn-6">▼ Show full snippet</button>
+        </div>
+        <div class="platform-tags">
+          <span class="platform-tag">ChatGPT</span>
+          <span class="platform-tag">Claude</span>
+          <span class="platform-tag">Gemini</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM CONVERSION -->
+    <div class="conversion-section">
+      <h2>Ready to Go Deeper?</h2>
+      <p class="conv-sub">These snippets are just the beginning. Here's what becomes possible when you level up.</p>
+
+      <div class="tier-grid">
+        <div class="tier-card">
+          <div class="tier-label">Free</div>
+          <div class="tier-name">Manual Snippets</div>
+          <div class="tier-points">
+            <div class="tier-point"><span class="tp-icon">✅</span>7 universal prompts for any AI</div>
+            <div class="tier-point"><span class="tp-icon">✅</span>Works on ChatGPT, Claude, Gemini</div>
+            <div class="tier-point"><span class="tp-icon">✅</span>Copy-paste into any conversation</div>
+            <div class="tier-point"><span class="tp-icon">⚠️</span>Manual process, one conversation at a time</div>
+            <div class="tier-point"><span class="tp-icon">⚠️</span>Limited to what fits in context window</div>
+          </div>
+        </div>
+        <div class="tier-card tier-premium">
+          <div class="tier-label">Premium</div>
+          <div class="tier-name">✨ Automatic Cross-Platform Analysis</div>
+          <div class="tier-points">
+            <div class="tier-point"><span class="tp-icon">🔄</span>Analyzes your entire AI conversation history</div>
+            <div class="tier-point"><span class="tp-icon">🌐</span>ChatGPT + Claude + Gemini in one view</div>
+            <div class="tier-point"><span class="tp-icon">∞</span>Deep reflection — no token limits</div>
+            <div class="tier-point"><span class="tp-icon">🌱</span>Unified idea garden across all platforms</div>
+            <div class="tier-point"><span class="tp-icon">⚡</span>One click — no prompt engineering needed</div>
+          </div>
+        </div>
+        <div class="tier-card">
+          <div class="tier-label">Custom Prompts</div>
+          <div class="tier-name">✨ Prompt Generator</div>
+          <div class="tier-points">
+            <div class="tier-point"><span class="tp-icon">🎯</span>Targeted prompts for your specific goals</div>
+            <div class="tier-point"><span class="tp-icon">📏</span>Optimized for any conversation size</div>
+            <div class="tier-point"><span class="tp-icon">🌊</span>Chunking strategies for 500K+ token conversations</div>
+            <div class="tier-point"><span class="tp-icon">🔏</span>Seed Signature provenance included</div>
+            <div class="tier-point"><span class="tp-icon">✅</span>Free — works on any platform</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="conversion-actions">
+        <a href="dashboard.html" class="btn btn-primary btn-lg">Connect Your Platforms →</a>
+        <span class="or-text">or</span>
+        <a href="generator.html" class="btn btn-secondary">✨ Build a Custom Prompt</a>
+        <span class="or-text">or</span>
+        <a href="index.html" class="btn btn-ghost">Try Instant Reflection</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand"><strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.</div>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="generator.html">Generator</a>
+    <a href="import.html">Import</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA</div>
+</footer>
+
+<script>
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyById(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function toggleExpand(idx) {
+  const el = document.getElementById('text-' + idx);
+  const btn = document.getElementById('expand-btn-' + idx);
+  const expanded = el.classList.toggle('expanded');
+  btn.textContent = expanded ? '▲ Collapse' : '▼ Show full snippet';
+}
+
+function shareSnippets() {
+  if (navigator.share) {
+    navigator.share({ title: 'Seed Reflection Snippet Library', text: '7 universal prompts for recovering lost ideas from AI conversations', url: location.href });
+  } else {
+    navigator.clipboard.writeText(location.href).then(() => alert('URL copied to clipboard!'));
+  }
+}
+
+// Expand all snippets on load since we want them visible
+document.querySelectorAll('.snippet-text').forEach((el, i) => {
+  el.classList.add('expanded');
+  const btn = document.getElementById('expand-btn-' + i);
+  if (btn) btn.textContent = '▲ Collapse';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Reflection — Find Every Lost Idea in Your AI Conversations</title>
+  <meta name="description" content="Paste any AI conversation and get a Seed Reflection Report. Every abandoned idea, recovered. Every seed, tracked. Powered by SRT-1.">
+  <meta property="og:title" content="Seed Reflection">
+  <meta property="og:description" content="Mine your AI conversations for lost ideas. Powered by SRT-1 Seed-Class Intelligence.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .hero { padding: 72px 5% 48px; text-align: center; background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,.07) 0%, transparent 60%); }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--green-dim); border: 1px solid rgba(34,197,94,.3); color: var(--green); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: .5px; margin-bottom: 24px; }
+    .hero h1 { font-family: var(--font-head); font-size: clamp(36px, 6vw, 64px); font-weight: 400; line-height: 1.15; letter-spacing: -.5px; margin-bottom: 16px; }
+    .hero h1 em { color: var(--green); font-style: italic; }
+    .hero-sub { font-size: 17px; color: var(--text2); max-width: 560px; margin: 0 auto 36px; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .app-area { padding: 0 5% 80px; }
+    .app-shell { max-width: 820px; margin: 0 auto; }
+
+    .mode-tabs { margin-bottom: 28px; }
+    .mode-tabs .tabs { max-width: 640px; }
+
+    /* generate tab */
+    .gen-shell { display: flex; flex-direction: column; gap: 20px; }
+    .gen-title { font-family: var(--font-head); font-size: 22px; margin-bottom: 4px; }
+    .gen-sub { color: var(--text3); font-size: 14px; }
+    .gen-field { display: flex; flex-direction: column; gap: 6px; }
+    .gen-field textarea { min-height: 90px; resize: vertical; }
+    .gen-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 500px) { .gen-row { grid-template-columns: 1fr; } }
+    .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 500px) { .check-grid { grid-template-columns: 1fr; } }
+    .check-item { display: flex; align-items: flex-start; gap: 10px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 13px; color: var(--text2); transition: border-color .15s; }
+    .check-item:hover { border-color: var(--border-hi); }
+    .check-item input { margin-top: 2px; accent-color: var(--green); flex-shrink: 0; }
+    .gen-output { margin-top: 8px; }
+    .gen-prompt-wrap { position: relative; }
+    .gen-prompt-text { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text2); line-height: 1.7; max-height: 400px; overflow-y: auto; }
+    .gen-sig { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--purple); border-radius: var(--radius); padding: 14px 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); margin-top: 16px; }
+
+    /* paste mode */
+    .paste-area { position: relative; }
+    .paste-area textarea {
+      min-height: 200px; resize: vertical;
+      font-size: 14px; line-height: 1.6;
+      border-radius: 10px; padding: 16px;
+    }
+    .paste-area textarea:focus { border-color: var(--green); }
+    .paste-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px; }
+    .char-count { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
+
+    /* api key bar */
+    .api-key-bar {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .api-key-bar .key-status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .key-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .key-dot.set { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .key-dot.unset { background: var(--amber); }
+    .api-key-bar .key-actions { display: flex; gap: 8px; }
+
+    /* results area */
+    .results-area {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; margin-top: 24px;
+    }
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .results-title { font-family: var(--font-head); font-size: 20px; }
+    .results-actions { display: flex; gap: 8px; }
+
+    /* upload mode */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 48px 24px; text-align: center; cursor: pointer;
+      transition: all .2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--green); background: var(--green-dim); }
+    .upload-icon { font-size: 48px; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .upload-zone p { color: var(--text3); font-size: 14px; }
+    #file-input { display: none; }
+
+    .conv-list { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .conv-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 18px; cursor: pointer;
+      transition: all .15s; display: flex; justify-content: space-between;
+      align-items: center; gap: 12px;
+    }
+    .conv-item:hover { border-color: var(--green); background: var(--bg-raised); }
+    .conv-item .conv-title { font-weight: 600; font-size: 14px; }
+    .conv-item .conv-meta { font-size: 12px; color: var(--text3); font-family: var(--font-mono); }
+    .conv-item .conv-preview { font-size: 12px; color: var(--text3); margin-top: 4px; }
+    .conv-item-right { text-align: right; flex-shrink: 0; }
+
+    /* snippets preview */
+    .snippet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .snippet-card-mini {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; cursor: pointer;
+      transition: all .15s; display: flex; flex-direction: column; gap: 8px;
+    }
+    .snippet-card-mini:hover { border-color: var(--purple); transform: translateY(-2px); }
+    .snippet-card-mini .sn-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .snippet-card-mini .sn-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+    .snippet-card-mini .sn-id { font-family: var(--font-mono); font-size: 10px; color: var(--purple); }
+    .snippet-card-mini .sn-copy { margin-top: auto; }
+    .see-all-link { text-align: center; margin-top: 20px; }
+
+    /* demo gate */
+    .demo-preview {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .demo-preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 14px; }
+    .demo-badge { background: var(--amber-dim, rgba(251,191,36,.12)); color: var(--amber, #fbbf24); border: 1px solid rgba(251,191,36,.3); border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px; }
+    .demo-seed { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+    .demo-blurred { filter: blur(5px); pointer-events: none; user-select: none; }
+    .demo-preview-blur {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg-card));
+    }
+    .demo-cta-box { text-align: center; padding: 28px 20px 20px; }
+    .demo-cta-box h3 { font-family: var(--font-head); font-size: 22px; font-weight: 400; margin-bottom: 10px; }
+    .demo-cta-box p { color: var(--text3); font-size: 14px; margin-bottom: 20px; max-width: 440px; margin-left: auto; margin-right: auto; }
+    .demo-features { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .demo-feature-tag { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.25); border-radius: 20px; font-size: 12px; font-weight: 600; padding: 4px 12px; }
+    .demo-cta-box .btn-lg { padding: 12px 28px; font-size: 15px; }
+    .demo-cta-divider { color: var(--text3); font-size: 13px; margin: 16px 0 4px; }
+    .demo-login-bar { display: flex; justify-content: center; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .demo-dash-note { font-size: 13px; color: var(--text3); margin-top: 14px; }
+    .demo-dash-note a { color: var(--green); text-decoration: none; font-weight: 600; }
+    .demo-dash-note a:hover { text-decoration: underline; }
+
+    /* upload gate */
+    .gate-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 40px 28px; text-align: center;
+    }
+    .gate-box-icon { font-size: 40px; margin-bottom: 12px; }
+    .gate-box h3 { font-family: var(--font-head); font-size: 18px; font-weight: 400; margin-bottom: 8px; }
+    .gate-box p { color: var(--text3); font-size: 14px; margin-bottom: 20px; max-width: 380px; margin-left: auto; margin-right: auto; }
+    .gate-box-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  </style>
+  <link rel="manifest" href="/seed-reflection/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Seed Reflection">
+  <meta name="theme-color" content="#06080f">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html" class="active">Reflect</a>
+    <a href="generator.html" class="hide-mobile">Generator</a>
+    <a href="snippets.html" class="hide-mobile">Snippets</a>
+    <a href="import.html" class="hide-mobile">Import</a>
+    <a href="instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+    <span id="nav-auth-area"></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🌱 Seed Reflection • SCIA Protocol</div>
+  <h1>Find every <em>lost idea</em><br>in your AI conversations.</h1>
+  <p class="hero-sub">Paste any conversation. Get a full Seed Reflection Report — every abandoned idea, every drift point, every seed you meant to grow.</p>
+  <div class="hero-actions">
+    <a href="#app" class="btn btn-primary btn-lg" onclick="document.getElementById('app').scrollIntoView({behavior:'smooth'});return false;">↓ Start Reflecting</a>
+    <a href="snippets.html" class="btn btn-ghost btn-lg">Browse Snippets</a>
+  </div>
+</section>
+
+<!-- APP -->
+<section class="app-area" id="app">
+  <div class="app-shell">
+
+    <!-- AUTH / API KEY BAR -->
+    <div class="api-key-bar" id="api-key-bar">
+      <div class="key-status">
+        <div class="key-dot unset" id="key-dot"></div>
+        <span id="key-label">Loading…</span>
+      </div>
+      <div class="key-actions" id="key-actions">
+        <button class="btn btn-sm btn-secondary" onclick="showKeyModal()">Set API Key</button>
+      </div>
+    </div>
+
+    <!-- Usage banner for free tier -->
+    <div id="usage-banner" style="display:none;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.2);
+         border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:var(--text2);
+         display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <span id="usage-text"></span>
+      <a href="../auth.html?mode=signup&plan=pro" class="btn btn-sm btn-primary" style="white-space:nowrap">Upgrade to Pro →</a>
+    </div>
+
+    <!-- MODE TABS -->
+    <div class="mode-tabs">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-btn-paste" onclick="switchTab('paste', this)">✦ Paste & Reflect</button>
+        <button class="tab-btn" id="tab-btn-generate" onclick="switchTab('generate', this)">🪄 Generate</button>
+        <button class="tab-btn" id="tab-btn-upload" onclick="switchTab('upload', this)">📤 Upload JSON</button>
+        <button class="tab-btn" id="tab-btn-snippets" onclick="switchTab('snippets', this)">📋 Snippets</button>
+      </div>
+    </div>
+
+    <!-- TAB: PASTE & REFLECT -->
+    <div class="tab-panel active" id="tab-paste">
+
+      <!-- Gate: shown to unauthenticated users -->
+      <div id="reflect-demo-gate">
+        <div class="demo-preview">
+          <div class="demo-preview-header">
+            <span style="font-weight:600;">🌱 Sample Seed Reflection Report</span>
+            <span class="demo-badge">PREVIEW</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px;letter-spacing:.3px;">✦ ACTIVE SEEDS — 2 ideas ready to grow</div>
+          <div class="demo-seed">Build a habit tracker using AI reminders — confidence <span style="color:var(--cyan,#22d3ee);">91%</span> · <em style="color:var(--text3);">you had a strong plan in session 3</em></div>
+          <div class="demo-seed">Write a Rust CLI that converts TypeScript types — <span style="color:var(--amber,#fbbf24);">in progress</span> · code fragment saved</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text3);margin:12px 0 8px;letter-spacing:.3px;">◎ ABANDONED SEEDS — 3 lost ideas recovered</div>
+          <div class="demo-blurred">
+            <div class="demo-seed">Create a "context capsule" document to survive thread resets — 💡 Recovery suggestion included</div>
+            <div class="demo-seed">Browser extension for saving AI highlights as seeds — High value, low effort</div>
+            <div class="demo-seed">Set up weekly email digest of unfinished threads — quick win</div>
+          </div>
+          <div class="demo-preview-blur"></div>
+        </div>
+        <div class="demo-cta-box">
+          <h3>Find every <em style="color:var(--green);">lost idea</em> in your conversations</h3>
+          <p>Create a free account to paste any AI conversation and get a full Seed Reflection Report — unlimited seeds, saved reports, and cross-platform analysis.</p>
+          <div class="demo-features">
+            <span class="demo-feature-tag">✓ Unlimited reflections</span>
+            <span class="demo-feature-tag">✓ Saved reflection library</span>
+            <span class="demo-feature-tag">✓ Cross-platform analysis</span>
+            <span class="demo-feature-tag">✓ Download reports</span>
+          </div>
+          <a href="../auth.html?mode=signup" class="btn btn-primary btn-lg" style="display:inline-block;margin-bottom:8px;">Get Started Free →</a>
+          <div class="demo-cta-divider">Already have an account?</div>
+          <div class="demo-login-bar">
+            <a href="../auth.html" class="btn btn-ghost">Log in</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shown to logged-in users: redirect to dashboard -->
+      <div id="reflect-logged-in" style="display:none;">
+        <div class="gate-box">
+          <div class="gate-box-icon">🌱</div>
+          <h3>Your reflection workspace is in your dashboard</h3>
+          <p>Paste conversations, upload exports, and view your saved seed library — all in one place.</p>
+          <div class="gate-box-actions">
+            <a href="dashboard.html" class="btn btn-primary btn-lg">Open Dashboard →</a>
+          </div>
+          <p class="demo-dash-note" style="margin-top:16px;">
+            <a href="dashboard.html#reflect">Go straight to Reflect →</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB: UPLOAD JSON -->
+    <div class="tab-panel" id="tab-upload">
+      <div class="gate-box">
+        <div class="gate-box-icon">📤</div>
+        <h3>Upload a ChatGPT or Claude export</h3>
+        <p>Sign in to upload <strong>.json</strong> files and <strong>.zip</strong> archives and get a full Seed Reflection Report. Your files are parsed in the browser — nothing is stored on our servers.</p>
+        <div class="gate-box-actions">
+          <a href="../auth.html?mode=signup" class="btn btn-primary">Get Started Free →</a>
+          <a href="../auth.html" class="btn btn-ghost">Log in</a>
+        </div>
+        <p class="demo-dash-note">Already signed in? <a href="dashboard.html#reflect">Open your dashboard →</a></p>
+      </div>
+    </div>
+
+    <!-- TAB: GENERATE PROMPT -->
+    <div class="tab-panel" id="tab-generate">
+      <div class="gen-shell">
+        <div>
+          <div class="gen-title">🪄 Build a Targeted Recovery Prompt</div>
+          <p class="gen-sub">Describe what you're looking for — the generator builds a custom SRT-1 prompt to paste into any AI thread alongside your old conversation.</p>
+        </div>
+
+        <div class="gen-field">
+          <label for="gen-what">What seeds are you looking for?</label>
+          <textarea id="gen-what" placeholder="e.g. I was building a mobile app for tracking recipes and I think we got stuck on the database design…"></textarea>
+        </div>
+
+        <div class="gen-row">
+          <div class="gen-field">
+            <label for="gen-platform">Platform</label>
+            <select id="gen-platform">
+              <option value="ChatGPT">ChatGPT</option>
+              <option value="Claude">Claude</option>
+              <option value="Gemini">Gemini</option>
+              <option value="Copilot">Copilot</option>
+              <option value="">Any AI platform</option>
+            </select>
+          </div>
+          <div class="gen-field">
+            <label for="gen-scope">Scope</label>
+            <select id="gen-scope">
+              <option value="one">Just one conversation</option>
+              <option value="few">A few conversations</option>
+              <option value="many">Many across platforms</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="gen-field">
+          <label>What's most important to you? <span style="color:var(--text3);font-weight:400;">(check all that apply)</span></label>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" id="chk-stuck" checked><span>Find where we got stuck</span></label>
+            <label class="check-item"><input type="checkbox" id="chk-recover" checked><span>Recover code or content we built</span></label>
+            <label class="check-item"><input type="checkbox" id="chk-other"><span>Find other ideas I mentioned but forgot</span></label>
+            <label class="check-item"><input type="checkbox" id="chk-summary"><span>Get a summary of what was accomplished</span></label>
+            <label class="check-item"><input type="checkbox" id="chk-next" checked><span>Know exactly what to do next</span></label>
+          </div>
+        </div>
+
+        <div>
+          <button class="btn btn-primary btn-lg" onclick="generatePrompt()" style="width:100%;">🌱 Generate My Recovery Prompt</button>
+        </div>
+
+        <div id="gen-output" class="hidden gen-output">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <strong style="font-size:15px;">Your custom recovery prompt</strong>
+            <button class="btn btn-secondary btn-sm" onclick="copyGenPrompt(this)">📋 Copy to Clipboard</button>
+          </div>
+          <div class="gen-prompt-wrap">
+            <pre class="gen-prompt-text" id="gen-prompt-text"></pre>
+          </div>
+          <div class="gen-sig" id="gen-sig-block"></div>
+          <p style="font-size:13px;color:var(--text3);margin-top:12px;">Paste this prompt + your old conversation into any AI assistant to recover your seeds.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SNIPPETS PREVIEW -->
+    <div class="tab-panel" id="tab-snippets">
+      <div class="snippet-grid" id="snippet-mini-grid">
+        <!-- populated by JS -->
+      </div>
+      <div class="see-all-link">
+        <a href="snippets.html" class="btn btn-secondary" style="margin-top:8px;">View all snippets with full text →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">
+    <strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.
+  </div>
+  <div class="footer-links">
+    <a href="snippets.html">Snippets</a>
+    <a href="import.html">Import</a>
+    <a href="about.html">About</a>
+    <a href="dashboard.html">My Dashboard</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA</div>
+</footer>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay hidden" id="key-modal">
+  <div class="modal">
+    <h2>🔑 Add your Anthropic API key</h2>
+    <p>Your key is stored only in your browser (localStorage). It is never sent to any server other than Anthropic's API to power your reflections.</p>
+    <label for="key-input">Anthropic API Key</label>
+    <input type="password" id="key-input" placeholder="sk-ant-api03-..." style="margin-bottom:16px;">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;">
+      Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. Only model access is used — no billing info is shared.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+      <button class="btn btn-ghost" onclick="closeKeyModal()">Cancel</button>
+      <button class="btn btn-ghost" style="margin-left:auto;color:var(--red);" onclick="clearApiKey()">Remove Key</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA: SNIPPETS ──────────────────────────────────────────────────────────
+const SNIPPETS = [
+  {
+    id: 'SCIA-REFLECT-FULL',
+    emoji: '🌱',
+    title: 'Full Seed Reflection',
+    when: 'After any long conversation to recover every idea you started.',
+    text: `You are a Seed Reflection specialist. Analyze this entire conversation and produce a structured Seed Reflection Report.
+
+A "Seed" is any idea, task, goal, project, question, or plan that was introduced. For each seed you find, identify: what it is, its current status (active / completed / abandoned / drifting), and where in the conversation it appears.
+
+Your report must include these sections:
+
+## 🌱 Active Seeds
+Ideas currently being worked on.
+
+## 🌿 Completed Seeds
+Goals that reached resolution.
+
+## 🍂 Abandoned Seeds
+Ideas introduced but never developed. For each, explain WHY it was left behind and what would be needed to restart it.
+
+## 🌊 Drift Points
+Moments where the conversation moved away from the original intent. Be specific.
+
+## 🎯 Recovery Recommendations
+The top 3 abandoned seeds I should pick up next, in priority order. Tell me exactly how to restart each one.
+
+## 📊 Session Summary
+One paragraph summarizing what this session was really about and what remains unfinished.
+
+At the end, append this exact block:
+---SEED-SIGNATURE---
+SRT-1 Reflection Complete
+Seed Signature: SCIA-REFLECT-FULL
+Seeds Found: [n]
+Abandoned: [n]
+Recovered: [n]
+Drift Points: [n]
+Coherence: [high/medium/low based on conversation focus]
+Platform: [platform name if visible, otherwise "Unknown"]
+Timestamp: [current ISO 8601 datetime]
+Protocol: SCIA v4.0
+---END-SIGNATURE---`
+  },
+  {
+    id: 'SCIA-COHERENCE',
+    emoji: '🧭',
+    title: 'Quick Coherence Check',
+    when: 'Mid-conversation when you feel the AI has drifted.',
+    text: `Stop. Perform a coherence check on our conversation.
+
+1. State my original intent in one sentence (what I asked for at the start).
+2. Describe what we are building/discussing right now.
+3. Are these aligned? Answer: YES / PARTIAL DRIFT / SIGNIFICANT DRIFT.
+4. If there is drift: name the point where we veered off and suggest how to return.
+5. What is the next action that would bring this session back to its original purpose?
+
+Keep your response under 200 words. Be direct.`
+  },
+  {
+    id: 'SCIA-RECOVER',
+    emoji: '🔄',
+    title: 'Thread Recovery',
+    when: 'Returning to a conversation after time away.',
+    text: `I am returning to this conversation after time away. Before we continue:
+
+1. **Original Goal**: State what I was originally trying to accomplish.
+2. **What Was Done**: List every decision made and everything built or written.
+3. **What Is Unfinished**: Identify everything that was started but not completed.
+4. **Recommended Next Step**: One clear action I should take right now to make progress.
+
+Then STOP and wait for my confirmation before continuing. Do not resume building until I say so.`
+  },
+  {
+    id: 'SCIA-HARVEST',
+    emoji: '🌾',
+    title: 'Multi-Platform Harvest',
+    when: 'Extracting ideas from a conversation you are pasting in.',
+    text: `I am going to paste a conversation from another AI platform. Extract every idea, task, question, or goal from it.
+
+For each one, provide:
+- **The Seed**: What the core idea or task was
+- **Status**: Was it resolved, explored, or abandoned?
+- **Recovery Value**: Is this worth revisiting? (High / Medium / Low)
+- **Restart Prompt**: One sentence I could use to pick this back up
+
+Give me a clean numbered list. At the end, tell me the top 2 seeds most worth pursuing and why.
+
+Here is the conversation:
+[PASTE CONVERSATION HERE]`
+  },
+  {
+    id: 'SCIA-PLANT',
+    emoji: '🪴',
+    title: 'Project Seed Plant',
+    when: 'Starting a new project to lock in your original intent.',
+    text: `I am starting a new project. I want to lock in my original intent so we do not drift.
+
+**My Goal**: [DESCRIBE YOUR GOAL IN 1-3 SENTENCES]
+
+Before we begin:
+1. Confirm you understand what I am trying to achieve.
+2. Ask me 2-3 clarifying questions if anything is ambiguous.
+3. Restate the core intent back to me in one sentence.
+
+After I confirm, begin working. At each major milestone, pause and check: are we still building toward this original goal? If you detect drift, flag it immediately.`
+  },
+  {
+    id: 'SCIA-CONTINUE',
+    emoji: '▶️',
+    title: 'Continue From Last Session',
+    when: 'Resuming a project across platforms or new chat windows.',
+    text: `I want to continue from my last session. Here is the context:
+
+**Project**: [PROJECT NAME]
+**Last Session Summary**: [PASTE YOUR PREVIOUS CONVERSATION SUMMARY OR KEY POINTS]
+**Current Status**: [WHERE THINGS STAND]
+**What Was Left Unfinished**: [WHAT NEEDS TO BE DONE]
+
+Please:
+1. Confirm you understand the context.
+2. State the most important unfinished item.
+3. Suggest the best next action.
+
+Then wait for my direction. Do not begin work until I confirm.`
+  },
+  {
+    id: 'SCIA-IMPORT',
+    emoji: '📥',
+    title: 'JSON Import Analysis',
+    when: 'When you have exported your conversation data and need to triage it.',
+    text: `I am going to share conversation data from my AI export. Please:
+
+1. List all conversation topics you can identify.
+2. Find the conversations with unfinished ideas or incomplete tasks.
+3. Rank the top 5 conversations most worth revisiting, with a one-sentence reason for each.
+4. For my top 3, give a 2-sentence summary of what was discussed and what was left unresolved.
+
+I will then tell you which ones to dig into deeply.
+
+[PASTE YOUR CONVERSATION DATA OR TRANSCRIPT HERE]`
+  }
+];
+
+// ── SYSTEM PROMPT ───────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = SNIPPETS[0].text;
+
+// ── API KEY MANAGEMENT ───────────────────────────────────────────────────────
+function loadApiKey() { return localStorage.getItem('sr_api_key') || ''; }
+function updateKeyStatus() {
+  const key = loadApiKey();
+  const dot = document.getElementById('key-dot');
+  const label = document.getElementById('key-label');
+  if (key) {
+    dot.className = 'key-dot set';
+    label.innerHTML = 'API key set — <strong>Reflect mode active</strong>';
+  } else {
+    dot.className = 'key-dot unset';
+    label.innerHTML = 'No API key — <strong>add yours to use Reflect mode</strong>';
+  }
+}
+function showKeyModal() {
+  document.getElementById('key-input').value = loadApiKey();
+  document.getElementById('key-modal').classList.remove('hidden');
+}
+function closeKeyModal() { document.getElementById('key-modal').classList.add('hidden'); }
+function saveApiKey() {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val) return alert('Please enter an API key.');
+  localStorage.setItem('sr_api_key', val);
+  closeKeyModal();
+  updateKeyStatus();
+}
+function clearApiKey() {
+  if (!confirm('Remove your API key?')) return;
+  localStorage.removeItem('sr_api_key');
+  closeKeyModal();
+  updateKeyStatus();
+}
+document.getElementById('key-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeKeyModal();
+});
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── CHAR COUNT ────────────────────────────────────────────────────────────────
+function updateCharCount(ta) {
+  const n = ta.value.length;
+  document.getElementById('char-count').textContent = n.toLocaleString() + ' characters';
+}
+
+// ── REFLECTION (PASTE MODE) ───────────────────────────────────────────────────
+let currentReportText = '';
+let currentUploadReportText = '';
+
+async function runReflection() {
+  const text = document.getElementById('conversation-input').value.trim();
+  if (!text) return alert('Please paste a conversation first.');
+
+  // If user is logged in, try platform API first (tracks usage, uses pooled key for Pro)
+  if (SRT1Platform.isLoggedIn()) {
+    await runReflectionPlatform(text);
+  } else {
+    // Not logged in: use user's own API key
+    const apiKey = loadApiKey();
+    if (!apiKey) { showKeyModal(); return; }
+    await streamReflection(text, apiKey, 'reflection-output', 'loading-state', 'sig-block', 'result-area', v => currentReportText = v);
+  }
+}
+
+async function runReflectionPlatform(text) {
+  const area = document.getElementById('result-area');
+  const loading = document.getElementById('loading-state');
+  const output = document.getElementById('reflection-output');
+  const sigBlock = document.getElementById('sig-block');
+  const btn = document.getElementById('reflect-btn');
+
+  area.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  output.innerHTML = '';
+  sigBlock.innerHTML = '';
+  if (btn) btn.disabled = true;
+
+  try {
+    // Try platform API. If it fails (no key configured) fall back to user key.
+    const result = await SRT1Platform.reflect(text, {});
+
+    loading.classList.add('hidden');
+
+    // Render seeds as rich report
+    const reportText = formatPlatformResult(result);
+    currentReportText = reportText;
+    output.innerHTML = renderMarkdown(reportText);
+
+    // Show signature block
+    sigBlock.innerHTML = renderSeedSignature({
+      'Seed Signature': 'SCIA-REFLECT-FULL',
+      'Seeds Found': String(result.seed_count),
+      'Abandoned': String(result.abandoned_count),
+      'Recovered': String(result.recovered_count),
+      'Coherence': result.coherence,
+      'Platform': 'SRT-1 Platform',
+      'Timestamp': new Date().toISOString(),
+    });
+
+    // Show "Save to Account" button
+    document.getElementById('save-platform-btn').style.display = '';
+
+    // Update usage display
+    if (result.usage_after && result.usage_after.limit) {
+      showUsageBanner(result.usage_after.used, result.usage_after.limit, result.usage_after.plan);
+    }
+
+  } catch (err) {
+    loading.classList.add('hidden');
+    if (err.message && err.message.includes('No Anthropic API key')) {
+      // Platform not configured with key — fall back to user's own key
+      const apiKey = loadApiKey();
+      if (!apiKey) { showKeyModal(); return; }
+      await streamReflection(text, apiKey, 'reflection-output', 'loading-state', 'sig-block', 'result-area', v => currentReportText = v);
+    } else if (err.message && err.message.includes('limit')) {
+      output.innerHTML = `<div style="color:var(--amber);padding:20px;background:rgba(210,153,34,.08);
+        border-radius:8px;border:1px solid rgba(210,153,34,.2);">
+        <strong>Monthly limit reached.</strong> ${escapeHtml(err.message)}
+        <br><br><a href="../auth.html?mode=signup&plan=pro" class="btn btn-primary btn-sm">Upgrade to Pro →</a>
+      </div>`;
+    } else {
+      output.innerHTML = `<div style="color:var(--red);padding:20px;background:rgba(239,68,68,.08);
+        border-radius:8px;border:1px solid rgba(239,68,68,.2);">
+        <strong>Error:</strong> ${escapeHtml(err.message)}
+      </div>`;
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function formatPlatformResult(result) {
+  let md = `## Summary\n\n${result.summary}\n\n`;
+  if (result.seeds && result.seeds.length) {
+    md += `## Seeds Found (${result.seeds.length})\n\n`;
+    for (const seed of result.seeds) {
+      const statusIcon = { completed:'✅', abandoned:'🍂', in_progress:'🌱', mentioned:'💡' }[seed.status] || '🌱';
+      md += `### ${statusIcon} ${seed.title}\n\n`;
+      md += `**Intent:** ${seed.intent}\n\n`;
+      if (seed.value) md += `**Why it matters:** ${seed.value}\n\n`;
+      if (seed.next_step) md += `**Next step:** ${seed.next_step}\n\n`;
+    }
+  }
+  if (result.drift_points && result.drift_points.length) {
+    md += `## Drift Points\n\n`;
+    for (const dp of result.drift_points) md += `- ${dp}\n`;
+    md += '\n';
+  }
+  return md;
+}
+
+async function saveToPlatform() {
+  if (!currentReportText) return;
+  const btn = document.getElementById('save-platform-btn');
+  btn.disabled = true; btn.textContent = '☁ Saving…';
+  try {
+    await SRT1Platform.saveReflection(
+      JSON.stringify({ report: currentReportText, timestamp: new Date().toISOString() }, null, 2),
+      `reflection-${Date.now()}.json`,
+      'Seed Reflection Report',
+    );
+    btn.textContent = '✓ Saved';
+    setTimeout(() => { btn.textContent = '☁ Save to Account'; btn.disabled = false; }, 2000);
+  } catch (err) {
+    alert(err.message || 'Save failed');
+    btn.textContent = '☁ Save to Account'; btn.disabled = false;
+  }
+}
+
+function showUsageBanner(used, limit, plan) {
+  const banner = document.getElementById('usage-banner');
+  const text = document.getElementById('usage-text');
+  if (!banner) return;
+  const remaining = Math.max(0, limit - used);
+  text.textContent = `Free plan: ${used}/${limit} reflections used this month. ${remaining} remaining.`;
+  banner.style.display = 'flex';
+}
+
+async function streamReflection(text, apiKey, outputId, loadingId, sigId, areaId, onText) {
+  const area = document.getElementById(areaId);
+  const loading = document.getElementById(loadingId);
+  const output = document.getElementById(outputId);
+  const sigBlock = document.getElementById(sigId);
+
+  area.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  output.innerHTML = '';
+  sigBlock.innerHTML = '';
+  onText('');
+
+  const btn = document.getElementById('reflect-btn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        stream: true,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    loading.classList.add('hidden');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const ev = JSON.parse(data);
+          if (ev.type === 'content_block_delta' && ev.delta?.text) {
+            fullText += ev.delta.text;
+            onText(fullText);
+            output.innerHTML = renderMarkdown(extractBodyText(fullText));
+            output.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+        } catch (_) {}
+      }
+    }
+
+    onText(fullText);
+    const sig = extractSignature(fullText);
+    if (sig) {
+      sigBlock.innerHTML = renderSeedSignature(sig);
+      output.innerHTML = renderMarkdown(extractBodyText(fullText));
+    }
+
+  } catch (err) {
+    loading.classList.add('hidden');
+    output.innerHTML = `<div style="color:var(--red);padding:20px;background:rgba(239,68,68,.08);border-radius:8px;border:1px solid rgba(239,68,68,.2);">
+      <strong>Error:</strong> ${escapeHtml(err.message)}
+      ${err.message.includes('401') ? '<br><br>Check your API key — it may be invalid or expired.' : ''}
+    </div>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── TEXT PROCESSING ───────────────────────────────────────────────────────────
+function extractSignature(text) {
+  const m = text.match(/---SEED-SIGNATURE---([\s\S]*?)---END-SIGNATURE---/);
+  if (!m) return null;
+  const lines = m[1].trim().split('\n');
+  const obj = {};
+  for (const l of lines) {
+    const idx = l.indexOf(':');
+    if (idx > -1) obj[l.slice(0, idx).trim()] = l.slice(idx + 1).trim();
+  }
+  return obj;
+}
+
+function extractBodyText(text) {
+  return text.replace(/---SEED-SIGNATURE---[\s\S]*?---END-SIGNATURE---/g, '').trim();
+}
+
+function renderSeedSignature(sig) {
+  const id = 'SR-' + Date.now().toString(36).toUpperCase();
+  const sigType = sig['Seed Signature'] || sig['Type'] || 'SCIA-REFLECT-FULL';
+  return `<div class="seed-signature">
+    <div class="sig-header">SRT-1 Seed Reflection • SCIA v4.0</div>
+    <div class="sig-row">
+      <div class="sig-field">
+        <span class="sig-label">Signature ID</span>
+        <span class="sig-value sig-id">${escapeHtml(id)}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Type</span>
+        <span class="sig-value">${escapeHtml(sigType)}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Seeds Found</span>
+        <span class="sig-value text-green">${escapeHtml(sig['Seeds Found'] || '—')}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Abandoned</span>
+        <span class="sig-value">${escapeHtml(sig['Abandoned'] || '—')}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Coherence</span>
+        <span class="sig-value text-cyan">${escapeHtml(sig['Coherence'] || '—')}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Platform</span>
+        <span class="sig-value">${escapeHtml(sig['Platform'] || '—')}</span>
+      </div>
+      <div class="sig-field">
+        <span class="sig-label">Protocol</span>
+        <span class="sig-value text-purple">${escapeHtml(sig['Protocol'] || 'SCIA v4.0')}</span>
+      </div>
+    </div>
+    <div class="sig-footer">
+      ${escapeHtml(sig['Timestamp'] || new Date().toISOString())} • Seed-Class Intelligence Architecture
+    </div>
+  </div>`;
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  // headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+  // bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  // italic
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // hr
+  html = html.replace(/^---$/gm, '<hr>');
+  // lists
+  html = html.replace(/^[*\-] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>');
+  // paragraphs (double newline)
+  html = html.replace(/\n\n+/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+  return '<p>' + html + '</p>';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── SAVE REPORT ────────────────────────────────────────────────────────────────
+function saveReport() {
+  if (!currentReportText) return;
+  download('seed-reflection-report.md', currentReportText);
+}
+function saveUploadReport() {
+  if (!currentUploadReportText) return;
+  download('seed-reflection-report.md', currentUploadReportText);
+}
+function download(filename, text) {
+  const a = document.createElement('a');
+  a.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(text);
+  a.download = filename;
+  a.click();
+}
+function clearInput() {
+  document.getElementById('conversation-input').value = '';
+  document.getElementById('char-count').textContent = '0 characters';
+}
+function clearResult() {
+  document.getElementById('result-area').classList.add('hidden');
+  currentReportText = '';
+}
+function clearUploadResult() {
+  document.getElementById('upload-result-area').classList.add('hidden');
+  currentUploadReportText = '';
+}
+
+// ── FILE UPLOAD ────────────────────────────────────────────────────────────────
+let parsedConversations = [];
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  document.getElementById('upload-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+async function processFile(file) {
+  try {
+    let jsonData;
+    if (file.name.endsWith('.zip')) {
+      // For ZIP files we need JSZip — inform user
+      alert('ZIP support requires the JSZip library. Please extract the zip and upload conversations.json directly.');
+      return;
+    } else {
+      const text = await file.text();
+      jsonData = JSON.parse(text);
+    }
+    parsedConversations = parseConversationExport(jsonData);
+    renderConvList(parsedConversations, file.name);
+  } catch (err) {
+    alert('Could not parse file: ' + err.message);
+  }
+}
+
+function parseConversationExport(data) {
+  // ChatGPT format: array of conversations with mapping property
+  if (Array.isArray(data) && data[0]?.mapping) {
+    return data.map(c => parseChatGPTConversation(c));
+  }
+  // Claude format: array of conversations with chat_messages
+  if (Array.isArray(data) && (data[0]?.chat_messages || data[0]?.messages)) {
+    return data.map(c => parseClaudeConversation(c));
+  }
+  // Single conversation
+  if (data?.mapping) return [parseChatGPTConversation(data)];
+  if (data?.chat_messages || data?.messages) return [parseClaudeConversation(data)];
+  // Fallback: treat as array
+  if (Array.isArray(data)) return data.map((c, i) => ({
+    id: String(i), title: c.title || `Conversation ${i+1}`,
+    date: c.create_time ? new Date(c.create_time * 1000).toLocaleDateString() : '—',
+    messageCount: 0, preview: '', transcript: JSON.stringify(c).slice(0, 500)
+  }));
+  return [];
+}
+
+function parseChatGPTConversation(c) {
+  const messages = [];
+  const mapping = c.mapping || {};
+  // Walk the tree
+  function walk(nodeId) {
+    const node = mapping[nodeId];
+    if (!node) return;
+    const msg = node.message;
+    if (msg?.content?.parts && msg.author?.role !== 'system') {
+      const text = msg.content.parts.filter(p => typeof p === 'string').join('');
+      if (text.trim()) messages.push({ role: msg.author.role, content: text });
+    }
+    (node.children || []).forEach(walk);
+  }
+  // Find root
+  const rootId = Object.values(mapping).find(n => !n.parent)?.id;
+  if (rootId) walk(rootId);
+  const transcript = messages.map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n\n');
+  const preview = messages.find(m => m.role === 'user')?.content?.slice(0, 100) || '';
+  return {
+    id: c.id || String(Math.random()),
+    title: c.title || 'Untitled',
+    date: c.create_time ? new Date(c.create_time * 1000).toLocaleDateString() : '—',
+    messageCount: messages.length,
+    preview,
+    transcript
+  };
+}
+
+function parseClaudeConversation(c) {
+  const msgs = c.chat_messages || c.messages || [];
+  const messages = msgs.map(m => ({
+    role: m.sender || m.role || 'user',
+    content: typeof m.text === 'string' ? m.text : (m.content || '')
+  })).filter(m => m.content.trim());
+  const transcript = messages.map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n\n');
+  const preview = messages.find(m => m.role === 'human' || m.role === 'user')?.content?.slice(0, 100) || '';
+  return {
+    id: c.uuid || String(Math.random()),
+    title: c.name || 'Untitled',
+    date: c.created_at ? new Date(c.created_at).toLocaleDateString() : '—',
+    messageCount: messages.length,
+    preview,
+    transcript
+  };
+}
+
+function renderConvList(convs, filename) {
+  const area = document.getElementById('conv-list-area');
+  const list = document.getElementById('conv-list');
+  const title = document.getElementById('conv-list-title');
+  title.textContent = `${convs.length} conversations found in ${filename}`;
+  list.innerHTML = convs.map((c, i) => `
+    <div class="conv-item" onclick="reflectOnConversation(${i})">
+      <div>
+        <div class="conv-title">${escapeHtml(c.title)}</div>
+        <div class="conv-preview">${escapeHtml(c.preview)}${c.preview.length >= 100 ? '…' : ''}</div>
+      </div>
+      <div class="conv-item-right">
+        <div class="conv-meta">${escapeHtml(c.date)}</div>
+        <div class="conv-meta">${c.messageCount} messages</div>
+        <button class="btn btn-sm btn-primary" style="margin-top:8px;">Reflect →</button>
+      </div>
+    </div>`).join('');
+  area.classList.remove('hidden');
+}
+
+function clearUpload() {
+  parsedConversations = [];
+  document.getElementById('conv-list-area').classList.add('hidden');
+  document.getElementById('file-input').value = '';
+}
+
+async function reflectOnConversation(idx) {
+  const conv = parsedConversations[idx];
+  if (!conv) return;
+  const apiKey = loadApiKey();
+  if (!apiKey) { showKeyModal(); return; }
+  document.getElementById('upload-result-title').textContent = conv.title;
+  await streamReflection(
+    conv.transcript, apiKey,
+    'upload-output', 'upload-loading', 'upload-sig-block', 'upload-result-area',
+    v => currentUploadReportText = v
+  );
+  document.getElementById('upload-result-area').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── SNIPPETS MINI GRID ─────────────────────────────────────────────────────────
+function renderSnippetMini() {
+  const grid = document.getElementById('snippet-mini-grid');
+  grid.innerHTML = SNIPPETS.map(s => `
+    <div class="snippet-card-mini">
+      <div class="sn-title">${s.emoji} ${escapeHtml(s.title)}</div>
+      <div class="sn-id">${s.id}</div>
+      <div class="sn-desc">${escapeHtml(s.when)}</div>
+      <div class="sn-copy">
+        <button class="btn btn-sm btn-ghost" style="width:100%;margin-top:8px;" onclick="copySnippet('${s.id}', this)">Copy Snippet</button>
+      </div>
+    </div>`).join('');
+}
+
+function copySnippet(id, btn) {
+  const s = SNIPPETS.find(x => x.id === id);
+  if (!s) return;
+  navigator.clipboard.writeText(s.text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = 'Copy Snippet';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 2000);
+  });
+}
+
+// ── GENERATE PROMPT ───────────────────────────────────────────────────────────
+function generatePrompt() {
+  const what = document.getElementById('gen-what').value.trim();
+  if (!what) { alert('Please describe what seeds you are looking for.'); return; }
+  const platform = document.getElementById('gen-platform').value;
+  const scope    = document.getElementById('gen-scope').value;
+  const chkStuck   = document.getElementById('chk-stuck').checked;
+  const chkRecover = document.getElementById('chk-recover').checked;
+  const chkOther   = document.getElementById('chk-other').checked;
+  const chkSummary = document.getElementById('chk-summary').checked;
+  const chkNext    = document.getElementById('chk-next').checked;
+
+  const platformPhrase = platform === 'ChatGPT' ? 'I had a conversation in ChatGPT where'
+    : platform === 'Claude' ? 'I had a conversation with Claude where'
+    : platform === 'Gemini' ? 'I had a conversation with Gemini where'
+    : platform === 'Copilot' ? 'I had a conversation with Copilot where'
+    : 'I had a previous conversation where';
+
+  const scopePhrase = scope === 'many'
+    ? 'I am pasting multiple conversations below separated by [SOURCE BREAK] markers.'
+    : scope === 'few' ? 'I am pasting a few conversations below.'
+    : 'I am pasting that conversation below.';
+
+  let focusItems = [], n = 1;
+  if (chkStuck)   focusItems.push(`${n++}. Find the exact point where progress stopped and explain why it stalled.`);
+  if (chkRecover) focusItems.push(`${n++}. Extract and present any code, designs, content, or decisions that were created.`);
+  if (chkSummary) focusItems.push(`${n++}. Provide a complete summary of what was accomplished before we stopped.`);
+  if (chkNext)    focusItems.push(`${n++}. Give me the specific next step to continue this work — one clear action.`);
+  if (!focusItems.length) focusItems.push('1. Summarize what was discussed and what was left unfinished.');
+
+  const otherLine = chkOther
+    ? '\nAlso: collect any OTHER ideas or seeds that came up — things mentioned but not pursued. List them at the end.'
+    : '\nAlso: note any other unrelated ideas that came up that I might want to revisit later.';
+
+  const timestamp = new Date().toISOString();
+  const sigId = 'SR-' + Date.now().toString(36).toUpperCase();
+
+  const prompt = `=== SRT-1 SEED RECOVERY ===
+Seed Signature: SCIA-RECOVER-TARGETED
+Protocol: Seed-Class Intelligence Architecture (SCIA) v4.0
+Target: ${what}
+===
+
+${platformPhrase} I was ${what}. ${scopePhrase}
+
+Please focus specifically on:
+${focusItems.join('\n')}
+${otherLine}
+
+End your report with this exact block:
+---
+SRT-1 Recovery Complete
+Seed Signature: SCIA-RECOVER-TARGETED
+Target Seed: [restate what was found, or confirm not found]
+Status: [recovered / partially recovered / not found]
+Other Seeds Found: [number]
+Next Action: [specific next step, one sentence]
+Timestamp: ${timestamp}
+Protocol: SCIA v4.0
+---
+
+Here is the conversation:
+[PASTE YOUR CONVERSATION HERE]`;
+
+  document.getElementById('gen-prompt-text').textContent = prompt;
+  document.getElementById('gen-sig-block').innerHTML =
+    `<div style="display:flex;align-items:center;gap:8px;color:var(--purple);font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">
+       <span style="width:8px;height:8px;border-radius:50%;background:var(--purple);display:inline-block;"></span>
+       SRT-1 Seed Recovery • SCIA v4.0
+     </div>
+     <div style="display:flex;gap:16px;flex-wrap:wrap;">
+       <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;">ID</div><div style="color:var(--purple);font-weight:600;">${sigId}</div></div>
+       <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Type</div><div>SCIA-RECOVER-TARGETED</div></div>
+       <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Target</div><div>${escapeHtml(what.slice(0,55))}${what.length>55?'…':''}</div></div>
+       <div><div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Protocol</div><div style="color:var(--purple);">SCIA v4.0</div></div>
+     </div>
+     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:var(--text3);font-size:11px;">${timestamp} • Generated by Seed Reflection</div>`;
+  document.getElementById('gen-output').classList.remove('hidden');
+  document.getElementById('gen-output').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyGenPrompt(btn) {
+  const text = document.getElementById('gen-prompt-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => { btn.textContent = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 2000);
+  });
+}
+
+function switchToGenerate(e) {
+  e.preventDefault();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-btn-generate').classList.add('active');
+  document.getElementById('tab-generate').classList.add('active');
+  document.getElementById('app').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+updateKeyStatus();
+renderSnippetMini();
+// Auto-switch to Generate tab if URL hash
+if (location.hash === '#generate') switchToGenerate({ preventDefault: () => {} });
+</script>
+
+<script src="../js/platform.js"></script>
+<script>
+// ── PLATFORM AUTH INIT ───────────────────────────────────────────────────────
+(async function initAuth() {
+  let user = null;
+  try { user = SRT1Platform.isLoggedIn() ? await SRT1Platform.getUser() : null; } catch {}
+
+  // Update nav auth area
+  const navAuth = document.getElementById('nav-auth-area');
+  if (navAuth) {
+    if (user) {
+      navAuth.innerHTML = `<a href="dashboard.html" class="nav-badge" style="color:var(--green);text-decoration:none">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;"></span>${SRT1Platform.escapeHtml(user.name || user.email)}</a>
+        <a href="../auth.html" class="nav-badge" style="color:var(--text3);text-decoration:none;font-size:12px;" onclick="SRT1Platform.logout();return false">Log out</a>`;
+    } else {
+      navAuth.innerHTML = `<a href="../auth.html" class="nav-badge" style="color:var(--blue);text-decoration:none">Log in</a>
+        <a href="../auth.html?mode=signup" class="btn btn-primary btn-sm" style="padding:4px 12px;font-size:12px;">Get Started</a>`;
+    }
+  }
+
+  // Show correct state in paste tab
+  const demoGate = document.getElementById('reflect-demo-gate');
+  const loggedIn = document.getElementById('reflect-logged-in');
+  if (user) {
+    if (demoGate) demoGate.style.display = 'none';
+    if (loggedIn) loggedIn.style.display = '';
+  } else {
+    if (demoGate) demoGate.style.display = '';
+    if (loggedIn) loggedIn.style.display = 'none';
+  }
+
+  // Update key bar
+  updateKeyBar(user);
+})();
+
+function updateKeyBar(user) {
+  const dot = document.getElementById('key-dot');
+  const label = document.getElementById('key-label');
+  const actions = document.getElementById('key-actions');
+  if (!dot || !label) return;
+
+  if (user) {
+    const planLabel = { free: 'Free Plan', plus: 'Plus', pro: 'Pro', enterprise: 'Enterprise' }[user.active_plan] || 'Free Plan';
+    dot.className = 'key-dot set';
+    label.textContent = planLabel + ' — ' + (user.email || '');
+    if (actions) actions.innerHTML = `<a href="dashboard.html" class="btn btn-sm btn-secondary">My Dashboard</a>`;
+  } else {
+    dot.className = 'key-dot unset';
+    label.textContent = 'Free tools: Generator & Snippets — Sign up to unlock Reflect';
+    if (actions) actions.innerHTML = `<a href="../auth.html?mode=signup" class="btn btn-sm btn-primary">Get Started Free</a>`;
+  }
+}
+</script>
+<script src="/pwa-install.js" defer></script>
+</body>
+</html>

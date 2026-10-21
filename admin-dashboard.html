@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seed Reflections Platform Admin | Master Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-deep: #06080f;
+            --bg-card: #0d1117;
+            --bg-card-alt: #161b22;
+            --bg-hover: #1f242c;
+            --border: #21262d;
+            --border-light: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-dim: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-cyan: #39d0d8;
+            --accent-emerald: #3fb950;
+            --accent-amber: #d29922;
+            --accent-purple: #bc8cff;
+            --accent-red: #f85149;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+            padding-bottom: 60px;
+        }
+
+        header.header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(6, 8, 15, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-right { display: flex; align-items: center; gap: 14px; }
+
+        .logo-mark {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 17px; font-weight: 800; letter-spacing: -0.3px;
+        }
+        .logo-text span {
+            color: var(--accent-cyan); font-weight: 500; font-size: 12px; margin-left: 6px;
+            background: rgba(57,208,216,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(57,208,216,0.2);
+        }
+
+        .btn {
+            background: var(--bg-card-alt); border: 1px solid var(--border-light);
+            color: var(--text-primary); padding: 7px 14px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+        .btn-cyan {
+            background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan);
+        }
+        .btn-cyan:hover { background: #5eead4; border-color: #5eead4; }
+        .btn-emerald {
+            background: rgba(63,185,80,0.15); color: var(--accent-emerald); border-color: rgba(63,185,80,0.4);
+        }
+        .btn-emerald:hover { background: rgba(63,185,80,0.25); }
+
+        .container {
+            max-width: 1360px;
+            margin: 28px auto;
+            padding: 0 24px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--accent-blue);
+        }
+        .stat-card.emerald::before { background: var(--accent-emerald); }
+        .stat-card.purple::before { background: var(--accent-purple); }
+        .stat-card.amber::before { background: var(--accent-amber); }
+        .stat-card.cyan::before { background: var(--accent-cyan); }
+
+        .stat-label {
+            font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;
+        }
+        .stat-val {
+            font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--text-primary);
+        }
+        .stat-sub {
+            font-size: 12px; color: var(--text-dim); margin-top: 6px;
+        }
+
+        .section-title {
+            font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        @media(max-width: 960px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(22, 27, 34, 0.4);
+        }
+        .card-header h3 {
+            font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;
+        }
+        .card-body { padding: 20px; }
+
+        /* Form elements */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;
+        }
+        .form-control {
+            width: 100%; background: var(--bg-deep); border: 1px solid var(--border-light);
+            border-radius: 6px; padding: 9px 12px; font-size: 13px; color: var(--text-primary);
+            font-family: inherit; outline: none; transition: border-color 0.15s;
+        }
+        .form-control:focus { border-color: var(--accent-cyan); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; }
+        table.data-table {
+            width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;
+        }
+        table.data-table th {
+            padding: 12px 16px; color: var(--text-muted); font-weight: 600; font-size: 11.5px;
+            text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+            background: var(--bg-card-alt);
+        }
+        table.data-table td {
+            padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary);
+        }
+        table.data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .badge {
+            padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block;
+        }
+        .badge-green { background: rgba(63, 185, 80, 0.15); color: var(--accent-emerald); border: 1px solid rgba(63, 185, 80, 0.3); }
+        .badge-purple { background: rgba(188, 140, 255, 0.15); color: var(--accent-purple); border: 1px solid rgba(188, 140, 255, 0.3); }
+        .badge-blue { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); border: 1px solid rgba(88, 166, 255, 0.3); }
+        .badge-amber { background: rgba(210, 153, 34, 0.15); color: var(--accent-amber); border: 1px solid rgba(210, 153, 34, 0.3); }
+        .badge-red { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+        .telemetry-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.06); font-size: 13px;
+        }
+        .telemetry-row:last-child { border-bottom: none; }
+        .telemetry-label { color: var(--text-muted); }
+        .telemetry-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-primary); }
+
+        .live-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--accent-emerald);
+            display: inline-block; box-shadow: 0 0 10px var(--accent-emerald);
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-left">
+        <div class="logo-mark">🛡️</div>
+        <div class="logo-text">SeedReflections <span>Master Control</span></div>
+    </div>
+    <div class="header-right">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--accent-emerald);">
+            <span class="live-dot"></span> Platform Master Active
+        </div>
+        <button class="btn" onclick="fetchOverview()">⟲ Refresh Telemetry</button>
+        <a href="/consumer" class="btn btn-cyan">Open Workspace View →</a>
+    </div>
+</header>
+
+<div class="container">
+    <!-- Top Level Platform Metrics -->
+    <div class="stat-grid">
+        <div class="stat-card cyan">
+            <div class="stat-label">Registered Accounts</div>
+            <div class="stat-val" id="stat-total-users">--</div>
+            <div class="stat-sub" id="stat-users-sub">Loading directory...</div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-label">Platform Token Burn</div>
+            <div class="stat-val" id="stat-total-tokens">--</div>
+            <div class="stat-sub" id="stat-token-sub">Metered queries</div>
+        </div>
+        <div class="stat-card emerald">
+            <div class="stat-label">Estimated AI Spend</div>
+            <div class="stat-val" id="stat-total-cost">$0.0000</div>
+            <div class="stat-sub" id="stat-cost-sub">Provider cost</div>
+        </div>
+        <div class="stat-card amber">
+            <div class="stat-label">Platform MRR & Billing</div>
+            <div class="stat-val" id="stat-mrr">$29.00</div>
+            <div class="stat-sub" id="stat-stripe-mode">Stripe: Test Mode</div>
+        </div>
+    </div>
+
+    <!-- Row 1: Stripe Revenue Hub & Platform AI Credentials Gateway -->
+    <div class="grid-2">
+        <!-- Stripe Billing & Subscription Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3>💳 Stripe Billing & Payment Gateways</h3>
+                <span class="badge badge-green" id="stripe-badge">Active (Test)</span>
+            </div>
+            <div class="card-body">
+                <form id="stripe-form" onsubmit="saveStripeConfig(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Payment Processing Mode</label>
+                            <select id="stripe_mode" class="form-control">
+                                <option value="test">Sandbox / Test Mode</option>
+                                <option value="live">Live Production</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Monthly Revenue Run Rate</label>
+                            <input type="text" class="form-control" value="$29.00 MRR (2 active plans)" disabled style="opacity:0.75;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stripe Secret API Key (sk_...)</label>
+                        <input type="password" id="stripe_secret_key" class="form-control" placeholder="sk_test_..." autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Webhook Signing Secret (whsec_...)</label>
+                        <input type="password" id="stripe_webhook_secret" class="form-control" placeholder="whsec_..." autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Stripe Pro Checkout URL ($9/mo)</label>
+                        <input type="url" id="stripe_checkout_pro" class="form-control" placeholder="https://buy.stripe.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Stripe Master Checkout URL ($20/mo)</label>
+                        <input type="url" id="stripe_checkout_master" class="form-control" placeholder="https://buy.stripe.com/...">
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                        <button type="submit" class="btn btn-emerald">Save Stripe Settings</button>
+                        <a href="https://dashboard.stripe.com" target="_blank" class="btn" style="font-size:12px;">Open Stripe Dashboard ↗</a>
+                    </div>
+                </form>
+
+                <!-- Live Stripe Webhook Ingestion & Simulation -->
+                <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">⚡ Live Webhook Ingestion Endpoint</span>
+                        <span id="webhook-copy-status" style="font-size:11px; color:var(--accent-emerald); display:none; font-weight:600;">✓ Copied!</span>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <input type="text" id="stripe_webhook_url" class="form-control" readonly style="font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(0,0,0,0.3);" value="">
+                        <button type="button" class="btn" onclick="copyWebhookUrl()">Copy</button>
+                        <button type="button" class="btn btn-cyan" onclick="simulateStripeWebhook()" style="white-space:nowrap;">⚡ Test Webhook</button>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+                        Auto-syncs tiers on: <code>checkout.session.completed</code>, <code>customer.subscription.updated</code>, <code>customer.subscription.deleted</code>
+                    </div>
+                    <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px;">Recent Webhook Ingestions:</div>
+                    <div id="stripe-events-feed" style="max-height:110px; overflow-y:auto; background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:12px; font-family:'JetBrains Mono',monospace;">
+                        <div style="color:var(--text-dim);">No incoming webhooks recorded yet. Use 'Test Webhook' to simulate live sync.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform AI Credentials & Key Vault -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🔑 Platform AI Gateway & Key Vault</h3>
+                <span class="badge badge-purple" id="llm-model-badge">qwen-qwq-32b</span>
+            </div>
+            <div class="card-body">
+                <form id="llm-form" onsubmit="saveLLMConfig(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Active Provider</label>
+                            <select id="llm_provider" class="form-control">
+                                <option value="openai_compatible">Groq Cloud (LPU Reasoning)</option>
+                                <option value="openai">OpenAI Official</option>
+                                <option value="gemini">Google Gemini</option>
+                                <option value="ollama">Local Ollama</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Model Architecture</label>
+                            <input type="text" id="llm_model" class="form-control" placeholder="qwen-qwq-32b">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gateway Endpoint URL</label>
+                        <input type="url" id="llm_api_url" class="form-control" placeholder="https://api.groq.com/openai/v1">
+                    </div>
+                    <div class="form-group">
+                        <label>Master Platform API Key (Masked)</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" id="llm_api_key" class="form-control" placeholder="gsk_... or sk_..." autocomplete="off">
+                            <button type="button" class="btn" onclick="toggleKeyVisibility('llm_api_key')">👁️</button>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:18px;">
+                        <button type="submit" class="btn btn-emerald">Save AI Settings</button>
+                        <button type="button" class="btn btn-cyan" onclick="testConnection()">⚡ Test API Connection</button>
+                    </div>
+                    <div id="test-result-box" style="margin-top:14px;display:none;padding:10px 12px;border-radius:6px;font-size:12px;"></div>
+                </form>
+
+                <!-- AI Budget Cap & Emergency Killswitch Controls -->
+                <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div>
+                            <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">🛑 Emergency AI Killswitch</span>
+                            <div style="font-size:11px; color:var(--text-muted);">Instantly halts all outbound LLM API requests and switches to local heuristics</div>
+                        </div>
+                        <button type="button" id="killswitch-btn" class="btn btn-red" onclick="toggleKillswitch()" style="font-weight:600; padding:6px 14px; white-space:nowrap;">
+                            ⚡ ENGAGE KILLSWITCH
+                        </button>
+                    </div>
+
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:6px; padding:12px; margin-top:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:12px;">
+                            <span style="color:var(--text-muted); font-weight:500;">Monthly Spend Ceiling:</span>
+                            <span id="budget-progress-text" style="font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--text-primary);">$0.00 / $50.00 (0%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.08); border-radius:4px; height:8px; overflow:hidden; margin-bottom:12px;">
+                            <div id="budget-progress-bar" style="background:var(--accent-emerald); height:100%; width:0%; transition:width 0.3s ease;"></div>
+                        </div>
+                        <div class="form-row" style="margin-bottom:0;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:11px;">Monthly Budget Limit ($ USD)</label>
+                                <input type="number" id="ai_monthly_budget_usd" class="form-control" step="1.0" min="5" value="50.00" style="padding:6px 10px; font-size:12px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
+                                <label style="font-size:11px;">Overspend Protection</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:var(--text-secondary); margin-top:4px;">
+                                    <input type="checkbox" id="ai_budget_hard_stop" checked> Hard-stop LLMs at cap
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Live User & Tenant Management -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="section-title" style="margin-bottom:0;">👥 Registered Accounts & Tenant Directory</div>
+        <button type="button" class="btn btn-cyan" onclick="openAddAccountModal()">➕ Create Account</button>
+    </div>
+
+    <!-- Tenant Search & Filter Toolbar -->
+    <div class="card" style="padding:12px 18px; margin-bottom:14px; background:var(--bg-card-alt); border:1px solid var(--border);">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <div style="flex:1; min-width:220px;">
+                <input type="text" id="user-search-input" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+            </div>
+            <div style="min-width:140px;">
+                <select id="user-plan-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                    <option value="">All Tiers</option>
+                    <option value="free">Free Tier</option>
+                    <option value="pro">Pro Tier</option>
+                    <option value="master">Master Tier</option>
+                </select>
+            </div>
+            <div style="min-width:130px;">
+                <select id="user-status-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+            <div style="min-width:120px;">
+                <select id="user-role-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                    <option value="">All Roles</option>
+                    <option value="consumer">Consumer</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button type="button" class="btn" onclick="resetUserFilters()" style="padding:7px 12px; font-size:12px;">Clear Filters</button>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div id="add-account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+        <div style="background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; width:90%; max-width:480px; padding:24px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:16px; font-weight:700;">➕ Create Tenant Account</h3>
+                <button type="button" class="btn" onclick="closeAddAccountModal()" style="padding:4px 8px;">✕</button>
+            </div>
+            <form id="add-account-form" onsubmit="submitCreateAccount(event)">
+                <div class="form-group">
+                    <label>Account Name</label>
+                    <input type="text" id="new_acc_name" class="form-control" placeholder="e.g. Alice Walker" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="new_acc_email" class="form-control" placeholder="user@company.com" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Platform Role</label>
+                        <select id="new_acc_role" class="form-control">
+                            <option value="consumer">Consumer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subscription Tier</label>
+                        <select id="new_acc_plan" class="form-control">
+                            <option value="free">Free Tier</option>
+                            <option value="pro" selected>Pro Tier ($9/mo)</option>
+                            <option value="master">Master Tier ($20/mo)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Initial Password (Optional)</label>
+                    <input type="password" id="new_acc_password" class="form-control" placeholder="Optional initial password">
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn" onclick="closeAddAccountModal()">Cancel</button>
+                    <button type="submit" class="btn btn-emerald">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:28px;">
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Account Name & Email</th>
+                        <th>Platform Role</th>
+                        <th>Subscription Tier</th>
+                        <th>Seeds Quota</th>
+                        <th>Reflections & Tokens</th>
+                        <th>Account Status</th>
+                        <th>Last Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody">
+                    <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">Loading registered user accounts...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Row 3: Storage & Live Operations Audit Feed -->
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3>💾 Storage, Transcripts & Engine Telemetry</h3>
+                <span class="badge badge-blue">Local System</span>
+            </div>
+            <div class="card-body">
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Engine Uptime</span>
+                    <span class="telemetry-val" id="system-uptime">--</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Seeds Database (seeds.json)</span>
+                    <span class="telemetry-val" id="db-file-size">-- KB</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Archived Transcripts Volume</span>
+                    <span class="telemetry-val" id="transcripts-volume">-- files (-- KB)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">SCIA Context Adapter</span>
+                    <span class="telemetry-val" style="color:var(--accent-emerald);">Active on Port 8476</span>
+                </div>
+                <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-emerald" onclick="downloadDatabaseBackup()" style="font-size:12px; padding:6px 12px; display:inline-flex; align-items:center; gap:6px;">
+                        📥 Download Backup
+                    </button>
+                    <button type="button" class="btn btn-cyan" onclick="cleanOrphanTranscripts()" id="clean-orphans-btn" style="font-size:12px; padding:6px 12px; display:inline-flex; align-items:center; gap:6px;">
+                        🧹 Prune Orphan Transcripts
+                    </button>
+                </div>
+                <div id="maintenance-feedback" style="margin-top:10px; font-size:11px; color:var(--text-muted); display:none;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📜 Live Platform Operations & Telemetry Log</h3>
+                <span class="badge badge-green">Live Stream</span>
+            </div>
+            <div class="card-body" id="audit-log-body" style="font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-secondary); max-height:200px; overflow-y:auto;">
+                Loading audit stream...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentConfig = {};
+
+function toggleKeyVisibility(id) {
+    const el = document.getElementById(id);
+    if (el) el.type = (el.type === 'password') ? 'text' : 'password';
+}
+
+function copyWebhookUrl() {
+    const input = document.getElementById('stripe_webhook_url');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        const status = document.getElementById('webhook-copy-status');
+        if (status) {
+            status.style.display = 'inline';
+            setTimeout(() => { status.style.display = 'none'; }, 2000);
+        }
+    });
+}
+
+async function simulateStripeWebhook() {
+    const email = prompt('Enter customer email to simulate checkout for:', 'consumer@seedreflections.app');
+    if (!email) return;
+    const plan = prompt('Choose target plan (pro, master, free):', 'pro');
+    if (!plan) return;
+    const planNorm = plan.trim().toLowerCase();
+
+    let eventType = 'checkout.session.completed';
+    let dataObj = {
+        id: 'cs_test_' + Date.now(),
+        customer: 'cus_test_' + Date.now(),
+        customer_email: email,
+        customer_details: { email: email },
+        amount_total: planNorm === 'master' ? 2000 : (planNorm === 'pro' ? 900 : 0),
+        metadata: { plan: planNorm }
+    };
+
+    if (planNorm === 'free') {
+        eventType = 'customer.subscription.deleted';
+        dataObj = {
+            id: 'sub_test_' + Date.now(),
+            customer: 'cus_test_' + Date.now()
+        };
+    }
+
+    try {
+        const res = await fetch('/api/v1/stripe/webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: 'evt_sim_' + Date.now(),
+                type: eventType,
+                data: { object: dataObj }
+            })
+        });
+        const result = await res.json();
+        alert('Stripe Webhook Synced: ' + JSON.stringify(result));
+        fetchOverview();
+    } catch(err) {
+        alert('Simulation failed: ' + err.message);
+    }
+}
+
+async function fetchOverview() {
+    try {
+        const resp = await fetch('/api/v1/admin/overview');
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        // Update Webhook URL input
+        const whUrlInput = document.getElementById('stripe_webhook_url');
+        if (whUrlInput && !whUrlInput.value) {
+            whUrlInput.value = window.location.origin + '/api/v1/stripe/webhook';
+        }
+
+        // Top Metrics
+        const usersCount = data.users ? data.users.length : 0;
+        document.getElementById('stat-total-users').textContent = usersCount;
+        document.getElementById('stat-users-sub').textContent = usersCount + ' registered accounts';
+        document.getElementById('stat-total-tokens').textContent = (data.llm_telemetry?.total_tokens || 0).toLocaleString();
+        document.getElementById('stat-token-sub').textContent = (data.llm_telemetry?.total_requests || 0) + ' operations logged';
+        document.getElementById('stat-total-cost').textContent = '$' + (data.llm_telemetry?.estimated_spend_usd || 0).toFixed(4);
+        document.getElementById('stat-cost-sub').textContent = 'Provider: ' + (data.llm_telemetry?.active_provider || 'Groq');
+        
+        const stripeInfo = data.stripe_billing || {};
+        document.getElementById('stat-mrr').textContent = stripeInfo.monthly_revenue_mrr || '$29.00';
+        document.getElementById('stat-stripe-mode').textContent = 'Stripe: ' + (stripeInfo.mode === 'live' ? 'Live Production' : 'Sandbox Test Mode');
+        document.getElementById('stripe-badge').textContent = stripeInfo.mode === 'live' ? 'Live Production' : 'Active (Test)';
+
+        // Populate Stripe form fields
+        document.getElementById('stripe_mode').value = stripeInfo.mode || 'test';
+        if (stripeInfo.secret_key && !document.getElementById('stripe_secret_key').value) {
+            document.getElementById('stripe_secret_key').value = stripeInfo.secret_key;
+        }
+        if (stripeInfo.webhook_secret && !document.getElementById('stripe_webhook_secret').value) {
+            document.getElementById('stripe_webhook_secret').value = stripeInfo.webhook_secret;
+        }
+        if (stripeInfo.checkout_urls) {
+            document.getElementById('stripe_checkout_pro').value = stripeInfo.checkout_urls.pro || '';
+            document.getElementById('stripe_checkout_master').value = stripeInfo.checkout_urls.master || '';
+        }
+
+        // Render Recent Webhook Events Feed
+        const eventsFeed = document.getElementById('stripe-events-feed');
+        if (eventsFeed && stripeInfo.webhook_events && stripeInfo.webhook_events.length > 0) {
+            eventsFeed.innerHTML = stripeInfo.webhook_events.slice().reverse().map(ev => {
+                const timeStr = new Date(ev.timestamp).toLocaleTimeString();
+                const planKey = (ev.plan || '').toLowerCase();
+                const planBadge = planKey.includes('master') ? '<span class="badge badge-purple">Master</span>' : (planKey.includes('pro') ? '<span class="badge badge-amber">Pro</span>' : '<span class="badge badge-blue">Free</span>');
+                return '<div style="padding:4px 0; border-bottom:1px dashed rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">' +
+                       '<span>[' + timeStr + '] <strong>' + ev.event_type + '</strong> &middot; ' + (ev.customer_email || 'n/a') + '</span>' +
+                       '<span>' + planBadge + '</span>' +
+                       '</div>';
+            }).join('');
+        }
+
+        // Populate LLM form fields & Killswitch state
+        const llmInfo = data.llm_telemetry || {};
+        const isKillswitchOn = Boolean(llmInfo.ai_killswitch_enabled);
+        const killBtn = document.getElementById('killswitch-btn');
+        const badge = document.getElementById('llm-model-badge');
+
+        if (isKillswitchOn) {
+            badge.textContent = 'PAUSED (Killswitch)';
+            badge.className = 'badge badge-red';
+            killBtn.textContent = '✓ DISENGAGE KILLSWITCH';
+            killBtn.className = 'btn btn-emerald';
+            document.getElementById('stat-cost-sub').textContent = '🔴 AI Killswitch ACTIVE';
+        } else {
+            badge.textContent = llmInfo.active_model || 'qwen-qwq-32b';
+            badge.className = 'badge badge-purple';
+            killBtn.textContent = '⚡ ENGAGE KILLSWITCH';
+            killBtn.className = 'btn btn-red';
+            document.getElementById('stat-cost-sub').textContent = 'Cap: $' + (llmInfo.ai_monthly_budget_usd || 50).toFixed(2) + ' USD';
+        }
+
+        document.getElementById('llm_provider').value = llmInfo.active_provider || 'openai_compatible';
+        document.getElementById('llm_model').value = llmInfo.active_model || 'qwen-qwq-32b';
+        document.getElementById('llm_api_url').value = llmInfo.endpoint_url || 'https://api.groq.com/openai/v1';
+        
+        // Populate Budget UI
+        const budgetCap = llmInfo.ai_monthly_budget_usd || 50.0;
+        const currentSpend = llmInfo.estimated_spend_usd || 0.0;
+        const percentUsed = llmInfo.budget_percent_used || 0.0;
+        document.getElementById('budget-progress-text').textContent = '$' + currentSpend.toFixed(4) + ' / $' + budgetCap.toFixed(2) + ' (' + percentUsed + '%)';
+        const pBar = document.getElementById('budget-progress-bar');
+        pBar.style.width = percentUsed + '%';
+        pBar.style.background = percentUsed >= 90 ? 'var(--accent-red)' : (percentUsed >= 70 ? 'var(--accent-amber)' : 'var(--accent-emerald)');
+        document.getElementById('ai_monthly_budget_usd').value = budgetCap;
+        document.getElementById('ai_budget_hard_stop').checked = Boolean(llmInfo.ai_budget_hard_stop);
+
+        // Storage Footprint
+        document.getElementById('system-uptime').textContent = data.uptime_human || '--';
+        document.getElementById('db-file-size').textContent = (data.storage_metrics?.seeds_db_size_kb || 0) + ' KB';
+        document.getElementById('transcripts-volume').textContent = (data.storage_metrics?.transcripts_count || 0) + ' files (' + (data.storage_metrics?.transcripts_size_kb || 0) + ' KB)';
+
+        // Store and Render Users Table with Filter support
+        allLoadedUsers = data.users || [];
+        filterUsersTable();
+
+        // Render Live Audit Feed
+        const logBody = document.getElementById('audit-log-body');
+        let logs = [];
+        logs.push('[' + new Date().toLocaleTimeString() + '] Master Control Operational · Port 8476 · Storage & DB OK');
+        logs.push('[' + new Date().toLocaleTimeString() + '] Active LLM: ' + (llmInfo.active_model || 'qwen-qwq-32b') + ' via ' + (llmInfo.active_provider || 'Groq'));
+        if (llmInfo.recent_telemetry && llmInfo.recent_telemetry.length) {
+            llmInfo.recent_telemetry.forEach(t => {
+                logs.push('[' + new Date(t.timestamp).toLocaleTimeString() + '] LLM ' + t.caller + ' · ' + t.model + ' · ' + t.total_tokens + ' tokens · $' + t.estimated_cost_usd);
+            });
+        }
+        logBody.innerHTML = logs.map(l => '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03);">' + l + '</div>').join('');
+
+    } catch (e) {
+        console.error('Failed to load admin overview:', e);
+    }
+}
+
+async function saveStripeConfig(e) {
+    e.preventDefault();
+    const payload = {
+        stripe_mode: document.getElementById('stripe_mode').value,
+        stripe_secret_key: document.getElementById('stripe_secret_key').value,
+        stripe_webhook_secret: document.getElementById('stripe_webhook_secret').value,
+        stripe_checkout_pro: document.getElementById('stripe_checkout_pro').value,
+        stripe_checkout_master: document.getElementById('stripe_checkout_master').value
+    };
+    try {
+        const res = await fetch('/api/v1/admin/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert('Stripe configuration updated and active.');
+            fetchOverview();
+        }
+    } catch(err) {
+        alert('Failed to save Stripe configuration: ' + err.message);
+    }
+}
+
+async function toggleKillswitch() {
+    try {
+        const res = await fetch('/api/v1/admin/ai/killswitch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        alert(data.message || 'Killswitch status updated');
+        fetchOverview();
+    } catch(err) {
+        alert('Killswitch toggle failed: ' + err.message);
+    }
+}
+
+async function saveLLMConfig(e) {
+    e.preventDefault();
+    const payload = {
+        llm_provider: document.getElementById('llm_provider').value,
+        llm_model: document.getElementById('llm_model').value,
+        llm_api_url: document.getElementById('llm_api_url').value,
+        llm_api_key: document.getElementById('llm_api_key').value,
+        ai_monthly_budget_usd: parseFloat(document.getElementById('ai_monthly_budget_usd').value || '50'),
+        ai_budget_hard_stop: document.getElementById('ai_budget_hard_stop').checked
+    };
+    try {
+        const res = await fetch('/api/v1/admin/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert('Platform AI Gateway credentials updated.');
+            fetchOverview();
+        }
+    } catch(err) {
+        alert('Failed to save AI configuration: ' + err.message);
+    }
+}
+
+async function testConnection() {
+    const box = document.getElementById('test-result-box');
+    box.style.display = 'block';
+    box.style.background = 'rgba(88,166,255,0.1)';
+    box.style.color = 'var(--accent-blue)';
+    box.style.border = '1px solid rgba(88,166,255,0.3)';
+    box.textContent = 'Testing connection to provider gateway...';
+
+    const payload = {
+        llm_provider: document.getElementById('llm_provider').value,
+        llm_model: document.getElementById('llm_model').value,
+        llm_api_url: document.getElementById('llm_api_url').value,
+        llm_api_key: document.getElementById('llm_api_key').value
+    };
+
+    try {
+        const res = await fetch('/api/v1/admin/test-llm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            box.style.background = 'rgba(63,185,80,0.15)';
+            box.style.color = 'var(--accent-emerald)';
+            box.style.border = '1px solid rgba(63,185,80,0.3)';
+            box.textContent = '✓ ' + data.message;
+        } else {
+            box.style.background = 'rgba(248,81,73,0.15)';
+            box.style.color = 'var(--accent-red)';
+            box.style.border = '1px solid rgba(248,81,73,0.3)';
+            box.textContent = '✕ ' + data.message;
+        }
+    } catch(err) {
+        box.style.background = 'rgba(248,81,73,0.15)';
+        box.style.color = 'var(--accent-red)';
+        box.textContent = '✕ Request failed: ' + err.message;
+    }
+}
+
+async function promptUserPlanChange(userId, userName) {
+    const newPlan = prompt('Enter new plan for ' + userName + ' (free, pro, master):');
+    if (!newPlan) return;
+    const planNormalized = newPlan.trim().toLowerCase();
+    if (!['free', 'pro', 'master'].includes(planNormalized)) {
+        alert('Invalid plan. Must be free, pro, or master.');
+        return;
+    }
+    await updateUserAccount(userId, { plan: planNormalized });
+}
+
+async function toggleUserStatus(userId, currentStatus) {
+    const newStatus = (currentStatus === 'Active') ? 'suspended' : 'active';
+    if (!confirm('Are you sure you want to change status to ' + newStatus + '?')) return;
+    await updateUserAccount(userId, { status: newStatus });
+}
+
+let allLoadedUsers = [];
+
+function renderUsersList(users) {
+    const tbody = document.getElementById('users-tbody');
+    if (!users || !users.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">No matching tenant accounts found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map(u => {
+        const planKey = (u.plan || '').toLowerCase();
+        const planClass = planKey.includes('master') ? 'badge-purple' : (planKey.includes('pro') ? 'badge-amber' : 'badge-blue');
+        const roleClass = u.role === 'admin' ? 'badge-purple' : 'badge-cyan';
+        const statusClass = u.status === 'Active' ? 'badge-green' : 'badge-red';
+        const seedLimitStr = (u.seeds_limit && u.seeds_limit < 1000) ? (u.seeds_count + ' / ' + u.seeds_limit) : (u.seeds_count + ' / ∞');
+        const refLimitStr = (u.reflections_limit && u.reflections_limit < 1000) ? ((u.reflections_count || 0) + ' / ' + u.reflections_limit) : ((u.reflections_count || 0) + ' / ∞');
+        return '<tr>' +
+            '<td><strong>' + u.name + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + u.email + '</span></td>' +
+            '<td><span class="badge ' + roleClass + '">' + u.role.toUpperCase() + '</span></td>' +
+            '<td><span class="badge ' + planClass + '">' + u.plan + '</span></td>' +
+            '<td style="font-family:monospace;font-size:12px;">' + seedLimitStr + '</td>' +
+            '<td style="font-family:monospace;font-size:12px;">' + refLimitStr + '<br><span style="font-size:11px;color:var(--text-muted);">' + (u.tokens_consumed || 0).toLocaleString() + ' tok</span></td>' +
+            '<td><span class="badge ' + statusClass + '">' + u.status + '</span></td>' +
+            '<td>' + u.last_active + '</td>' +
+            '<td>' +
+                '<div style="display:flex; gap:4px; flex-wrap:wrap;">' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptUserPlanChange('' + u.id + '', '' + u.name + '')">Plan</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="toggleUserStatus('' + u.id + '', '' + u.status + '')">' + (u.status === 'Active' ? 'Suspend' : 'Activate') + '</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptResetPassword('' + u.id + '', '' + u.email + '')">Password</button>' +
+                    '<button class="btn btn-red" style="padding:3px 7px;font-size:11px;" onclick="promptDeleteUser('' + u.id + '', '' + u.name + '', '' + u.role + '')">Delete</button>' +
+                '</div>' +
+            '</td>' +
+        '</tr>';
+    }).join('');
+}
+
+function filterUsersTable() {
+    const query = (document.getElementById('user-search-input')?.value || '').toLowerCase().trim();
+    const planFilter = (document.getElementById('user-plan-filter')?.value || '').toLowerCase();
+    const statusFilter = (document.getElementById('user-status-filter')?.value || '').toLowerCase();
+    const roleFilter = (document.getElementById('user-role-filter')?.value || '').toLowerCase();
+
+    const filtered = allLoadedUsers.filter(u => {
+        const matchesQuery = !query || (u.name || '').toLowerCase().includes(query) || (u.email || '').toLowerCase().includes(query);
+        const matchesPlan = !planFilter || (u.plan || '').toLowerCase().includes(planFilter);
+        const matchesStatus = !statusFilter || (u.status || '').toLowerCase() === statusFilter;
+        const matchesRole = !roleFilter || (u.role || '').toLowerCase() === roleFilter;
+        return matchesQuery && matchesPlan && matchesStatus && matchesRole;
+    });
+    renderUsersList(filtered);
+}
+
+function resetUserFilters() {
+    if (document.getElementById('user-search-input')) document.getElementById('user-search-input').value = '';
+    if (document.getElementById('user-plan-filter')) document.getElementById('user-plan-filter').value = '';
+    if (document.getElementById('user-status-filter')) document.getElementById('user-status-filter').value = '';
+    if (document.getElementById('user-role-filter')) document.getElementById('user-role-filter').value = '';
+    renderUsersList(allLoadedUsers);
+}
+
+function openAddAccountModal() {
+    const modal = document.getElementById('add-account-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeAddAccountModal() {
+    const modal = document.getElementById('add-account-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function submitCreateAccount(e) {
+    e.preventDefault();
+    const payload = {
+        name: document.getElementById('new_acc_name').value.trim(),
+        email: document.getElementById('new_acc_email').value.trim(),
+        role: document.getElementById('new_acc_role').value,
+        plan: document.getElementById('new_acc_plan').value,
+        password: document.getElementById('new_acc_password').value.trim()
+    };
+    try {
+        const res = await fetch('/api/v1/admin/users/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert('Tenant account created successfully: ' + payload.email);
+            closeAddAccountModal();
+            document.getElementById('add-account-form').reset();
+            fetchOverview();
+        } else {
+            alert('Failed to create account: ' + (data.error || 'Unknown error'));
+        }
+    } catch(err) {
+        alert('Request failed: ' + err.message);
+    }
+}
+
+async function promptResetPassword(userId, email) {
+    const newPwd = prompt('Enter new password for ' + email + ':');
+    if (!newPwd) return;
+    try {
+        const res = await fetch('/api/v1/admin/users/reset-password', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId, password: newPwd.trim() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message || 'Password updated.');
+            fetchOverview();
+        } else {
+            alert('Failed: ' + (data.error || 'Could not reset password.'));
+        }
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function promptDeleteUser(userId, name, role) {
+    if (role === 'admin') {
+        if (!confirm('Warning: This account has ADMINISTRATOR privileges. Are you certain you wish to delete it?')) return;
+    } else {
+        if (!confirm('Are you sure you want to delete account: ' + name + '?')) return;
+    }
+    try {
+        const res = await fetch('/api/v1/admin/users/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert('Account deleted.');
+            fetchOverview();
+        } else {
+            alert('Failed to delete account: ' + (data.error || 'Server error'));
+        }
+    } catch(err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function updateUserAccount(userId, changes) {
+    try {
+        const res = await fetch('/api/v1/admin/users/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId, ...changes })
+        });
+        if (res.ok) {
+            fetchOverview();
+        } else {
+            alert('Failed to update account.');
+        }
+    } catch(e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+function downloadDatabaseBackup() {
+    window.location.href = '/api/v1/admin/backup';
+}
+
+async function cleanOrphanTranscripts() {
+    const btn = document.getElementById('clean-orphans-btn');
+    const feedback = document.getElementById('maintenance-feedback');
+    if (btn) btn.disabled = true;
+    if (feedback) {
+        feedback.style.display = 'block';
+        feedback.style.color = 'var(--text-muted)';
+        feedback.textContent = 'Scanning storage and pruning orphan files...';
+    }
+    try {
+        const res = await fetch('/api/v1/admin/transcripts/clean', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (res.ok) {
+            if (feedback) {
+                feedback.style.color = 'var(--accent-emerald)';
+                feedback.textContent = '✓ ' + (data.message || 'Orphan cache cleaned.');
+            }
+            fetchOverview();
+        } else {
+            if (feedback) {
+                feedback.style.color = 'var(--accent-red)';
+                feedback.textContent = 'Error: ' + (data.error || 'Failed to prune transcripts');
+            }
+        }
+    } catch(err) {
+        if (feedback) {
+            feedback.style.color = 'var(--accent-red)';
+            feedback.textContent = 'Error: ' + err.message;
+        }
+    } finally {
+        if (btn) btn.disabled = false;
+        setTimeout(() => {
+            if (feedback) feedback.style.display = 'none';
+        }, 5000);
+    }
+}
+
+fetchOverview();
+setInterval(fetchOverview, 15000);
+</script>
+
+</body>
+</html>

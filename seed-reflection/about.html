@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — Seed Reflection</title>
+  <meta name="description" content="Seed Reflection finds every lost idea in your AI conversations. Built on SRT-1, the Seed-Class Intelligence Architecture by William Darnell Jernigan IV.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .page-hero { padding: 72px 5% 48px; text-align: center; background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,.07) 0%, transparent 60%); }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(32px, 5vw, 56px); margin-bottom: 12px; line-height: 1.2; }
+    .page-hero p { color: var(--text2); font-size: 18px; max-width: 560px; margin: 0 auto; }
+
+    .content-section { padding: 0 5% 80px; }
+    .content-shell { max-width: 760px; margin: 0 auto; }
+
+    .prose h2 { font-family: var(--font-head); font-size: 30px; margin: 48px 0 16px; color: var(--text); }
+    .prose h3 { font-size: 18px; font-weight: 700; margin: 32px 0 10px; color: var(--text); }
+    .prose p { color: var(--text2); font-size: 16px; line-height: 1.8; margin-bottom: 16px; }
+    .prose strong { color: var(--text); }
+    .prose ul { list-style: none; padding: 0; margin: 16px 0; }
+    .prose ul li { color: var(--text2); font-size: 15px; padding: 6px 0 6px 24px; position: relative; line-height: 1.6; }
+    .prose ul li::before { content: '→'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+    .problem-block {
+      background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.2);
+      border-left: 3px solid var(--red); border-radius: 10px; padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .problem-block h4 { color: var(--red); font-size: 13px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
+    .problem-block ul { list-style: disc; padding-left: 20px; margin: 0; }
+    .problem-block ul li { color: var(--text2); font-size: 14px; line-height: 1.7; padding: 2px 0; }
+    .problem-block ul li::before { display: none; }
+
+    .solution-block {
+      background: var(--green-dim); border: 1px solid rgba(34,197,94,.25);
+      border-left: 3px solid var(--green); border-radius: 10px; padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .solution-block h4 { color: var(--green); font-size: 13px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
+
+    .sig-explanation {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 3px solid var(--purple); border-radius: 10px; padding: 24px;
+      margin: 24px 0;
+    }
+    .sig-explanation h4 { color: var(--purple); font-size: 13px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 12px; }
+    .sig-example {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; font-family: var(--font-mono); font-size: 12px;
+      color: var(--text2); line-height: 1.8; margin-top: 12px;
+    }
+    .sig-example .k { color: var(--text3); }
+    .sig-example .v { color: var(--text); }
+    .sig-example .vid { color: var(--purple); font-weight: 600; }
+    .sig-example .vg { color: var(--green); }
+
+    .timeline { margin: 24px 0; display: flex; flex-direction: column; gap: 0; }
+    .tl-item { display: flex; gap: 16px; padding-bottom: 24px; position: relative; }
+    .tl-item:not(:last-child)::after { content: ''; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--border); }
+    .tl-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; z-index: 1; }
+    .tl-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .tl-body p { font-size: 13px; color: var(--text3); line-height: 1.6; margin: 0; }
+
+    .builder-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px; margin: 40px 0;
+      display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;
+    }
+    .builder-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+    .builder-info h3 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .builder-info .role { color: var(--text3); font-size: 14px; margin-bottom: 12px; font-family: var(--font-mono); }
+    .builder-info p { color: var(--text2); font-size: 15px; line-height: 1.7; }
+
+    .links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 24px 0; }
+    .link-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+      text-decoration: none; transition: all .15s;
+    }
+    .link-card:hover { border-color: var(--border-hi); transform: translateY(-2px); text-decoration: none; }
+    .link-card .lc-icon { font-size: 24px; flex-shrink: 0; }
+    .link-card h4 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .link-card p { font-size: 12px; color: var(--text3); }
+
+    .cta-block {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 40px; text-align: center; margin: 40px 0;
+    }
+    .cta-block h2 { font-family: var(--font-head); font-size: 28px; margin-bottom: 12px; }
+    .cta-block p { color: var(--text2); max-width: 400px; margin: 0 auto 24px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="index.html#generate">Generate</a>
+    <a href="snippets.html" class="hide-mobile">Snippets</a>
+    <a href="import.html" class="hide-mobile">Import</a>
+    <a href="instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="active">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+    <a href="../dashboard.html" class="nav-badge dev-link hide-mobile" title="SRT-1 Command Center (requires local middleware)" target="_blank" rel="noopener">⚙ Dev Dashboard</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="badge badge-green" style="margin-bottom:20px;">About Seed Reflection</div>
+  <h1>Every conversation you've had<br>with an AI is a <em style="font-style:italic;color:var(--green);">garden</em>.</h1>
+  <p>Most of those seeds were never grown. Seed Reflection finds them and brings them back.</p>
+</section>
+
+<section class="content-section">
+  <div class="content-shell prose">
+
+    <h2>The Problem</h2>
+    <p>If you use AI assistants regularly, you have this problem — whether you've named it or not.</p>
+
+    <div class="problem-block">
+      <h4>What's happening to your ideas</h4>
+      <ul>
+        <li>You've started dozens — maybe hundreds — of conversations, each with an idea you cared about.</li>
+        <li>Most of those conversations drift. The AI helps you explore tangents. The original question gets buried.</li>
+        <li>You close the tab. The idea is gone. Not deleted — just unreachable.</li>
+        <li>When you export your conversation history, you get a zip file full of unreadable JSON.</li>
+        <li>There is no tool that helps you find what you started and pick it back up.</li>
+      </ul>
+    </div>
+
+    <p>This is not a niche problem. <strong>Every person who uses an AI assistant loses ideas this way.</strong> The conversations are there — thousands of them — but nobody can see the pattern. Nobody can see the seeds.</p>
+
+    <h2>The Solution</h2>
+
+    <div class="solution-block">
+      <h4>What Seed Reflection does</h4>
+      <ul>
+        <li>Paste any conversation and get a structured report of every idea it contained.</li>
+        <li>Upload your ChatGPT or Claude export and browse every conversation you've ever had.</li>
+        <li>Reflect on any one of them to recover its seeds.</li>
+        <li>Copy universal snippets that trigger this reflection in any AI platform.</li>
+        <li>Every report carries a <strong>Seed Signature</strong> — a cryptographic identity that proves what was found, when, and how.</li>
+      </ul>
+    </div>
+
+    <h2>How It Works</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot">1</div>
+        <div class="tl-body">
+          <h4>You paste a conversation (or upload an export)</h4>
+          <p>Any AI platform. Any length. Seed Reflection reads it.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">2</div>
+        <div class="tl-body">
+          <h4>Claude analyzes it using the SCIA-REFLECT-FULL protocol</h4>
+          <p>Every idea, task, goal, question, and plan is identified and classified: active, completed, abandoned, or drifting.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">3</div>
+        <div class="tl-body">
+          <h4>You get a structured Seed Reflection Report</h4>
+          <p>Active seeds, completed seeds, abandoned seeds, drift points, and your top 3 recovery recommendations.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot">4</div>
+        <div class="tl-body">
+          <h4>Every report is signed with a Seed Signature</h4>
+          <p>A unique identity block that records what was found, when, and on which platform.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2>What Is a Seed Signature?</h2>
+    <p>A Seed Signature is a provenance record — proof that a specific reflection happened, at a specific time, and found a specific set of seeds. It is the brand mark of every interaction in the SCIA protocol.</p>
+    <p>It looks like this:</p>
+
+    <div class="sig-explanation">
+      <h4>Example Seed Signature</h4>
+      <div class="sig-example">
+<span class="k">---SEED-SIGNATURE---</span>
+<span class="k">Type:</span>      <span class="v">SCIA-REFLECT-FULL</span>
+<span class="k">Timestamp:</span> <span class="v">2026-03-15T14:32:08Z</span>
+<span class="k">ID:</span>        <span class="vid">SR-L8KQ2MNP</span>
+<span class="k">Seeds Found:</span> <span class="vg">7</span>
+<span class="k">Abandoned:</span>  <span class="v">4</span>
+<span class="k">Drift Points:</span> <span class="v">2</span>
+<span class="k">Platform:</span>  <span class="v">ChatGPT</span>
+<span class="k">---END-SIGNATURE---</span></div>
+      <p style="font-size:13px;color:var(--text3);margin-top:12px;">The Seed Signature is appended to every reflection report. It is not decorative — it is the difference between an anonymous output and a traceable, trusted result.</p>
+    </div>
+
+    <h2>What Is SCIA?</h2>
+    <p><strong>SCIA</strong> stands for <strong>Seed-Class Intelligence Architecture</strong>. It is a protocol for anchoring AI conversations to their original intent, detecting drift, and recovering abandoned ideas. It was created by William Darnell Jernigan IV as the foundation of the SRT-1 system.</p>
+
+    <p>The SCIA protocol has two surfaces:</p>
+    <ul>
+      <li><strong>SRT-1 Code Indexer</strong> — the developer product. For engineers building with AI. It indexes your codebase, generates a Code Manifest with cryptographic trust chains, and gives AI assistants the full picture before they act.</li>
+      <li><strong>Seed Reflection</strong> — the consumer product. For everyone who uses AI assistants. It mines your conversations for lost ideas and helps you pick them back up.</li>
+    </ul>
+    <p>Both are built on the same core engine: <code>srt.py</code> and <code>seed_signature_engine.py</code>. Same IP. Same signatures. Same philosophy: <em>AI assistants do better work when they have better context.</em></p>
+
+    <h2>Who Built This</h2>
+
+    <div class="builder-card">
+      <div class="builder-avatar">W</div>
+      <div class="builder-info">
+        <h3>William Darnell Jernigan IV</h3>
+        <div class="role">Creator, SCIA • SRT-1 • Seed Reflection</div>
+        <p>William built SRT-1 because he experienced the problem firsthand — ideas scattered across hundreds of AI conversations, no way to find them, no way to pick them back up. He built the tool he needed. Seed Reflection is that tool made available to everyone.</p>
+        <p style="margin-top:10px;">He does not write code. He describes what he wants. The AI builds it. Every file in this repository was written by AI under William's direction — and all of it carries a Seed Signature.</p>
+      </div>
+    </div>
+
+    <h2>Related Links</h2>
+    <div class="links-grid">
+      <a href="../index.html" class="link-card">
+        <div class="lc-icon">🔧</div>
+        <div>
+          <h4>SRT-1 Code Indexer</h4>
+          <p>The developer product. Index your codebase. Trust your AI.</p>
+        </div>
+      </a>
+      <a href="snippets.html" class="link-card">
+        <div class="lc-icon">📋</div>
+        <div>
+          <h4>Snippet Library</h4>
+          <p>7 universal prompts. Copy them into any AI platform.</p>
+        </div>
+      </a>
+      <a href="import.html" class="link-card">
+        <div class="lc-icon">📤</div>
+        <div>
+          <h4>Import Conversations</h4>
+          <p>Upload your ChatGPT or Claude export. Find every lost idea.</p>
+        </div>
+      </a>
+      <a href="index.html" class="link-card">
+        <div class="lc-icon">🌱</div>
+        <div>
+          <h4>Start Reflecting</h4>
+          <p>Paste any conversation. Get your Seed Reflection Report.</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="cta-block">
+      <div style="font-size:40px;margin-bottom:16px;">🌱</div>
+      <h2>Your ideas are still there.</h2>
+      <p>They're in your conversation history right now — waiting. Seed Reflection finds them.</p>
+      <a href="index.html" class="btn btn-primary btn-lg">Start Reflecting →</a>
+    </div>
+
+    <div class="seed-signature" style="margin-top:40px;">
+      <div class="sig-header">About Page • Seed Signature</div>
+      <div class="sig-row">
+        <div class="sig-field"><span class="sig-label">Product</span><span class="sig-value">Seed Reflection</span></div>
+        <div class="sig-field"><span class="sig-label">Architecture</span><span class="sig-value">SCIA v2.0</span></div>
+        <div class="sig-field"><span class="sig-label">Core Engine</span><span class="sig-value">SRT-1</span></div>
+        <div class="sig-field"><span class="sig-label">Creator</span><span class="sig-value sig-id">William Darnell Jernigan IV</span></div>
+      </div>
+      <div class="sig-footer">Powered by SRT-1 Seed-Class Intelligence Architecture • srt1.dev</div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand"><strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.</div>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="import.html">Import</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA • William Darnell Jernigan IV</div>
+</footer>
+
+</body>
+</html>

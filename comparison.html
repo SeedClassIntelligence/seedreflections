@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Seed Reflections Compares — vs. ChatGPT, Claude, Notion AI & More</title>
+  <meta name="description" content="See how Seed Reflections compares to ChatGPT, Claude Projects, Notion AI, Obsidian, and Rewind. Recover original ideas, sign your seeds, track drift — across every AI platform.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #06080f;
+      --bg-card: #0d1117;
+      --bg-surface: #161b22;
+      --bg-raised: #21262d;
+      --border: #21262d;
+      --text: #f0f6fc;
+      --text2: #c9d1d9;
+      --text3: #8b949e;
+      --green: #3fb950;
+      --green-dim: rgba(63,185,80,0.12);
+      --blue: #58a6ff;
+      --blue-dim: rgba(88,166,255,0.12);
+      --purple: #bc8cff;
+      --amber: #e3b341;
+      --red: #f85149;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.6; overflow-x: hidden; }
+
+    /* ── NAV ── */
+    .site-header { position: sticky; top: 0; z-index: 100; background: rgba(6,8,15,.96); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+    .nav-top { display: flex; align-items: center; justify-content: space-between; padding: 0 5%; height: 50px; border-bottom: 1px solid rgba(33,38,45,.5); }
+    .nav-logo { font-weight: 900; font-size: 17px; color: var(--green); letter-spacing: -.5px; text-decoration: none; display: inline-flex; align-items: center; }
+    .nav-logo em { color: inherit; font-style: normal; }
+    .nav-top-right { display: flex; align-items: center; gap: 12px; }
+    .nav-top-right a { font-size: 13px; font-weight: 600; text-decoration: none; }
+    .nav-top-right .signin { color: var(--text3); }
+    .nav-top-right .signin:hover { color: var(--text); }
+    .nav-top-right .signup { background: var(--green); color: #000; padding: 6px 14px; border-radius: 6px; font-weight: 700; }
+    .nav-top-right .signup:hover { filter: brightness(1.1); }
+    .nav-bottom { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 5%; height: 38px; overflow-x: auto; white-space: nowrap; }
+    .nav-bottom a { font-size: 12px; font-weight: 600; color: var(--text3); text-decoration: none; padding: 4px 10px; border-radius: 4px; transition: color .15s, background .15s; flex-shrink: 0; }
+    .nav-bottom a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+    .nav-bottom a.active { color: var(--green); }
+
+    /* ── HERO ── */
+    .page-hero { padding: 80px 5% 56px; text-align: center; background: radial-gradient(ellipse at 50% 0%, rgba(63,185,80,0.07) 0%, transparent 65%); border-bottom: 1px solid var(--border); }
+    .eyebrow { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
+    h1 { font-size: 40px; font-weight: 900; letter-spacing: -1.5px; line-height: 1.12; margin-bottom: 18px; }
+    h1 em { color: var(--green); font-style: normal; }
+    .lead { font-size: 16px; color: var(--text2); max-width: 620px; margin: 0 auto 32px; line-height: 1.7; }
+    .hero-stat-row { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
+    .hero-stat { text-align: center; }
+    .hero-stat-num { font-size: 28px; font-weight: 900; color: var(--green); letter-spacing: -1px; }
+    .hero-stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1060px; margin: 0 auto; padding: 56px 5% 96px; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .section-heading { font-size: 22px; font-weight: 900; letter-spacing: -.5px; margin-bottom: 8px; }
+    .section-sub { font-size: 14px; color: var(--text3); margin-bottom: 32px; line-height: 1.6; }
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 56px 0; }
+
+    /* ── PROBLEM CARDS ── */
+    .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 56px; }
+    @media (max-width: 768px) { .problem-grid { grid-template-columns: 1fr; } }
+    .problem-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; overflow: hidden; }
+    .problem-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .problem-card.red::before { background: var(--red); }
+    .problem-card.amber::before { background: var(--amber); }
+    .problem-card.blue::before { background: var(--blue); }
+    .problem-icon { font-size: 28px; margin-bottom: 12px; }
+    .problem-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .problem-card p { font-size: 13px; color: var(--text3); line-height: 1.65; }
+
+    /* ── COMPARISON TABLE ── */
+    .table-wrap { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,.4); margin-bottom: 56px; overflow-x: auto; }
+    .comp-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 680px; }
+    .comp-table th { background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 15px 20px; font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+    .comp-table td { padding: 15px 20px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); vertical-align: top; }
+    .comp-table tr:last-child td { border-bottom: none; }
+    .comp-table tbody tr:hover td { background: rgba(255,255,255,.012); }
+    .feature-name { font-weight: 600; color: var(--text); font-size: 13.5px; }
+    .feature-sub { font-size: 11.5px; color: var(--text3); margin-top: 2px; font-weight: 400; }
+    .check-yes { color: var(--green); font-weight: 700; }
+    .check-partial { color: var(--amber); font-weight: 600; }
+    .check-no { color: var(--text3); opacity: .55; }
+    .col-us { color: var(--green) !important; font-weight: 900 !important; font-size: 13px !important; }
+    .cell-us { background: rgba(63,185,80,0.025) !important; border-left: 1px solid rgba(63,185,80,0.12) !important; border-right: 1px solid rgba(63,185,80,0.12) !important; }
+    .comp-table tbody tr:hover .cell-us { background: rgba(63,185,80,0.05) !important; }
+
+    /* ── CALLOUT CARDS ── */
+    .callout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 56px; }
+    @media (max-width: 768px) { .callout-grid { grid-template-columns: 1fr; } }
+    .callout-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+    .callout-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    .callout-card p { font-size: 13.5px; color: var(--text2); line-height: 1.7; }
+    .callout-card ul { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+    .callout-card ul li { font-size: 13px; color: var(--text3); padding-left: 16px; position: relative; line-height: 1.5; }
+    .callout-card ul li::before { content: '→'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+    /* ── VERDICT BANNER ── */
+    .verdict { background: linear-gradient(135deg, rgba(63,185,80,0.08) 0%, rgba(88,166,255,0.06) 100%); border: 1.5px solid rgba(63,185,80,0.2); border-radius: 16px; padding: 36px 40px; text-align: center; margin-bottom: 56px; }
+    .verdict h2 { font-size: 24px; font-weight: 900; letter-spacing: -.5px; margin-bottom: 12px; }
+    .verdict p { font-size: 15px; color: var(--text2); max-width: 640px; margin: 0 auto 24px; line-height: 1.7; }
+    .verdict-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #000; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 8px; text-decoration: none; transition: filter .15s, transform .15s; }
+    .verdict-cta:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ── FOOTER ── */
+    footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 64px 5% 48px; }
+    .footer-grid { max-width: 1060px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+    @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr; } }
+    .footer-brand p { font-size: 13px; color: var(--text3); margin-top: 8px; max-width: 260px; line-height: 1.6; }
+    .footer-col-title { font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .footer-links { display: flex; flex-direction: column; gap: 10px; }
+    .footer-links a { font-size: 13px; color: var(--text3); text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: var(--green); }
+    .footer-bottom { max-width: 1060px; margin: 0 auto; display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 16px; }
+    .footer-bottom a { color: var(--text3); text-decoration: none; }
+    .footer-bottom a:hover { color: var(--green); }
+
+    /* ── LANDSCAPE SECTION ── */
+    .landscape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
+    @media (max-width: 900px) { .landscape-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .landscape-grid { grid-template-columns: 1fr; } }
+    .competitor-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px; transition: border-color .2s; }
+    .competitor-card:hover { border-color: rgba(255,255,255,.12); }
+    .comp-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .comp-card-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .comp-card-category { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 20px; flex-shrink: 0; }
+    .cat-memory { background: rgba(88,166,255,.15); color: var(--blue); }
+    .cat-provenance { background: rgba(188,140,255,.15); color: var(--purple); }
+    .cat-notes { background: rgba(227,179,65,.15); color: var(--amber); }
+    .cat-capture { background: rgba(63,185,80,.12); color: var(--green); }
+    .comp-card-desc { font-size: 13px; color: var(--text3); line-height: 1.6; }
+    .comp-card-gap { border-top: 1px solid var(--border); padding-top: 12px; }
+    .comp-card-gap-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text3); margin-bottom: 6px; }
+    .comp-card-gap-text { font-size: 12.5px; color: var(--amber); line-height: 1.5; }
+    .landscape-note { background: rgba(63,185,80,.06); border: 1px solid rgba(63,185,80,.2); border-radius: 10px; padding: 18px 22px; font-size: 13.5px; color: var(--text2); line-height: 1.7; margin-bottom: 48px; }
+    .landscape-note strong { color: var(--green); }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-top">
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">SeedReflections</a>
+    <div class="nav-top-right" id="nav-auth">
+      <a href="auth.html?mode=login" class="signin">Sign In</a>
+      <a href="auth.html?mode=signup" class="signup">Sign Up Free</a>
+    </div>
+  </div>
+  <div class="nav-bottom">
+    <a href="index.html">🌱 Home</a>
+    <a href="/consumer">Go to Dashboard</a>
+    <a href="index.html#section-generator">📋 Prompt Engine</a>
+    <a href="comparison.html" class="active">⚔️ Compare</a>
+  </div>
+</header>
+
+<!-- ── HERO ── -->
+<section class="page-hero">
+  <div class="eyebrow">Product Comparison</div>
+  <h1>Your Ideas Keep Getting Lost.<br><em>We Fix That.</em></h1>
+  <p class="lead">Every AI platform lets you have a conversation. None of them help you own it. Seed Reflections is the only tool built to recover your original intent, track where it drifted, and sign it as yours — permanently.</p>
+  <div class="hero-stat-row">
+    <div class="hero-stat">
+      <div class="hero-stat-num">0</div>
+      <div class="hero-stat-label">Competitors with Seed Recovery</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">0</div>
+      <div class="hero-stat-label">Competitors with Cryptographic Signing</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num">100%</div>
+      <div class="hero-stat-label">Platform-Independent</div>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+  <!-- ── THE REAL PROBLEMS ── -->
+  <div class="section-label">The Problem</div>
+  <h2 class="section-heading">Why AI conversations fail you</h2>
+  <p class="section-sub">Three things consistently destroy the value of your AI sessions. No existing tool solves all three.</p>
+
+  <div class="problem-grid">
+    <div class="problem-card red">
+      <div class="problem-icon">🌀</div>
+      <h3>Topic Drift</h3>
+      <p>You start with a clear goal. Three hours later the conversation has wandered into a totally different territory and your original idea is buried under 200 turns of context. Every platform lets this happen silently.</p>
+    </div>
+    <div class="problem-card amber">
+      <div class="problem-icon">🔒</div>
+      <h3>Platform Lock-In</h3>
+      <p>Your best ideas live inside ChatGPT's servers, Claude's memory, Gemini's history — locked inside walled gardens you don't control. Switching platforms means starting over from scratch.</p>
+    </div>
+    <div class="problem-card blue">
+      <div class="problem-icon">👤</div>
+      <h3>No Provenance</h3>
+      <p>You generated something valuable — a strategy, a concept, a creative work. There is no way to prove it was your original idea, when you created it, or that it hasn't been tampered with since.</p>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- ── TABLE 1: vs. AI Assistants ── -->
+  <div class="section-label">Comparison 1 of 2</div>
+  <h2 class="section-heading">Seed Reflections vs. AI Assistant Platforms</h2>
+  <p class="section-sub">ChatGPT, Claude, and Gemini are great at generating responses. They are not built to preserve, organize, or attribute the ideas you bring to them.</p>
+
+  <div class="table-wrap">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>ChatGPT</th>
+          <th>Claude Projects</th>
+          <th>Gemini Gems</th>
+          <th class="col-us cell-us">Seed Reflections</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="feature-name">Original Seed Recovery</div>
+            <div class="feature-sub">Recover your genesis intent from a drifted conversation</div>
+          </td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-yes cell-us">✔ Core feature</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Conversation Drift Tracking</div>
+            <div class="feature-sub">Detect when your session derails from your original goal</div>
+          </td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-yes cell-us">✔ Coherence scoring</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Cryptographic Seed Signature</div>
+            <div class="feature-sub">Prove authorship of your ideas with a tamper-proof seal</div>
+          </td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-yes cell-us">✔ Standalone signing</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Works Across All Platforms</div>
+            <div class="feature-sub">Import from any AI — ChatGPT, Claude, Gemini, custom LLMs</div>
+          </td>
+          <td class="check-no">❌ Locked to ChatGPT</td>
+          <td class="check-no">❌ Locked to Claude</td>
+          <td class="check-no">❌ Locked to Gemini</td>
+          <td class="check-yes cell-us">✔ Any platform</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Recovery Prompt Compilation</div>
+            <div class="feature-sub">Generate handoff prompts to continue work in a new session</div>
+          </td>
+          <td class="check-partial">~ Manual copy-paste</td>
+          <td class="check-partial">~ Projects memory (limited)</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-yes cell-us">✔ Auto-generated</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Locally Stored Conversation Data</div>
+            <div class="feature-sub">Your ideas stay on your machine, not on AI company servers</div>
+          </td>
+          <td class="check-no">❌ Cloud only</td>
+          <td class="check-no">❌ Cloud only</td>
+          <td class="check-no">❌ Cloud only</td>
+          <td class="check-yes cell-us">✔ Local-first</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Idea Garden (Seed Browser)</div>
+            <div class="feature-sub">Visual library of all your captured ideas across all sessions</div>
+          </td>
+          <td class="check-no">❌ None</td>
+          <td class="check-partial">~ Projects list (no depth)</td>
+          <td class="check-no">❌ None</td>
+          <td class="check-yes cell-us">✔ Full garden view</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- ── TABLE 2: vs. Knowledge Tools ── -->
+  <div class="section-label">Comparison 2 of 2</div>
+  <h2 class="section-heading">Seed Reflections vs. Knowledge & Memory Tools</h2>
+  <p class="section-sub">Notion AI, Obsidian, and passive recorders like Rewind exist to capture and organize. But they capture everything — not your original intent. And none of them sign a single thing as yours.</p>
+
+  <div class="table-wrap">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Notion AI</th>
+          <th>Obsidian + AI</th>
+          <th>Rewind / Screenpipe</th>
+          <th class="col-us cell-us">Seed Reflections</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="feature-name">Primary Purpose</div>
+            <div class="feature-sub">What the tool is fundamentally designed for</div>
+          </td>
+          <td class="check-partial">~ Note organization</td>
+          <td class="check-partial">~ Markdown knowledge base</td>
+          <td class="check-partial">~ Passive screen recording</td>
+          <td class="check-yes cell-us">✔ Original seed recovery</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Active Intent Extraction</div>
+            <div class="feature-sub">Identify and surface the specific original goal from a conversation</div>
+          </td>
+          <td class="check-no">❌ Manual notes only</td>
+          <td class="check-no">❌ Manual linking only</td>
+          <td class="check-no">❌ Keyword search on logs</td>
+          <td class="check-yes cell-us">✔ Automatic extraction</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Conversation Coherence Score</div>
+            <div class="feature-sub">Measure how far a session drifted from the original topic</div>
+          </td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-yes cell-us">✔ Scored per session</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Cryptographic Authorship Proof</div>
+            <div class="feature-sub">Unforgeable signature proving you created something first</div>
+          </td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-yes cell-us">✔ Seed Signature</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Portable Across Platforms</div>
+            <div class="feature-sub">Use the same idea recovery across ChatGPT, Claude, Gemini, etc.</div>
+          </td>
+          <td class="check-partial">~ Notion ecosystem only</td>
+          <td class="check-yes">✔ Local files (portable)</td>
+          <td class="check-no">❌ Screen capture only</td>
+          <td class="check-yes cell-us">✔ Any AI platform</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Recovery Prompt Compiler</div>
+            <div class="feature-sub">Generate ready-to-paste prompts to resume any idea in a new thread</div>
+          </td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-no">❌ No</td>
+          <td class="check-yes cell-us">✔ 7 prompt types built-in</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="feature-name">Privacy — Your Data Stays Yours</div>
+            <div class="feature-sub">Conversations not stored on third-party servers or used for training</div>
+          </td>
+          <td class="check-no">❌ Cloud-synced to Notion</td>
+          <td class="check-yes">✔ Local Markdown files</td>
+          <td class="check-partial">~ Local DB, proprietary format</td>
+          <td class="check-yes cell-us">✔ Local-first, open format</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── CALLOUT: WHAT MAKES US DIFFERENT ── -->
+  <div class="section-label">What Sets Us Apart</div>
+  <h2 class="section-heading">Two things no one else offers</h2>
+  <p class="section-sub">These are not feature upgrades. They are entirely new categories.</p>
+
+  <div class="callout-grid">
+    <div class="callout-card">
+      <h3><span>🌱</span> <span style="color:var(--green)">Original Seed Recovery</span></h3>
+      <p>When you start an AI conversation, you arrive with a specific goal — your <strong>Original Seed</strong>. Sessions drift. Context windows fill. The model loses track. You lose track. Seed Reflections extracts that original intent, scores how far the session drifted, and compiles personalized prompts so you can pick up exactly where you left off — in any new thread, on any platform.</p>
+      <ul>
+        <li>Works with exported ChatGPT, Claude, and Gemini conversations</li>
+        <li>Accepts pasted transcripts and raw text uploads</li>
+        <li>Generates 7 types of recovery and handoff prompts</li>
+        <li>Stores every seed in your personal Idea Garden</li>
+      </ul>
+    </div>
+    <div class="callout-card">
+      <h3><span>🔏</span> <span style="color:var(--blue)">Seed Signature</span></h3>
+      <p>Seed Signature is a standalone cryptographic attribution protocol. When you sign a seed, it receives a unique content hash tied to your identity and timestamp. That signature travels with your content everywhere — in pasted text, generated documents, shared links. Anyone can verify it. No one can fake it.</p>
+      <ul>
+        <li>Sign any conversation seed with a personal passphrase</li>
+        <li>Receive a permanent, verifiable provenance certificate</li>
+        <li>Embed the signature into any content you share</li>
+        <li>Tamper-detection: any modification invalidates the signature</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- ── ADJACENT PLAYERS ── -->
+  <div class="section-label">Competitive Landscape</div>
+  <h2 class="section-heading">Who else is in this neighbourhood?</h2>
+  <p class="section-sub">Honestly — nobody does exactly this. But six product categories operate in adjacent spaces. Here's where they end and where we begin.</p>
+
+  <div class="landscape-note">
+    <strong>The gap is real.</strong> No product on the market today combines (1) recovering your original intent from a drifted AI conversation, (2) tracking how far it drifted, and (3) cryptographically signing that idea as yours. These are three separate unsolved problems that Seed Reflections addresses as one unified workflow.
+  </div>
+
+  <div class="landscape-grid">
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">Limitless AI</div>
+        <div class="comp-card-category cat-capture">Passive Capture</div>
+      </div>
+      <div class="comp-card-desc">Wearable AI pendant + software that passively records everything you say in meetings and real-world conversations. Great at total recall of what was spoken. Does not operate on AI chat sessions, cannot recover intent, and signs nothing.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">Records everything — recovers nothing specific. Your original seed is still buried inside hours of audio. No signing, no drift detection, no AI session support.</div>
+      </div>
+    </div>
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">Mem0 / Zep</div>
+        <div class="comp-card-category cat-memory">AI Memory Layer</div>
+      </div>
+      <div class="comp-card-desc">Developer infrastructure for giving AI agents long-term memory. Mem0 extracts facts and preferences from conversations so AI can remember you over time. Powerful — but built for developers building products, not for individuals managing their own ideas.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">Serves the AI's memory, not yours. There's no concept of an Original Seed, no drift tracking, no provenance signing, and no cross-platform portability for end users.</div>
+      </div>
+    </div>
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">TypingMind</div>
+        <div class="comp-card-category cat-memory">AI Chat Client</div>
+      </div>
+      <div class="comp-card-desc">A premium multi-model chat interface where you bring your own API keys. Offers better conversation organization than default ChatGPT/Claude interfaces, with folders and prompt libraries. A power user shell — not an intent recovery system.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">Better organized chaos, but still chaos. No seed extraction, no coherence scoring, no recovery prompts, no signing. Your original idea still gets lost — it's just in a nicer-looking folder.</div>
+      </div>
+    </div>
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">Reflect.app</div>
+        <div class="comp-card-category cat-notes">Second Brain</div>
+      </div>
+      <div class="comp-card-desc">AI-assisted note-taking and knowledge management built around backlinking your thoughts. Great for organizing ideas you've already processed and written down. Not designed for recovering ideas from AI conversations you haven't manually captured.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">You have to do the work first. Reflect organizes what you manually bring to it. It won't extract your original intent from a five-hour ChatGPT session or sign anything as yours.</div>
+      </div>
+    </div>
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">Adobe Content Credentials</div>
+        <div class="comp-card-category cat-provenance">Media Provenance</div>
+      </div>
+      <div class="comp-card-desc">Part of the C2PA standard. Embeds cryptographically signed metadata into image, video, and audio files to prove authorship and track edits. Backed by Adobe, Microsoft, and major camera manufacturers. Built entirely for media files — not text or AI-generated ideas.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">Solves provenance for pixels, not for ideas. There is no mechanism for signing a conversation seed, a written concept, or any text-based original intent. Signing a JPEG of your idea is not the same as signing the idea.</div>
+      </div>
+    </div>
+
+    <div class="competitor-card">
+      <div class="comp-card-top">
+        <div class="comp-card-name">Numbers Protocol</div>
+        <div class="comp-card-category cat-provenance">Blockchain Provenance</div>
+      </div>
+      <div class="comp-card-desc">Decentralized digital provenance using blockchain to create a permanent, verifiable ownership record for digital assets. Supports C2PA and extends it with on-chain anchoring. Like Content Credentials — focused entirely on media files, not ideas.</div>
+      <div class="comp-card-gap">
+        <div class="comp-card-gap-label">Their Gap</div>
+        <div class="comp-card-gap-text">Blockchain-anchored photo and video ownership is powerful — but a text seed from a ChatGPT conversation isn't a media file. No concept of AI session intent, drift, or idea recovery exists in their model.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── VERDICT ── -->
+  <div class="verdict">
+    <div class="eyebrow" style="margin-bottom:10px">The Bottom Line</div>
+    <h2>The only tool built for the human side of AI.</h2>
+    <p>AI platforms are optimized to serve the model. Seed Reflections is built to serve you — to preserve your original thinking, protect your authorship, and make sure every idea you bring to an AI session can be recovered, continued, and proven as yours.</p>
+    <a href="auth.html?mode=signup" class="verdict-cta" id="compare-cta-signup">Start Recovering Ideas — Free</a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div style="font-weight:900;font-size:18px;letter-spacing:-.5px">Seed<em style="color:var(--green);font-style:normal">Reflections</em></div>
+      <p>Never lose another original idea in an AI conversation. Recover. Sign. Own it.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Product</div>
+      <div class="footer-links">
+        <a href="index.html">Conversation Recovery</a>
+        <a href="index.html#section-generator">Prompt Engine</a>
+        <a href="comparison.html">How We Compare</a>
+        <a href="/consumer">My Dashboard</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Account</div>
+      <div class="footer-links">
+        <a href="auth.html?mode=signup">Sign Up Free</a>
+        <a href="auth.html?mode=login">Log In</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Seed Reflections — Recover. Sign. Own It.</div>
+    <div style="display:flex;gap:16px">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/platform.js"></script>
+<script>
+  // Render nav auth state
+  if (window.SeedReflectionsPlatform && SeedReflectionsPlatform.renderNavAuth) {
+    SeedReflectionsPlatform.renderNavAuth('#nav-auth', {
+      loggedInHtml: '<a href="/consumer" class="signup">Go to Dashboard</a>',
+    });
+  }
+</script>
+</body>
+</html>

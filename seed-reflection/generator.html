@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Recovery Prompt Generator — Seed Reflection</title>
+  <meta name="description" content="Generate a custom SRT-1 seed recovery prompt tailored to your conversation platform, length, and focus areas. Works with ChatGPT, Claude, Gemini, and more.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* ── PAGE HERO ─────────────────────────── */
+    .page-hero {
+      padding: 60px 5% 40px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,.08) 0%, transparent 60%);
+    }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(28px, 5vw, 50px); margin-bottom: 10px; }
+    .page-hero h1 em { color: var(--purple); font-style: italic; }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 580px; }
+
+    /* ── MAIN LAYOUT ───────────────────────── */
+    .gen-layout {
+      padding: 0 5% 80px;
+      display: flex; gap: 32px; max-width: 1200px; margin: 0 auto;
+      align-items: flex-start;
+    }
+    .gen-form-col { flex: 1; min-width: 0; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 80px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+
+    /* ── FORM SECTIONS ─────────────────────── */
+    .form-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    }
+    .form-section-title {
+      font-size: 13px; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .8px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-title span { font-size: 16px; }
+
+    /* ── INTENT INPUT ──────────────────────── */
+    .intent-input {
+      min-height: 80px; resize: vertical; font-size: 15px;
+      line-height: 1.6;
+    }
+    .intent-input:focus { border-color: var(--purple); }
+    .intent-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+    /* ── PLATFORM SELECTOR ─────────────────── */
+    .platform-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      background: var(--bg-raised); border: 2px solid var(--border);
+      border-radius: 10px; padding: 12px 8px; cursor: pointer;
+      font-size: 12px; font-weight: 600; color: var(--text3);
+      transition: all .15s; text-align: center;
+    }
+    .platform-option + label .plat-icon { font-size: 22px; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label {
+      border-color: var(--purple); color: var(--purple);
+      background: var(--purple-dim);
+    }
+
+    /* ── LENGTH SELECTOR ───────────────────── */
+    .length-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: var(--bg-raised); border: 2px solid var(--border);
+      border-radius: 10px; padding: 12px 8px; cursor: pointer;
+      font-size: 12px; font-weight: 600; color: var(--text3);
+      transition: all .15s; text-align: center;
+    }
+    .length-option + label .len-icon { font-size: 18px; }
+    .length-option + label .len-sub { font-size: 10px; font-weight: 400; color: var(--text3); margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label {
+      border-color: var(--cyan); color: var(--cyan);
+      background: var(--cyan-dim);
+    }
+
+    /* ── FOCUS CHECKBOXES ──────────────────── */
+    .focus-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    @media (max-width: 500px) { .focus-grid { grid-template-columns: 1fr; } }
+    .focus-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--bg-raised); border: 2px solid var(--border);
+      border-radius: 8px; padding: 12px 14px; cursor: pointer;
+      font-size: 13px; color: var(--text2); transition: all .15s;
+    }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item input { margin-top: 2px; accent-color: var(--green); flex-shrink: 0; width: auto; }
+    .focus-item.checked { border-color: var(--green); background: rgba(34,197,94,.06); color: var(--text); }
+    .focus-item .focus-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+    .focus-item .focus-text { line-height: 1.4; }
+
+    /* ── GENERATE BUTTON ───────────────────── */
+    .generate-btn-wrap { margin-top: 20px; }
+    .generate-btn {
+      width: 100%; padding: 14px 24px; font-size: 16px; font-weight: 700;
+      background: linear-gradient(135deg, var(--purple), #7c3aed);
+      color: #fff; border: none; border-radius: 10px; cursor: pointer;
+      font-family: var(--font-body); transition: all .15s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .generate-btn:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(167,139,250,.25); }
+    .generate-btn:active { transform: translateY(0); }
+
+    /* ── OUTPUT AREA ───────────────────────── */
+    .output-shell {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .output-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .output-title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .output-actions { display: flex; gap: 8px; }
+    .output-body { padding: 0; }
+    .output-prompt {
+      padding: 20px; font-family: var(--font-mono); font-size: 12.5px;
+      color: var(--text2); white-space: pre-wrap; line-height: 1.75;
+      max-height: 560px; overflow-y: auto;
+      min-height: 200px;
+    }
+    .output-placeholder {
+      padding: 60px 20px; text-align: center;
+      color: var(--text3); display: flex; flex-direction: column;
+      align-items: center; gap: 12px;
+    }
+    .output-placeholder .ph-icon { font-size: 48px; opacity: .4; }
+    .output-placeholder p { font-size: 14px; max-width: 280px; line-height: 1.6; }
+
+    /* ── SIGNATURE BLOCK ───────────────────── */
+    .sig-block {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(167,139,250,.04);
+      font-family: var(--font-mono); font-size: 11.5px; color: var(--text3);
+      line-height: 1.8;
+    }
+    .sig-block .sig-label { color: var(--purple); font-weight: 700; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── CHUNKING ALERT ────────────────────── */
+    .chunking-note {
+      background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3);
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;
+      font-size: 13px; color: var(--amber); display: none;
+    }
+    .chunking-note.visible { display: flex; gap: 10px; align-items: flex-start; }
+
+    /* ── PREMIUM UPSELL ────────────────────── */
+    .premium-upsell {
+      background: linear-gradient(135deg, rgba(167,139,250,.08), rgba(6,182,212,.05));
+      border: 1px solid rgba(167,139,250,.25);
+      border-radius: 12px; padding: 24px;
+      margin-top: 16px;
+    }
+    .premium-upsell h3 { font-family: var(--font-head); font-size: 20px; margin-bottom: 8px; }
+    .premium-upsell p { color: var(--text2); font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+    .premium-upsell .upsell-points {
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px;
+    }
+    .premium-upsell .upsell-point {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: var(--text2);
+    }
+    .premium-upsell .upsell-point .up-icon { font-size: 15px; flex-shrink: 0; }
+    .upsell-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── STATS BAR ─────────────────────────── */
+    .stats-bar {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      padding: 12px 20px; background: var(--bg-raised);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--text3); font-family: var(--font-mono);
+    }
+    .stats-bar span { color: var(--text2); }
+    .stats-bar .stat-val { color: var(--purple); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="generator.html" class="active">Generator</a>
+    <a href="snippets.html" class="hide-mobile">Snippets</a>
+    <a href="import.html" class="hide-mobile">Import</a>
+    <a href="instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div>
+    <div class="badge badge-purple" style="margin-bottom:16px;">✨ Custom Prompt Builder</div>
+    <h1>Seed Recovery<br><em>Prompt Generator</em></h1>
+    <p>Tell us what you're looking for and we'll generate a precision SRT-1 prompt — tailored to your platform, conversation size, and recovery goals.</p>
+  </div>
+</section>
+
+<div class="gen-layout">
+
+  <!-- LEFT: FORM -->
+  <div class="gen-form-col">
+
+    <!-- SECTION 1: Intent -->
+    <div class="form-section">
+      <div class="form-section-title"><span>🎯</span> What seeds are you looking for?</div>
+      <textarea class="intent-input" id="intent" placeholder="Describe what you're trying to recover or find. For example: 'We were building a SaaS app and I think we discussed auth but never finished it' or 'Find all the product ideas I mentioned but we got sidetracked'"></textarea>
+      <div class="intent-hint">Optional — but the more specific you are, the more targeted your prompt will be.</div>
+    </div>
+
+    <!-- SECTION 2: Platform -->
+    <div class="form-section">
+      <div class="form-section-title"><span>🤖</span> Which AI platform is this for?</div>
+      <div class="platform-grid">
+        <div>
+          <input type="radio" name="platform" id="plat-chatgpt" value="ChatGPT" class="platform-option" checked>
+          <label for="plat-chatgpt"><span class="plat-icon">💬</span>ChatGPT</label>
+        </div>
+        <div>
+          <input type="radio" name="platform" id="plat-claude" value="Claude" class="platform-option">
+          <label for="plat-claude"><span class="plat-icon">🔮</span>Claude</label>
+        </div>
+        <div>
+          <input type="radio" name="platform" id="plat-gemini" value="Gemini" class="platform-option">
+          <label for="plat-gemini"><span class="plat-icon">♊</span>Gemini</label>
+        </div>
+        <div>
+          <input type="radio" name="platform" id="plat-other" value="AI assistant" class="platform-option">
+          <label for="plat-other"><span class="plat-icon">🌐</span>Other</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Length -->
+    <div class="form-section">
+      <div class="form-section-title"><span>📏</span> How long is the conversation?</div>
+      <div class="length-grid">
+        <div>
+          <input type="radio" name="length" id="len-short" value="short" class="length-option" checked>
+          <label for="len-short">
+            <span class="len-icon">📄</span>
+            Short
+            <span class="len-sub">Under 10K tokens</span>
+          </label>
+        </div>
+        <div>
+          <input type="radio" name="length" id="len-medium" value="medium" class="length-option">
+          <label for="len-medium">
+            <span class="len-icon">📋</span>
+            Medium
+            <span class="len-sub">10K–50K tokens</span>
+          </label>
+        </div>
+        <div>
+          <input type="radio" name="length" id="len-long" value="long" class="length-option">
+          <label for="len-long">
+            <span class="len-icon">📚</span>
+            Long
+            <span class="len-sub">50K–200K tokens</span>
+          </label>
+        </div>
+        <div>
+          <input type="radio" name="length" id="len-xlarge" value="xlarge" class="length-option">
+          <label for="len-xlarge">
+            <span class="len-icon">🌊</span>
+            Very Long
+            <span class="len-sub">500K+ tokens</span>
+          </label>
+        </div>
+      </div>
+      <div class="chunking-note" id="chunking-note">
+        <span>⚠️</span>
+        <div><strong>Large conversation detected.</strong> Your prompt will include chunking instructions and strategies for deep analysis of massive conversation histories.</div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Focus Areas -->
+    <div class="form-section">
+      <div class="form-section-title"><span>🔍</span> What matters most to you?</div>
+      <div class="focus-grid">
+        <label class="focus-item checked" id="focus-stuck-label">
+          <input type="checkbox" id="focus-stuck" value="stuck" checked onchange="toggleFocusStyle('focus-stuck-label', this)">
+          <span class="focus-icon">🧱</span>
+          <span class="focus-text">Find where we got stuck and why</span>
+        </label>
+        <label class="focus-item checked" id="focus-code-label">
+          <input type="checkbox" id="focus-code" value="code" checked onchange="toggleFocusStyle('focus-code-label', this)">
+          <span class="focus-icon">💾</span>
+          <span class="focus-text">Recover code/content we built</span>
+        </label>
+        <label class="focus-item checked" id="focus-ideas-label">
+          <input type="checkbox" id="focus-ideas" value="ideas" checked onchange="toggleFocusStyle('focus-ideas-label', this)">
+          <span class="focus-icon">💡</span>
+          <span class="focus-text">Find other ideas mentioned but forgotten</span>
+        </label>
+        <label class="focus-item checked" id="focus-next-label">
+          <input type="checkbox" id="focus-next" value="next" checked onchange="toggleFocusStyle('focus-next-label', this)">
+          <span class="focus-icon">🎯</span>
+          <span class="focus-text">Get actionable next steps</span>
+        </label>
+        <label class="focus-item checked" id="focus-drift-label">
+          <input type="checkbox" id="focus-drift" value="drift" checked onchange="toggleFocusStyle('focus-drift-label', this)">
+          <span class="focus-icon">🌊</span>
+          <span class="focus-text">Identify drift points and causes</span>
+        </label>
+        <label class="focus-item" id="focus-decisions-label">
+          <input type="checkbox" id="focus-decisions" value="decisions" onchange="toggleFocusStyle('focus-decisions-label', this)">
+          <span class="focus-icon">⚖️</span>
+          <span class="focus-text">List all decisions made and rationale</span>
+        </label>
+        <label class="focus-item" id="focus-blockers-label">
+          <input type="checkbox" id="focus-blockers" value="blockers" onchange="toggleFocusStyle('focus-blockers-label', this)">
+          <span class="focus-icon">🚧</span>
+          <span class="focus-text">Surface unresolved blockers</span>
+        </label>
+        <label class="focus-item" id="focus-summary-label">
+          <input type="checkbox" id="focus-summary" value="summary" onchange="toggleFocusStyle('focus-summary-label', this)">
+          <span class="focus-icon">📊</span>
+          <span class="focus-text">Executive summary of entire session</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- GENERATE BUTTON -->
+    <div class="generate-btn-wrap">
+      <button class="generate-btn" onclick="generatePrompt()">
+        <span>✨</span> Generate My Custom Prompt
+      </button>
+    </div>
+
+    <!-- PREMIUM UPSELL -->
+    <div class="premium-upsell">
+      <h3>Want this automated?</h3>
+      <p>This generates targeted prompts for manual use. Connect your API keys for automatic cross-platform analysis across all your AI conversations — no copy-paste required.</p>
+      <div class="upsell-points">
+        <div class="upsell-point"><span class="up-icon">🔄</span> Automatic analysis across ChatGPT + Claude + Gemini</div>
+        <div class="upsell-point"><span class="up-icon">∞</span> Unlimited depth — no token limits, full conversation mining</div>
+        <div class="upsell-point"><span class="up-icon">🌱</span> Unified idea garden — all seeds from all platforms in one view</div>
+        <div class="upsell-point"><span class="up-icon">⚡</span> One-click recovery — no prompt engineering needed</div>
+      </div>
+      <div class="upsell-actions">
+        <a href="dashboard.html" class="btn btn-primary btn-sm">See Cross-Platform Dashboard →</a>
+        <a href="import.html" class="btn btn-secondary btn-sm">Connect My Platforms</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: OUTPUT -->
+  <div class="gen-output-col">
+    <div class="output-shell">
+      <div class="output-header">
+        <div class="output-title">
+          <span>📋</span> Your Custom Prompt
+        </div>
+        <div class="output-actions">
+          <button class="btn btn-secondary btn-sm" id="copy-all-btn" onclick="copyFullPrompt()" style="display:none;">Copy All</button>
+        </div>
+      </div>
+
+      <div id="output-placeholder" class="output-placeholder">
+        <div class="ph-icon">✨</div>
+        <p>Configure your options and click <strong>Generate</strong> to build your custom seed recovery prompt.</p>
+      </div>
+
+      <div id="output-content" style="display:none;">
+        <div class="stats-bar" id="stats-bar">
+          <div>Platform: <span class="stat-val" id="stat-platform">—</span></div>
+          <div>Length: <span class="stat-val" id="stat-length">—</span></div>
+          <div>Focus areas: <span class="stat-val" id="stat-focus">—</span></div>
+        </div>
+        <div class="output-body">
+          <div class="output-prompt" id="output-prompt"></div>
+        </div>
+        <div class="sig-block" id="sig-block">
+          <div class="sig-label">🔏 Seed Signature</div>
+          <div id="sig-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO USE -->
+    <div class="card" style="margin-top:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;">How to use your prompt</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="background:var(--purple-dim);color:var(--purple);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">1</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.5;">Click <strong style="color:var(--text);">Copy All</strong> to copy the full prompt to your clipboard.</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="background:var(--purple-dim);color:var(--purple);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">2</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.5;">Open a new chat on your AI platform and paste the prompt.</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="background:var(--purple-dim);color:var(--purple);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">3</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.5;">Paste your conversation history after the prompt (or use the chunking instructions for very long conversations).</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="background:var(--purple-dim);color:var(--purple);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;">4</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.5;">The AI will return a structured Seed Reflection Report with your requested focus areas.</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);">
+        Want the pre-made version? Browse the <a href="snippets.html">Snippet Library →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="footer-brand"><strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.</div>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="import.html">Import</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA</div>
+</footer>
+
+<script>
+// ── FOCUS STYLE TOGGLE ──────────────────────────────────────────────────────
+function toggleFocusStyle(labelId, checkbox) {
+  const label = document.getElementById(labelId);
+  if (checkbox.checked) {
+    label.classList.add('checked');
+  } else {
+    label.classList.remove('checked');
+  }
+}
+
+// ── CHUNKING NOTE ───────────────────────────────────────────────────────────
+document.querySelectorAll('input[name="length"]').forEach(el => {
+  el.addEventListener('change', function() {
+    const note = document.getElementById('chunking-note');
+    note.classList.toggle('visible', this.value === 'xlarge' || this.value === 'long');
+  });
+});
+
+// ── GENERATE PROMPT ─────────────────────────────────────────────────────────
+function generatePrompt() {
+  const intent     = document.getElementById('intent').value.trim();
+  const platform   = document.querySelector('input[name="platform"]:checked').value;
+  const lengthVal  = document.querySelector('input[name="length"]:checked').value;
+
+  const focuses = [];
+  if (document.getElementById('focus-stuck').checked)     focuses.push('stuck');
+  if (document.getElementById('focus-code').checked)      focuses.push('code');
+  if (document.getElementById('focus-ideas').checked)     focuses.push('ideas');
+  if (document.getElementById('focus-next').checked)      focuses.push('next');
+  if (document.getElementById('focus-drift').checked)     focuses.push('drift');
+  if (document.getElementById('focus-decisions').checked) focuses.push('decisions');
+  if (document.getElementById('focus-blockers').checked)  focuses.push('blockers');
+  if (document.getElementById('focus-summary').checked)   focuses.push('summary');
+
+  const lengthLabels = { short: 'Short (<10K)', medium: 'Medium (10K–50K)', long: 'Long (50K–200K)', xlarge: 'Very Long (500K+)' };
+
+  // Build prompt
+  const prompt = buildPrompt(intent, platform, lengthVal, focuses);
+  const sig    = buildSignature(platform, lengthVal, focuses);
+
+  // Update UI
+  document.getElementById('output-placeholder').style.display = 'none';
+  document.getElementById('output-content').style.display     = 'block';
+  document.getElementById('copy-all-btn').style.display       = 'inline-flex';
+  document.getElementById('output-prompt').textContent        = prompt;
+  document.getElementById('sig-content').textContent          = sig;
+  document.getElementById('stat-platform').textContent        = platform;
+  document.getElementById('stat-length').textContent          = lengthLabels[lengthVal];
+  document.getElementById('stat-focus').textContent           = focuses.length + ' selected';
+
+  // Scroll to output on mobile
+  if (window.innerWidth < 900) {
+    document.getElementById('output-content').closest('.output-shell').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function buildPrompt(intent, platform, length, focuses) {
+  const lines = [];
+  const isXL  = length === 'xlarge';
+  const isLong = length === 'long' || length === 'xlarge';
+
+  // Header
+  lines.push('You are a Seed Reflection specialist trained in the SCIA (Seed-Class Intelligence Architecture) protocol.');
+  lines.push('');
+
+  // Intent block
+  if (intent) {
+    lines.push('## My Primary Recovery Goal');
+    lines.push(intent);
+    lines.push('');
+    lines.push('Keep this goal in focus throughout your analysis. Prioritize findings that relate to it.');
+    lines.push('');
+  }
+
+  // Platform context
+  lines.push('## Context');
+  lines.push('Platform: ' + platform);
+  lines.push('Conversation size: ' + { short: 'Short (under 10K tokens)', medium: 'Medium (10K–50K tokens)', long: 'Long (50K–200K tokens)', xlarge: 'Very Long (500K+ tokens — use chunking strategy below)' }[length]);
+  lines.push('');
+
+  // Chunking instructions for large convos
+  if (isXL) {
+    lines.push('## ⚠️ Large Conversation Strategy');
+    lines.push('This is a very long conversation. Use the following chunking approach:');
+    lines.push('');
+    lines.push('PASS 1 — SEED DISCOVERY (skim at high speed):');
+    lines.push('  Read the entire conversation quickly. Do NOT stop to analyze yet.');
+    lines.push('  Tag every moment where a new idea, goal, project, or task is introduced.');
+    lines.push('  Note the approximate position (beginning / middle / end / timestamp if visible).');
+    lines.push('');
+    lines.push('PASS 2 — DEEP ANALYSIS (for each tagged seed):');
+    lines.push('  For each seed you tagged in Pass 1, go back and analyze it in detail.');
+    lines.push('  Determine: Was it developed? Completed? Abandoned? Why?');
+    lines.push('');
+    lines.push('PASS 3 — SYNTHESIS:');
+    lines.push('  Assemble your complete Seed Reflection Report from the tagged and analyzed seeds.');
+    lines.push('');
+    lines.push('If the conversation is too long to process in a single response, tell me how many');
+    lines.push('chunks you need and I will confirm before you proceed.');
+    lines.push('');
+  } else if (isLong) {
+    lines.push('## Long Conversation Guidance');
+    lines.push('This is a long conversation. Prioritize breadth over depth in your first pass —');
+    lines.push('identify ALL seeds before analyzing any of them deeply. Then apply deep analysis');
+    lines.push('to the top seeds by recovery value.');
+    lines.push('');
+  }
+
+  // Task definition
+  lines.push('## Your Task');
+  lines.push('Analyze the conversation below and produce a structured Seed Reflection Report.');
+  lines.push('A "Seed" is any idea, task, goal, project, question, or plan that was introduced.');
+  lines.push('');
+
+  // Focus-specific sections
+  lines.push('Your report MUST include the following sections:');
+  lines.push('');
+
+  // Always include core seed discovery
+  lines.push('### 🌱 All Seeds Discovered');
+  lines.push('A numbered list of every seed, with:');
+  lines.push('  - What it is (1 sentence)');
+  lines.push('  - Status: ACTIVE / COMPLETED / ABANDONED / DRIFTING');
+  lines.push('  - Where it appeared (start / middle / end of conversation)');
+  if (intent) {
+    lines.push('  - Relevance to my primary goal: HIGH / MEDIUM / LOW');
+  }
+  lines.push('');
+
+  if (focuses.includes('stuck')) {
+    lines.push('### 🧱 Where We Got Stuck');
+    lines.push('For each point of friction or stall:');
+    lines.push('  - What were we trying to do?');
+    lines.push('  - What caused the stall? (technical problem / unclear requirements / context switch / distraction / AI limitation)');
+    lines.push('  - What would it take to get past this?');
+    lines.push('');
+  }
+
+  if (focuses.includes('code')) {
+    lines.push('### 💾 Code & Content Inventory');
+    lines.push('List every piece of code, content, document, or artifact that was:');
+    lines.push('  - Completed and usable now');
+    lines.push('  - Started but incomplete (note what is missing)');
+    lines.push('  - Discussed but never written');
+    lines.push('For each item, give it a short name and note where in the conversation it appears.');
+    lines.push('');
+  }
+
+  if (focuses.includes('ideas')) {
+    lines.push('### 💡 Forgotten Ideas');
+    lines.push('Specifically surface ideas that were mentioned briefly but never explored:');
+    lines.push('  - What was the idea?');
+    lines.push('  - Why was it dropped? (distraction / context switch / just moved on)');
+    lines.push('  - Recovery value: HIGH / MEDIUM / LOW');
+    lines.push('  - One-line restart prompt to pick it back up');
+    lines.push('');
+  }
+
+  if (focuses.includes('drift')) {
+    lines.push('### 🌊 Drift Analysis');
+    lines.push('Identify every moment the conversation drifted from its original intent:');
+    lines.push('  - What was the original direction?');
+    lines.push('  - What triggered the drift? (new question / tangent / AI response / topic expansion)');
+    lines.push('  - How far did we drift? (minor / moderate / major)');
+    lines.push('  - Did we ever recover?');
+    lines.push('');
+    if (isLong) {
+      lines.push('For long conversations: also identify MACRO drift — did the overall session');
+      lines.push('end up in a very different place than it started? Describe the journey arc.');
+      lines.push('');
+    }
+  }
+
+  if (focuses.includes('decisions')) {
+    lines.push('### ⚖️ Decisions Made');
+    lines.push('List every architectural, design, product, or technical decision that was made:');
+    lines.push('  - What was decided');
+    lines.push('  - What alternatives were considered');
+    lines.push('  - The rationale (why this choice)');
+    lines.push('  - Whether this decision still seems sound');
+    lines.push('');
+  }
+
+  if (focuses.includes('blockers')) {
+    lines.push('### 🚧 Unresolved Blockers');
+    lines.push('Surface every blocker, open question, or dependency that was never resolved:');
+    lines.push('  - What is blocked and why');
+    lines.push('  - What information or action is needed to unblock it');
+    lines.push('  - Priority: HIGH / MEDIUM / LOW');
+    lines.push('');
+  }
+
+  if (focuses.includes('next')) {
+    lines.push('### 🎯 Recommended Next Steps');
+    lines.push('Give me 3–5 specific, actionable next steps in priority order.');
+    lines.push('For each step:');
+    lines.push('  - What to do (one clear imperative sentence)');
+    lines.push('  - Why this is the right next action');
+    lines.push('  - Estimated complexity: Quick win / Half-day / Multi-session');
+    if (intent) {
+      lines.push('  - Connection to my primary goal');
+    }
+    lines.push('');
+  }
+
+  if (focuses.includes('summary')) {
+    lines.push('### 📊 Executive Summary');
+    lines.push('One paragraph (5–8 sentences) summarizing:');
+    lines.push('  - What this session was really about at its core');
+    lines.push('  - The main accomplishment (if any)');
+    lines.push('  - The most significant unfinished thread');
+    lines.push('  - The single most important thing to do next');
+    lines.push('');
+  }
+
+  // Abandoned seeds section (always included)
+  lines.push('### 🍂 Top Abandoned Seeds to Recover');
+  lines.push('The top 3 abandoned seeds most worth picking up, in priority order.');
+  lines.push('For each:');
+  lines.push('  - What it is and why it matters');
+  lines.push('  - Exact restart prompt (2–3 sentences you can paste into a new chat)');
+  lines.push('  - Why now vs. later');
+  lines.push('');
+
+  // Platform-specific instructions
+  if (platform === 'ChatGPT') {
+    lines.push('## Platform Note — ChatGPT');
+    lines.push('If you see system messages or function calls in the conversation data, treat them');
+    lines.push('as context (not seeds). Focus on user and assistant turns for seed discovery.');
+    lines.push('');
+  } else if (platform === 'Claude') {
+    lines.push('## Platform Note — Claude');
+    lines.push('Claude conversations often have structured thinking blocks — treat these as');
+    lines.push('valuable signal for understanding intent, not just the final responses.');
+    lines.push('');
+  } else if (platform === 'Gemini') {
+    lines.push('## Platform Note — Gemini');
+    lines.push('Gemini may include search results in responses — focus on user intent and');
+    lines.push('the assistant\'s substantive responses, not retrieved reference content.');
+    lines.push('');
+  }
+
+  // Signature instruction
+  lines.push('## Required Signature Block');
+  lines.push('At the end of your report, append this exact block (fill in the bracketed values):');
+  lines.push('');
+  lines.push('---SEED-SIGNATURE---');
+  lines.push('Type: SCIA-CUSTOM-RECOVERY');
+  lines.push('Generated: [ISO 8601 datetime when you produce this report]');
+  lines.push('Platform: ' + platform);
+  lines.push('Seeds Found: [total number]');
+  lines.push('Abandoned: [number abandoned]');
+  lines.push('Completed: [number completed]');
+  lines.push('Drift Points: [number]');
+  if (focuses.length > 0) {
+    lines.push('Focus Areas: ' + focuses.join(', '));
+  }
+  lines.push('---END-SIGNATURE---');
+  lines.push('');
+
+  // Conversation placeholder
+  lines.push('---');
+  lines.push('[PASTE YOUR CONVERSATION BELOW THIS LINE]');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function buildSignature(platform, length, focuses) {
+  const now     = new Date().toISOString();
+  const focuStr = focuses.length > 0 ? focuses.join(', ') : 'none selected';
+  const sid     = 'SCIA-GEN-' + now.replace(/[-:.TZ]/g, '').slice(0, 14);
+  return [
+    'Signature-ID : ' + sid,
+    'Generated-At : ' + now,
+    'Generator    : Seed Reflection Prompt Generator v1.0',
+    'Platform     : ' + platform,
+    'Length-Class : ' + length,
+    'Focus-Areas  : ' + focuStr,
+    'Protocol     : SCIA (Seed-Class Intelligence Architecture)',
+    'Source       : seed-reflection/generator.html',
+  ].join('\n');
+}
+
+// ── COPY ────────────────────────────────────────────────────────────────────
+function copyFullPrompt() {
+  const prompt = document.getElementById('output-prompt').textContent;
+  const sig    = document.getElementById('sig-content').textContent;
+  const full   = prompt + '\n\n---GENERATOR-SIGNATURE---\n' + sig + '\n---END---';
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('copy-all-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+</script>
+</body>
+</html>

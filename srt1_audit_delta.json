@@ -1,0 +1,14 @@
+{
+  "drift_score": 3,
+  "protected_symbols": [],
+  "recovery_path": "git checkout HEAD -- \"seeds.json\"",
+  "file_state_velocity": {
+    "added": [
+      "transcripts\\8b9ffdcfb3f546d7.txt"
+    ],
+    "removed": [],
+    "modified": [
+      "seeds.json"
+    ]
+  }
+}

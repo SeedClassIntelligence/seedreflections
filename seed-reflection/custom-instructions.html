@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom LLM Instructions — SRT-1 Protocol</title>
+  <meta name="description" content="Set up permanent SRT-1 behavior in Claude, ChatGPT, Gemini, and Copilot custom instruction settings. Every conversation becomes seed-aware automatically.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* ── HERO ───────────────────────────────── */
+    .page-hero {
+      padding: 64px 5% 48px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(167,139,250,.07) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 600; color: var(--purple);
+      background: var(--purple-dim); border: 1px solid rgba(167,139,250,.25);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 18px;
+    }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(30px, 5.5vw, 52px); margin-bottom: 12px; line-height: 1.15; }
+    .page-hero h1 em { font-style: italic; color: var(--purple); }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 600px; line-height: 1.7; }
+    .hero-compare {
+      display: flex; gap: 16px; margin-top: 28px; flex-wrap: wrap;
+    }
+    .compare-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 22px; flex: 1; min-width: 240px; max-width: 340px;
+    }
+    .compare-box.without { border-left: 3px solid var(--red); }
+    .compare-box.with    { border-left: 3px solid var(--green); }
+    .compare-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 10px; }
+    .compare-box.without .compare-label { color: var(--red); }
+    .compare-box.with    .compare-label { color: var(--green); }
+    .compare-items { display: flex; flex-direction: column; gap: 6px; }
+    .compare-item { font-size: 13px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; }
+    .ci-icon { flex-shrink: 0; }
+
+    /* ── SECTION WRAPPER ────────────────────── */
+    .platforms-section { padding: 0 5% 80px; }
+    .platforms-inner { max-width: 1040px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text3); margin-bottom: 8px;
+    }
+    .section-desc { font-size: 14px; color: var(--text2); margin-bottom: 32px; line-height: 1.6; }
+
+    /* ── PLATFORM CARD ──────────────────────── */
+    .plat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; margin-bottom: 28px;
+      transition: border-color .2s;
+    }
+    .plat-card:hover { border-color: var(--border-hi); }
+
+    /* Accent top bar */
+    .plat-card.claude-card  { border-top: 3px solid #cc785c; }
+    .plat-card.chatgpt-card { border-top: 3px solid #10a37f; }
+    .plat-card.gemini-card  { border-top: 3px solid #4285f4; }
+    .plat-card.copilot-card { border-top: 3px solid #0078d4; }
+    .plat-card.universal-card { border-top: 3px solid var(--purple); }
+
+    .plat-head {
+      padding: 22px 28px 18px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 20px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .plat-logo { display: flex; align-items: center; gap: 14px; }
+    .plat-emoji {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+    .claude-card  .plat-emoji { background: rgba(204,120,92,.12); }
+    .chatgpt-card .plat-emoji { background: rgba(16,163,127,.12); }
+    .gemini-card  .plat-emoji { background: rgba(66,133,244,.12); }
+    .copilot-card .plat-emoji { background: rgba(0,120,212,.12); }
+    .universal-card .plat-emoji { background: var(--purple-dim); }
+
+    .plat-name  { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+    .plat-where { font-size: 13px; color: var(--text3); }
+    .plat-where a { color: var(--cyan); }
+
+    .plat-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; align-items: flex-start; }
+
+    /* Copy button */
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; font-family: var(--font-body); transition: all .15s;
+    }
+    .copy-btn-default {
+      background: var(--bg-raised); color: var(--text2); border: 1px solid var(--border);
+    }
+    .copy-btn-default:hover { border-color: var(--border-hi); color: var(--text); }
+    .copy-btn-default.copied { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+    .copy-btn-primary {
+      background: var(--purple); color: #000; font-size: 14px;
+    }
+    .copy-btn-primary:hover { background: #9b7ef7; }
+    .copy-btn-primary.copied { background: #7c5ce8; }
+    .copy-btn-primary.claude  { background: #cc785c; }
+    .copy-btn-primary.claude:hover  { background: #b5674e; }
+    .copy-btn-primary.chatgpt { background: #10a37f; }
+    .copy-btn-primary.chatgpt:hover { background: #0d8a6a; }
+    .copy-btn-primary.gemini  { background: #4285f4; }
+    .copy-btn-primary.gemini:hover  { background: #3570d4; }
+    .copy-btn-primary.copilot { background: #0078d4; }
+    .copy-btn-primary.copilot:hover { background: #0062b1; }
+
+    /* Instructions body */
+    .plat-body { padding: 24px 28px; }
+
+    /* Two-column layout for field/value instructions */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; } }
+
+    .field-block { display: flex; flex-direction: column; gap: 8px; }
+    .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text3); }
+    .field-name  { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 2px; }
+    .instr-text {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 18px; font-family: var(--font-mono); font-size: 12.5px;
+      color: var(--text2); white-space: pre-wrap; word-break: break-word;
+      line-height: 1.75; position: relative;
+    }
+    .instr-text.full { grid-column: 1 / -1; }
+
+    /* Nav path breadcrumb */
+    .nav-path {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text3);
+      background: var(--bg-raised); border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 6px; margin-bottom: 16px;
+      font-family: var(--font-mono); flex-wrap: wrap;
+    }
+    .nav-path .sep { color: var(--border-hi); }
+    .nav-path .step { color: var(--text2); }
+    .nav-path .step.last { color: var(--cyan); font-weight: 600; }
+
+    /* Tips row */
+    .plat-tips {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      margin-top: 4px;
+    }
+    .plat-tips-title { font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .plat-tip { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text2); line-height: 1.5; }
+    .plat-tip .pt-icon { flex-shrink: 0; }
+
+    /* ── COMPARISON TABLE ───────────────────── */
+    .compare-section { padding: 0 5% 60px; }
+    .compare-inner { max-width: 1040px; margin: 0 auto; }
+    .compare-table-wrap { overflow-x: auto; }
+    .compare-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; color: var(--text2);
+    }
+    .compare-table th {
+      text-align: left; padding: 12px 16px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--text3);
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td {
+      padding: 12px 16px; border-bottom: 1px solid rgba(30,42,56,.6);
+      vertical-align: middle;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:hover td { background: var(--bg-card); }
+    .td-platform { font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .td-check { color: var(--green); font-size: 15px; }
+    .td-partial { color: var(--amber); font-size: 15px; }
+    .td-x { color: var(--red); font-size: 15px; }
+    .td-note { color: var(--text3); font-size: 12px; }
+
+    /* ── FAQ ────────────────────────────────── */
+    .faq-section { padding: 0 5% 60px; }
+    .faq-inner { max-width: 700px; margin: 0 auto; }
+    .faq-item {
+      border-bottom: 1px solid var(--border); padding: 20px 0;
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-size: 15px; font-weight: 700; margin-bottom: 8px;
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .faq-q .faq-toggle { color: var(--text3); font-size: 18px; transition: transform .2s; flex-shrink: 0; }
+    .faq-q.open .faq-toggle { transform: rotate(45deg); }
+    .faq-a { font-size: 14px; color: var(--text2); line-height: 1.7; display: none; }
+    .faq-a.open { display: block; }
+
+    /* ── CTA ────────────────────────────────── */
+    .cta-section {
+      padding: 48px 5% 80px;
+      background: radial-gradient(ellipse at 50% 100%, rgba(167,139,250,.05) 0%, transparent 60%);
+    }
+    .cta-box {
+      max-width: 640px; margin: 0 auto; text-align: center;
+      background: var(--bg-card); border: 1px solid rgba(167,139,250,.2);
+      border-radius: 16px; padding: 40px 36px;
+    }
+    .cta-box h2 { font-family: var(--font-head); font-size: 28px; margin-bottom: 12px; }
+    .cta-box p { color: var(--text2); font-size: 15px; margin-bottom: 28px; line-height: 1.6; }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── FOOTER ─────────────────────────────── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 5%; font-size: 13px; color: var(--text3);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer a { color: var(--text3); }
+    .footer a:hover { color: var(--cyan); text-decoration: none; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="generator.html">Generator</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="new-thread.html">New Thread</a>
+    <a href="custom-instructions.html" class="active">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="page-hero">
+  <div class="hero-badge">⚙️ Permanent Setup</div>
+  <h1>Make SRT-1 your AI's<br><em>default behavior.</em></h1>
+  <p>Set up custom instructions once in your AI settings and every future conversation automatically follows the SRT-1 protocol — no thread starter needed, no copy-paste required.</p>
+
+  <div class="hero-compare">
+    <div class="compare-box without">
+      <div class="compare-label">❌ Without custom instructions</div>
+      <div class="compare-items">
+        <div class="compare-item"><span class="ci-icon">😤</span>Paste a thread starter every single time</div>
+        <div class="compare-item"><span class="ci-icon">🌀</span>AI forgets the protocol in new tabs</div>
+        <div class="compare-item"><span class="ci-icon">💨</span>Drift happens, good ideas get lost</div>
+        <div class="compare-item"><span class="ci-icon">📭</span>No automatic reflection summaries</div>
+      </div>
+    </div>
+    <div class="compare-box with">
+      <div class="compare-label">✅ With custom instructions</div>
+      <div class="compare-items">
+        <div class="compare-item"><span class="ci-icon">⚡</span>SRT-1 active in every new conversation</div>
+        <div class="compare-item"><span class="ci-icon">🎯</span>AI asks "What's your seed?" automatically</div>
+        <div class="compare-item"><span class="ci-icon">🛡️</span>Drift detection always on</div>
+        <div class="compare-item"><span class="ci-icon">📋</span>Reflection summaries on demand, any time</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORMS -->
+<section class="platforms-section">
+  <div class="platforms-inner">
+    <div class="section-label">Custom instructions by platform</div>
+    <div class="section-desc">Each platform uses a slightly different format and location. Copy the exact text for your AI, then follow the setup path shown.</div>
+
+    <!-- ── CLAUDE ── -->
+    <div class="plat-card claude-card" id="claude">
+      <div class="plat-head">
+        <div class="plat-logo">
+          <div class="plat-emoji">🟠</div>
+          <div>
+            <div class="plat-name">Claude (Anthropic)</div>
+            <div class="plat-where">Settings → Profile → <strong style="color:var(--text)">Custom Instructions</strong> (or Project instructions)</div>
+          </div>
+        </div>
+        <div class="plat-actions">
+          <button class="copy-btn copy-btn-primary claude" onclick="copyText('ci-claude', this)">Copy for Claude</button>
+        </div>
+      </div>
+      <div class="plat-body">
+        <div class="nav-path">
+          <span class="step">claude.ai</span>
+          <span class="sep">→</span>
+          <span class="step">Your profile icon</span>
+          <span class="sep">→</span>
+          <span class="step">Settings</span>
+          <span class="sep">→</span>
+          <span class="step last">Profile &amp; Instructions</span>
+        </div>
+
+        <div class="instr-text full" id="ci-claude">I use the SRT-1 protocol in conversations. Please follow these behaviors in every conversation:
+
+SEED SETUP: If I haven't stated a clear goal at the start of a conversation, ask me: "What's your seed for this conversation?" before diving in. A seed is my main goal or task.
+
+SEED TRACKING: Once we have a seed, keep every response anchored to it. If I ask something tangential, briefly note whether it serves the seed or represents drift.
+
+DRIFT DETECTION: If our conversation veers off the original goal for more than 2-3 exchanges, gently say: "Drift check — we've moved away from [original seed]. Want to refocus or make this a new thread?"
+
+SEED COLLECTION: When you notice a valuable idea that isn't the current seed, note it as: "[New seed found: brief description]" — but don't chase it unless I ask.
+
+PROGRESS NOTES: Every 4-5 exchanges on a complex task, briefly acknowledge progress: "Progress: [what we've covered] | Remaining: [what's left]"
+
+REFLECTION SUMMARY: When I say "reflect", "wrap up", or "session summary", give me:
+• ✅ Accomplished: [bullet list]
+• ⏳ Still pending: [bullet list]
+• 🌱 New seeds discovered: [list any [New seed] items]
+• ▶ Recommended next actions: [prioritized list]</div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+          <button class="copy-btn copy-btn-default" onclick="copyText('ci-claude',this)">📋 Copy plain text</button>
+          <button class="copy-btn copy-btn-primary claude" onclick="copyText('ci-claude', this)">Copy for Claude</button>
+        </div>
+
+        <div class="plat-tips" style="margin-top:20px;">
+          <div class="plat-tips-title">💡 Claude-specific tips</div>
+          <div class="plat-tip"><span class="pt-icon">🎯</span>Claude's custom instructions apply globally. For project-specific instructions, use <strong>Projects</strong> and set per-project instructions — great for long-running codebases or research.</div>
+          <div class="plat-tip"><span class="pt-icon">📌</span>You can pin a Project with SRT-1 instructions for each major area of your life (Work, Learning, Personal) so the right seed context is always active.</div>
+          <div class="plat-tip"><span class="pt-icon">⚡</span>Claude follows custom instructions very faithfully. You can add specific preferences: "My default domain is software engineering" or "I prefer concise responses under 200 words unless I ask for detail."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHATGPT ── -->
+    <div class="plat-card chatgpt-card" id="chatgpt">
+      <div class="plat-head">
+        <div class="plat-logo">
+          <div class="plat-emoji">🟢</div>
+          <div>
+            <div class="plat-name">ChatGPT (OpenAI)</div>
+            <div class="plat-where">Settings → Personalization → <strong style="color:var(--text)">Custom Instructions</strong></div>
+          </div>
+        </div>
+        <div class="plat-actions">
+          <button class="copy-btn copy-btn-primary chatgpt" onclick="copyText('ci-chatgpt-combined', this)">Copy for ChatGPT</button>
+        </div>
+      </div>
+      <div class="plat-body">
+        <div class="nav-path">
+          <span class="step">chatgpt.com</span>
+          <span class="sep">→</span>
+          <span class="step">Profile icon (bottom left)</span>
+          <span class="sep">→</span>
+          <span class="step">Settings</span>
+          <span class="sep">→</span>
+          <span class="step">Personalization</span>
+          <span class="sep">→</span>
+          <span class="step last">Custom Instructions</span>
+        </div>
+
+        <p style="font-size:13px; color:var(--text3); margin-bottom:16px;">ChatGPT has <strong style="color:var(--text2)">two separate fields</strong>. Copy each into the correct box:</p>
+
+        <div class="field-grid">
+          <div class="field-block">
+            <div class="field-label">Field 1</div>
+            <div class="field-name">What would you like ChatGPT to know about you?</div>
+            <div class="instr-text" id="ci-chatgpt-1">I use a productivity system called SRT-1 for AI conversations. I work with seeds — specific goals or tasks — that I want to stay focused on throughout each conversation. I tend to have wide-ranging curiosity and sometimes drift off-topic, so I value help staying focused. I prefer structured summaries at the end of work sessions.</div>
+            <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+              <button class="copy-btn copy-btn-default" onclick="copyText('ci-chatgpt-1',this)">Copy Field 1</button>
+            </div>
+          </div>
+          <div class="field-block">
+            <div class="field-label">Field 2</div>
+            <div class="field-name">How would you like ChatGPT to respond?</div>
+            <div class="instr-text" id="ci-chatgpt-2">Follow the SRT-1 protocol in every conversation:
+
+1. SEED: If I haven't stated a goal, ask "What's your seed for this conversation?" first.
+
+2. FOCUS: Keep responses anchored to my stated goal. If something is off-topic, say "Off-seed — still relevant?" before answering.
+
+3. COLLECT: When new valuable ideas emerge, note them as "[Seed found: idea]" without abandoning the main goal.
+
+4. TRACK: On long tasks, periodically note progress: "Done: X | Remaining: Y"
+
+5. REFLECT: When I say "reflect" or "wrap up":
+   ✅ Accomplished: [list]
+   ⏳ Pending: [list]
+   🌱 New seeds: [list]
+   ▶ Next actions: [list]</div>
+            <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+              <button class="copy-btn copy-btn-default" onclick="copyText('ci-chatgpt-2',this)">Copy Field 2</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden combined for the main copy button -->
+        <div style="display:none" id="ci-chatgpt-combined">FIELD 1 — "What would you like ChatGPT to know about you?":
+I use a productivity system called SRT-1 for AI conversations. I work with seeds — specific goals or tasks — that I want to stay focused on throughout each conversation. I tend to have wide-ranging curiosity and sometimes drift off-topic, so I value help staying focused. I prefer structured summaries at the end of work sessions.
+
+---
+
+FIELD 2 — "How would you like ChatGPT to respond?":
+Follow the SRT-1 protocol in every conversation:
+
+1. SEED: If I haven't stated a goal, ask "What's your seed for this conversation?" first.
+
+2. FOCUS: Keep responses anchored to my stated goal. If something is off-topic, say "Off-seed — still relevant?" before answering.
+
+3. COLLECT: When new valuable ideas emerge, note them as "[Seed found: idea]" without abandoning the main goal.
+
+4. TRACK: On long tasks, periodically note progress: "Done: X | Remaining: Y"
+
+5. REFLECT: When I say "reflect" or "wrap up":
+   ✅ Accomplished: [list]
+   ⏳ Pending: [list]
+   🌱 New seeds: [list]
+   ▶ Next actions: [list]</div>
+
+        <div class="plat-tips" style="margin-top:4px;">
+          <div class="plat-tips-title">💡 ChatGPT-specific tips</div>
+          <div class="plat-tip"><span class="pt-icon">📝</span>ChatGPT's custom instructions have a 1,500-character limit per field. The instructions above are sized to fit — don't expand them significantly.</div>
+          <div class="plat-tip"><span class="pt-icon">🗂️</span>Custom instructions apply to all new conversations but not existing ones. For project-specific focus, use <strong>GPT Builder</strong> to create a custom GPT with deeper SRT-1 integration.</div>
+          <div class="plat-tip"><span class="pt-icon">📱</span>Custom instructions sync to the mobile app automatically once set on web.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GEMINI ── -->
+    <div class="plat-card gemini-card" id="gemini">
+      <div class="plat-head">
+        <div class="plat-logo">
+          <div class="plat-emoji">💠</div>
+          <div>
+            <div class="plat-name">Gemini (Google)</div>
+            <div class="plat-where">Gemini Advanced → Settings → <strong style="color:var(--text)">Personalization</strong> (or Gems)</div>
+          </div>
+        </div>
+        <div class="plat-actions">
+          <button class="copy-btn copy-btn-primary gemini" onclick="copyText('ci-gemini', this)">Copy for Gemini</button>
+        </div>
+      </div>
+      <div class="plat-body">
+        <div class="nav-path">
+          <span class="step">gemini.google.com</span>
+          <span class="sep">→</span>
+          <span class="step">Settings (⚙)</span>
+          <span class="sep">→</span>
+          <span class="step last">Personalization / Extensions</span>
+        </div>
+
+        <div class="instr-text full" id="ci-gemini">Personal context: I use a goal-tracking system called SRT-1 to stay focused and productive in AI conversations.
+
+How it works: At the start of each conversation, I define a "seed" — my specific goal. I'd like your help staying anchored to that goal throughout our discussion.
+
+Please follow these behaviors:
+
+1. IDENTIFY THE SEED: If I haven't clearly stated a goal, ask me: "What's the main thing you want to accomplish in this conversation?" before we begin.
+
+2. STAY FOCUSED: Keep your responses relevant to my stated goal. If we start going off in a different direction, briefly check: "This seems outside your main goal — is this a detour or a new direction?"
+
+3. CAPTURE NEW IDEAS: If something valuable but off-topic comes up, note it as "(New idea to explore later: [brief description])" and then refocus.
+
+4. TRACK PROGRESS: On longer sessions, periodically note what we've covered and what remains.
+
+5. SESSION WRAP: When I say "wrap up" or "reflect", give me a structured summary:
+   — What we accomplished
+   — What's still open
+   — New ideas captured
+   — What I should do next
+
+This system helps me stay productive and never lose important insights from our conversations. Thank you for following it consistently.</div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+          <button class="copy-btn copy-btn-default" onclick="copyText('ci-gemini',this)">📋 Copy plain text</button>
+          <button class="copy-btn copy-btn-primary gemini" onclick="copyText('ci-gemini', this)">Copy for Gemini</button>
+        </div>
+
+        <div class="plat-tips" style="margin-top:20px;">
+          <div class="plat-tips-title">💡 Gemini-specific tips</div>
+          <div class="plat-tip"><span class="pt-icon">💎</span>Gemini Advanced (paid) supports custom instructions more reliably than free Gemini. Worth upgrading if you use it regularly for work.</div>
+          <div class="plat-tip"><span class="pt-icon">🔮</span>You can create a <strong>Gem</strong> (custom AI with specific instructions) dedicated to SRT-1 work sessions. Name it "Focused Work Mode" and paste these instructions there for a dedicated productivity assistant.</div>
+          <div class="plat-tip"><span class="pt-icon">🌐</span>Gemini responds well to personal context framing ("I use a system called...") rather than commands. The instructions above are tuned for that.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COPILOT ── -->
+    <div class="plat-card copilot-card" id="copilot">
+      <div class="plat-head">
+        <div class="plat-logo">
+          <div class="plat-emoji">🔵</div>
+          <div>
+            <div class="plat-name">Microsoft Copilot</div>
+            <div class="plat-where">Copilot → Settings → <strong style="color:var(--text)">Personalization</strong> or via system prompt in Copilot Studio</div>
+          </div>
+        </div>
+        <div class="plat-actions">
+          <button class="copy-btn copy-btn-primary copilot" onclick="copyText('ci-copilot', this)">Copy for Copilot</button>
+        </div>
+      </div>
+      <div class="plat-body">
+        <div class="nav-path">
+          <span class="step">copilot.microsoft.com</span>
+          <span class="sep">→</span>
+          <span class="step">Settings (⚙)</span>
+          <span class="sep">→</span>
+          <span class="step last">Personalization</span>
+        </div>
+
+        <div class="instr-text full" id="ci-copilot">Conversation style preference — SRT-1 Protocol:
+
+I follow a structured conversation protocol to stay organized and productive. Please apply these rules in every conversation:
+
+OBJECTIVE SETUP: If I haven't defined a clear objective at the start, ask: "What's the main goal for this conversation?" before proceeding.
+
+TASK FOCUS: Keep all responses aligned with my stated objective. When I raise something tangential, acknowledge it briefly and ask "Should we stay on our main objective or handle this first?"
+
+IDEA CAPTURE: When valuable but off-topic ideas come up, mark them: "[Idea noted: description] — setting aside to keep us focused."
+
+PROGRESS TRACKING: For multi-step tasks, maintain a brief status: what we've done, what's next. Update it when we complete a milestone.
+
+CONVERSATION CLOSE: When I say "wrap up", "done", or "summarize this session":
+• Task completed: [list what we finished]
+• Items remaining: [list what's still open]
+• Ideas to follow up: [captured ideas]
+• Suggested next actions: [what I should do next, in priority order]
+
+This protocol helps me stay organized and prevents me from losing work or ideas between sessions.</div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+          <button class="copy-btn copy-btn-default" onclick="copyText('ci-copilot',this)">📋 Copy plain text</button>
+          <button class="copy-btn copy-btn-primary copilot" onclick="copyText('ci-copilot', this)">Copy for Copilot</button>
+        </div>
+
+        <div class="plat-tips" style="margin-top:20px;">
+          <div class="plat-tips-title">💡 Copilot-specific tips</div>
+          <div class="plat-tip"><span class="pt-icon">🏢</span>Microsoft 365 Copilot (enterprise) lets admins set organization-wide instructions. If you're an admin, you can deploy SRT-1 protocol across your whole team.</div>
+          <div class="plat-tip"><span class="pt-icon">🔧</span>Copilot Studio allows building custom agents with embedded instructions — great for creating a dedicated "Project Manager Copilot" with SRT-1 built in.</div>
+          <div class="plat-tip"><span class="pt-icon">📊</span>Copilot works well with task-management framing. The instructions above use "objective" instead of "seed" for better comprehension.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── UNIVERSAL ── -->
+    <div class="plat-card universal-card" id="universal">
+      <div class="plat-head">
+        <div class="plat-logo">
+          <div class="plat-emoji">🌐</div>
+          <div>
+            <div class="plat-name">Universal / Any LLM</div>
+            <div class="plat-where">Works in any AI that accepts system prompts or initial instructions</div>
+          </div>
+        </div>
+        <div class="plat-actions">
+          <button class="copy-btn copy-btn-primary" onclick="copyText('ci-universal', this)">Copy Universal</button>
+        </div>
+      </div>
+      <div class="plat-body">
+        <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">Use this for: Perplexity, Mistral, LM Studio, Open WebUI, API integrations, or any AI that lets you set a system prompt.</p>
+        <div class="instr-text full" id="ci-universal">SYSTEM: SRT-1 Protocol Active
+
+You are a focused AI assistant following the SRT-1 (Seed Reflection Tool) protocol.
+
+CORE BEHAVIORS:
+1. At the start of each conversation, if the user's goal isn't clear, ask: "What is your seed — the main goal for this conversation?"
+2. Keep all responses aligned with the user's stated seed/goal
+3. When the conversation drifts from the seed, note: "Drift detected — should we refocus on [original seed]?"
+4. Capture new ideas that emerge without abandoning the current seed: "[New seed: idea description]"
+5. Periodically acknowledge progress on complex tasks
+6. When the user says "reflect", "wrap up", or "session summary", provide:
+   ACCOMPLISHED: [what was done]
+   PENDING: [what remains]
+   NEW SEEDS: [ideas captured]
+   NEXT ACTIONS: [recommended steps]
+
+TONE: Stay focused, structured, and proactive about keeping the user on track. The goal of SRT-1 is that no good idea or progress is ever lost.</div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+          <button class="copy-btn copy-btn-default" onclick="copyText('ci-universal',this)">📋 Copy plain text</button>
+          <button class="copy-btn copy-btn-primary" onclick="copyText('ci-universal', this)">Copy Universal</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- COMPARISON TABLE -->
+<section class="compare-section">
+  <div class="compare-inner">
+    <div class="section-label">Platform comparison</div>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Custom Instructions</th>
+            <th>Project/Agent Mode</th>
+            <th>Character Limit</th>
+            <th>Mobile Sync</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="td-platform">🟠 Claude</div></td>
+            <td><span class="td-check">✓ Yes</span></td>
+            <td><span class="td-check">✓ Projects</span></td>
+            <td>~2,000</td>
+            <td><span class="td-check">✓</span></td>
+            <td class="td-note">Best instruction-following. Projects allow per-context instructions.</td>
+          </tr>
+          <tr>
+            <td><div class="td-platform">🟢 ChatGPT</div></td>
+            <td><span class="td-check">✓ Yes (2 fields)</span></td>
+            <td><span class="td-check">✓ GPT Builder</span></td>
+            <td>1,500 per field</td>
+            <td><span class="td-check">✓</span></td>
+            <td class="td-note">Two-field format. GPT Builder allows custom agents.</td>
+          </tr>
+          <tr>
+            <td><div class="td-platform">💠 Gemini</div></td>
+            <td><span class="td-partial">~ Advanced only</span></td>
+            <td><span class="td-check">✓ Gems</span></td>
+            <td>~1,000</td>
+            <td><span class="td-check">✓</span></td>
+            <td class="td-note">Free tier limited. Gems provide richer customization.</td>
+          </tr>
+          <tr>
+            <td><div class="td-platform">🔵 Copilot</div></td>
+            <td><span class="td-partial">~ Limited</span></td>
+            <td><span class="td-check">✓ Copilot Studio</span></td>
+            <td>Varies</td>
+            <td><span class="td-check">✓</span></td>
+            <td class="td-note">Personal instructions limited; enterprise has full control.</td>
+          </tr>
+          <tr>
+            <td><div class="td-platform">🌐 Any LLM</div></td>
+            <td><span class="td-check">✓ System prompt</span></td>
+            <td><span class="td-partial">~ Depends</span></td>
+            <td>Model limit</td>
+            <td><span class="td-x">—</span></td>
+            <td class="td-note">Use Universal version as system prompt in any API call.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="faq-inner">
+    <div class="section-label">Frequently asked questions</div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Do I still need thread starters if I have custom instructions?
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-a">For most conversations, no — the AI will automatically ask for your seed and follow the protocol. Thread starters are useful when you want to provide extra context upfront, resume a specific previous session, or use platform-specific variations that go beyond what custom instructions support.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Will this make every conversation feel rigid or over-structured?
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-a">No — the protocol is designed to be lightweight. For casual conversations, the AI won't interrupt with progress reports. It scales to the conversation type. A quick question gets a quick answer; a complex work session gets structured tracking. You're always in control of when to "reflect" or when to ignore the seed.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Can I customize the instructions for my specific workflow?
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-a">Absolutely. These are templates — feel free to adapt the language, change the reflection format, add domain-specific context ("I work in software engineering"), or adjust the drift sensitivity. The key elements to keep are: seed identification, drift detection, idea capture ([New seed: ...]), and the reflection summary format.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        What if I'm using a team account or shared access?
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-a">Custom instructions typically apply to your individual account, not shared conversations. For team use, consider creating a shared custom GPT (ChatGPT Teams) or a Claude Project with embedded SRT-1 instructions that everyone on the team can access. That way the whole team benefits from consistent seed-aware conversations.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        How does this relate to the SRT-1 Snippet Library?
+        <span class="faq-toggle">+</span>
+      </div>
+      <div class="faq-a">Think of it as three layers: <strong>Custom Instructions</strong> are the foundation (permanent, automatic, no action needed). <strong>Thread Starters</strong> are for intentional new sessions (you control when to activate). <strong>Snippets</strong> are in-conversation tools for specific moments (recovery, drift, etc.). Together they give you full SRT-1 coverage at every stage of a conversation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>Complete your SRT-1 toolkit</h2>
+    <p>You've got the permanent foundation with custom instructions. Add thread starters for focused new sessions and snippets for in-conversation tools.</p>
+    <div class="cta-btns">
+      <a href="new-thread.html" class="btn btn-primary">Thread Starters →</a>
+      <a href="snippets.html" class="btn btn-ghost">Browse Snippets</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span>© 2026 SeedClassIntelligence — SRT-1 Protocol</span>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="new-thread.html">New Thread</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Home</a>
+  </div>
+</footer>
+
+<script>
+  // ── Copy to clipboard ─────────────────────
+  function copyText(id, btn) {
+    const el = document.getElementById(id);
+    const text = el.innerText || el.textContent;
+    const original = btn.textContent;
+    navigator.clipboard.writeText(text.trim()).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove('copied');
+      }, 2200);
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text.trim(); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(ta);
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = original; }, 2200);
+    });
+  }
+
+  // ── FAQ accordion ─────────────────────────
+  function toggleFaq(qEl) {
+    const aEl = qEl.nextElementSibling;
+    const isOpen = aEl.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-a').forEach(a => a.classList.remove('open'));
+    document.querySelectorAll('.faq-q').forEach(q => q.classList.remove('open'));
+    if (!isOpen) {
+      aEl.classList.add('open');
+      qEl.classList.add('open');
+    }
+  }
+
+  // ── Platform anchor smooth scroll ─────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

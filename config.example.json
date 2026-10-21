@@ -1,0 +1,16 @@
+{
+  "api_mode": "self_hosted",
+  "llm_provider": "ollama",
+  "llm_model": "llama3",
+  "llm_api_url": "http://127.0.0.1:11434",
+  "llm_api_key": "",
+  "stripe_mode": "test",
+  "stripe_secret_key": "",
+  "stripe_webhook_secret": "",
+  "stripe_checkout_free": "",
+  "stripe_checkout_pro": "",
+  "stripe_checkout_master": "",
+  "ai_killswitch_enabled": false,
+  "ai_monthly_budget_usd": 50.0,
+  "ai_budget_hard_stop": true
+}

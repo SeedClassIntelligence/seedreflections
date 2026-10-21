@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.log
+frontend_log.txt
+uploads/
+transcripts/
+.env
+config.json
+seeds.json
+data/
+.srt1/
+.netlify/
+scratch/
+*.bak
+SRT-1 for Developers — AI That Understands Your Entire Codebase_files/

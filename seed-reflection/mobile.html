@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#06080f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Seed Reflection">
+  <link rel="manifest" href="/seed-reflection/manifest.json">
+  <title>Seed Reflection</title>
+  <style>
+    :root {
+      --bg: #06080f;
+      --bg2: #0d1117;
+      --bg3: #161b22;
+      --border: #21262d;
+      --green: #10a37f;
+      --green-dim: #0d8a6b;
+      --green-glow: rgba(16,163,127,0.15);
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --text-muted: #484f58;
+      --red: #f85149;
+      --yellow: #d29922;
+      --blue: #58a6ff;
+      --radius: 12px;
+      --tab-h: 64px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+
+    /* ── Layout ── */
+    #app { display: flex; flex-direction: column; height: 100%; padding-top: var(--safe-top); }
+    .header { padding: 12px 20px 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .header h1 span { color: var(--green); }
+    .header-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border); display: flex; align-items: center; gap: 5px; }
+    .header-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+    .header-badge.online .dot { background: var(--green); }
+    .header-badge.syncing .dot { background: var(--yellow); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .page { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--tab-h) + var(--safe-bottom) + 16px); }
+    .page > .content { padding: 16px; }
+
+    /* ── Tabs ── */
+    .tab-bar { flex-shrink: 0; display: flex; background: var(--bg2); border-top: 1px solid var(--border); padding-bottom: var(--safe-bottom); height: calc(var(--tab-h) + var(--safe-bottom)); }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: none; color: var(--text-muted); font-size: 10px; font-weight: 500; cursor: pointer; padding: 8px 0; transition: color 0.15s; position: relative; }
+    .tab-btn svg { width: 22px; height: 22px; }
+    .tab-btn.active { color: var(--green); }
+    .tab-btn .badge { position: absolute; top: 6px; right: calc(50% - 16px); background: var(--red); color: #fff; font-size: 9px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+
+    /* ── Cards ── */
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .card-sm { padding: 12px; }
+    .card h3 { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+    /* ── Capture Tab ── */
+    .capture-hero { text-align: center; padding: 24px 0 20px; }
+    .capture-hero p { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; }
+    .mic-btn { width: 96px; height: 96px; border-radius: 50%; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: var(--green); box-shadow: 0 0 0 0 var(--green-glow); transition: all 0.2s; position: relative; }
+    .mic-btn:hover { background: var(--green-dim); }
+    .mic-btn.recording { background: var(--red); animation: sonar 1.2s infinite; }
+    @keyframes sonar { 0%{box-shadow:0 0 0 0 rgba(248,81,73,0.4)} 70%{box-shadow:0 0 0 24px rgba(248,81,73,0)} 100%{box-shadow:0 0 0 0 rgba(248,81,73,0)} }
+    .mic-btn svg { width: 40px; height: 40px; fill: #fff; }
+    .mic-status { margin-top: 12px; font-size: 13px; color: var(--text-dim); min-height: 20px; }
+    .mic-status.listening { color: var(--red); }
+
+    .idea-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 16px; padding: 14px; width: 100%; resize: none; outline: none; font-family: inherit; transition: border-color 0.2s; min-height: 80px; }
+    .idea-input:focus { border-color: var(--green); }
+    .idea-input::placeholder { color: var(--text-muted); }
+    .plant-btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--green); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .plant-btn:active { background: var(--green-dim); }
+    .plant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .recent-seeds { }
+    .seed-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .seed-item:last-child { border-bottom: none; }
+    .seed-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-top: 5px; flex-shrink: 0; }
+    .seed-dot.pending { background: var(--yellow); }
+    .seed-dot.wilted { background: var(--text-muted); }
+    .seed-text { font-size: 14px; line-height: 1.4; flex: 1; }
+    .seed-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .seed-platform { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--bg3); border: 1px solid var(--border); color: var(--text-dim); display: inline-flex; align-items: center; }
+
+    /* ── Search Tab ── */
+    .search-box-wrap { position: relative; margin-bottom: 12px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .search-box { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 16px; padding: 13px 13px 13px 38px; outline: none; font-family: inherit; transition: border-color 0.2s; }
+    .search-box:focus { border-color: var(--green); }
+    .search-box::placeholder { color: var(--text-muted); }
+    .search-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-chip { padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg3); color: var(--text-dim); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .filter-chip.active { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+    .search-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+    .search-empty .icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* ── Import Tab ── */
+    .import-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .import-opt { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: border-color 0.15s; text-align: center; }
+    .import-opt:hover, .import-opt:active { border-color: var(--green); background: var(--green-glow); }
+    .import-opt svg { width: 28px; height: 28px; color: var(--green); }
+    .import-opt span { font-size: 13px; font-weight: 500; }
+    .import-opt small { font-size: 11px; color: var(--text-dim); }
+    .paste-area { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; padding: 14px; width: 100%; resize: none; outline: none; font-family: inherit; min-height: 120px; transition: border-color 0.2s; }
+    .paste-area:focus { border-color: var(--green); }
+    .paste-area::placeholder { color: var(--text-muted); }
+    .import-btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--bg3); color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; border: 1px solid var(--border); }
+    .import-btn:hover { border-color: var(--green); color: var(--green); }
+    .import-results { }
+
+    /* ── Garden Tab ── */
+    .garden-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--green); line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stage-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stage-row:last-child { border-bottom: none; }
+    .stage-label { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .stage-icon { font-size: 16px; }
+    .stage-count { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+    .sync-status-card { display: flex; align-items: center; gap: 12px; }
+    .sync-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg3); flex-shrink: 0; }
+    .sync-info h4 { font-size: 14px; font-weight: 600; }
+    .sync-info p { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .sync-btn { margin-left: auto; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--text-dim); font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .sync-btn:hover { border-color: var(--green); color: var(--green); }
+    .dashboard-link { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--green-glow); border: 1px solid var(--green); border-radius: var(--radius); color: var(--green); font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .dashboard-link svg { width: 18px; height: 18px; }
+
+    /* ── Install Banner ── */
+    #install-banner { display: none; position: fixed; bottom: calc(var(--tab-h) + var(--safe-bottom) + 12px); left: 12px; right: 12px; background: var(--bg2); border: 1px solid var(--green); border-radius: var(--radius); padding: 14px 16px; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    #install-banner .banner-row { display: flex; align-items: center; gap: 12px; }
+    #install-banner .banner-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    #install-banner .banner-icon svg { width: 22px; height: 22px; fill: #fff; }
+    #install-banner .banner-text { flex: 1; }
+    #install-banner .banner-text strong { font-size: 14px; display: block; }
+    #install-banner .banner-text span { font-size: 12px; color: var(--text-dim); }
+    #install-banner .banner-actions { display: flex; gap: 8px; margin-top: 10px; }
+    #install-banner .btn-install { flex: 1; padding: 10px; background: var(--green); border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+    #install-banner .btn-dismiss { padding: 10px 14px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); font-size: 14px; cursor: pointer; }
+
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: calc(var(--tab-h) + var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 18px; font-size: 13px; white-space: nowrap; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 200; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+
+    /* ── Loading ── */
+    .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Highlight ── */
+    mark { background: rgba(16,163,127,0.2); color: var(--green); border-radius: 3px; padding: 0 2px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <h1>Seed <span>Reflection</span></h1>
+    <div class="header-badge" id="online-badge">
+      <div class="dot"></div>
+      <span id="online-text">offline</span>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div class="page" id="page-capture" style="display:block">
+    <div class="content">
+      <div class="capture-hero">
+        <p>Tap the mic and speak your idea — or type it below.</p>
+        <button class="mic-btn" id="mic-btn" aria-label="Start voice capture">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <div class="mic-status" id="mic-status">Hold to speak or use text below</div>
+      </div>
+
+      <textarea class="idea-input" id="idea-input" placeholder="What's the idea? Be as brief or detailed as you like..." rows="3"></textarea>
+      <button class="plant-btn" id="plant-btn" onclick="plantIdea()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Plant This Idea
+      </button>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Recent Ideas</h3>
+        <div id="recent-list"><div style="color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0">No ideas yet — plant your first one above!</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-search" style="display:none">
+    <div class="content">
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-box" type="search" id="search-input" placeholder="What was that idea about...?" oninput="doSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="search-filters">
+        <div class="filter-chip active" data-filter="all" onclick="setFilter('all',this)">All</div>
+        <div class="filter-chip" data-filter="planted" onclick="setFilter('planted',this)">🌱 Planted</div>
+        <div class="filter-chip" data-filter="growing" onclick="setFilter('growing',this)">🌿 Growing</div>
+        <div class="filter-chip" data-filter="bloomed" onclick="setFilter('bloomed',this)">🌸 Bloomed</div>
+        <div class="filter-chip" data-filter="chatgpt" onclick="setFilter('chatgpt',this)">ChatGPT</div>
+        <div class="filter-chip" data-filter="claude" onclick="setFilter('claude',this)">Claude</div>
+      </div>
+      <div id="search-results">
+        <div class="search-empty"><div class="icon">💭</div>Search your idea garden</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-import" style="display:none">
+    <div class="content">
+      <div class="import-options">
+        <div class="import-opt" onclick="triggerCamera()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/></svg>
+          <span>Camera</span>
+          <small>Photo of conversation</small>
+        </div>
+        <div class="import-opt" onclick="pasteFromClipboard()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"/></svg>
+          <span>Paste</span>
+          <small>Copy from app</small>
+        </div>
+        <div class="import-opt" onclick="document.getElementById('file-input').click()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+          <span>Upload</span>
+          <small>JSON export file</small>
+        </div>
+        <div class="import-opt" onclick="showPasteArea()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/></svg>
+          <span>Type</span>
+          <small>Manual text entry</small>
+        </div>
+      </div>
+
+      <input type="file" id="file-input" accept=".json,.txt,.zip" style="display:none" onchange="handleFileUpload(event)">
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleCameraCapture(event)">
+
+      <div id="paste-area-wrap" style="display:none">
+        <textarea class="paste-area" id="paste-area" placeholder="Paste your conversation here — ChatGPT, Claude, Gemini, or any plain text...&#10;&#10;The system will automatically extract your ideas and seed them to your garden." rows="6"></textarea>
+        <button class="import-btn" onclick="extractFromPaste()">Extract Ideas →</button>
+      </div>
+
+      <div id="import-results"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-garden" style="display:none">
+    <div class="content">
+      <div class="garden-stats" id="garden-stats">
+        <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total Ideas</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-bloomed" style="color:var(--blue)">0</div><div class="stat-label">Completed</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-growing">0</div><div class="stat-label">Growing</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-pending" style="color:var(--yellow)">0</div><div class="stat-label">Pending Sync</div></div>
+      </div>
+
+      <div class="card">
+        <h3>By Stage</h3>
+        <div id="stage-breakdown">
+          <div class="stage-row"><span class="stage-label"><span class="stage-icon">🌱</span>Planted</span><span class="stage-count" id="count-planted">0</span></div>
+          <div class="stage-row"><span class="stage-label"><span class="stage-icon">🌿</span>Growing</span><span class="stage-count" id="count-growing">0</span></div>
+          <div class="stage-row"><span class="stage-label"><span class="stage-icon">🌸</span>Bloomed</span><span class="stage-count" id="count-bloomed">0</span></div>
+          <div class="stage-row"><span class="stage-label"><span class="stage-icon">🥀</span>Wilted</span><span class="stage-count" id="count-wilted">0</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sync-status-card" id="sync-status-card">
+          <div class="sync-icon" id="sync-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
+          </div>
+          <div class="sync-info">
+            <h4 id="sync-title">Sync Status</h4>
+            <p id="sync-desc">Checking...</p>
+          </div>
+          <button class="sync-btn" onclick="syncNow()">Sync Now</button>
+        </div>
+      </div>
+
+      <a class="dashboard-link" href="/seed-reflection/dashboard.html">
+        View Full Dashboard
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-capture" onclick="switchTab('capture')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path stroke-linecap="round" d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      Capture
+    </button>
+    <button class="tab-btn" id="tab-search" onclick="switchTab('search')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/></svg>
+      Search
+    </button>
+    <button class="tab-btn" id="tab-import" onclick="switchTab('import')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-8-4-4m0 0L8 8m4-4v12"/></svg>
+      Import
+    </button>
+    <button class="tab-btn" id="tab-garden" onclick="switchTab('garden')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 22V12m0 0C12 7 7 5 2 6c0 6 4 10 10 10zm0 0c0-5 5-7 10-6 0 6-4 10-10 10"/></svg>
+      Garden
+      <span class="badge" id="pending-badge" style="display:none">0</span>
+    </button>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div id="install-banner">
+  <div class="banner-row">
+    <div class="banner-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="4" opacity=".6"/><circle cx="12" cy="12" r="2" opacity=".9"/></svg>
+    </div>
+    <div class="banner-text">
+      <strong>Install Seed Reflection</strong>
+      <span>Add to Home Screen for quick idea capture</span>
+    </div>
+  </div>
+  <div class="banner-actions">
+    <button class="btn-install" onclick="doInstall()">Install App</button>
+    <button class="btn-dismiss" onclick="dismissBanner()">Not now</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── IndexedDB ─────────────────────────────────────────────────────────────────
+const DB_NAME = 'srt1-offline';
+const DB_VERSION = 2;
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('pending_seeds')) {
+        d.createObjectStore('pending_seeds', { keyPath: 'id' });
+      }
+      if (!d.objectStoreNames.contains('pending_imports')) {
+        d.createObjectStore('pending_imports', { keyPath: 'id' });
+      }
+      if (!d.objectStoreNames.contains('seeds')) {
+        const s = d.createObjectStore('seeds', { keyPath: 'id' });
+        s.createIndex('status', 'status');
+        s.createIndex('platform', 'platform');
+        s.createIndex('date', 'date');
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGet(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbPut(store, obj) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(obj);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbDelete(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function genId() {
+  return 'seed_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentTab = 'capture';
+let activeFilter = 'all';
+let installPrompt = null;
+let recognition = null;
+let isRecording = false;
+let allSeeds = [];
+
+// ── Service Worker ────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/seed-reflection/sw.js', { scope: '/seed-reflection/' })
+    .then(reg => {
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data && e.data.type === 'SYNC_COMPLETE') {
+          showToast('✓ ' + e.data.count + ' idea(s) synced', 'success');
+          loadSeeds();
+        }
+      });
+    })
+    .catch(() => {});
+}
+
+// ── PWA Install ───────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installPrompt = e;
+  if (!localStorage.getItem('pwa-dismissed-sr')) {
+    setTimeout(() => { document.getElementById('install-banner').style.display = 'block'; }, 2000);
+  }
+});
+
+function doInstall() {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  installPrompt.userChoice.then(r => {
+    if (r.outcome === 'accepted') showToast('✓ App installed!', 'success');
+    dismissBanner();
+  });
+}
+
+function dismissBanner() {
+  document.getElementById('install-banner').style.display = 'none';
+  localStorage.setItem('pwa-dismissed-sr', '1');
+}
+
+// ── Online/Offline ────────────────────────────────────────────────────────────
+function updateOnlineStatus() {
+  const badge = document.getElementById('online-badge');
+  const txt = document.getElementById('online-text');
+  if (navigator.onLine) {
+    badge.className = 'header-badge online';
+    txt.textContent = 'online';
+  } else {
+    badge.className = 'header-badge';
+    txt.textContent = 'offline';
+  }
+  updateGardenSync();
+}
+
+window.addEventListener('online', () => { updateOnlineStatus(); syncNow(); });
+window.addEventListener('offline', updateOnlineStatus);
+
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('page-' + currentTab).style.display = 'none';
+  document.getElementById('tab-' + currentTab).classList.remove('active');
+  currentTab = tab;
+  document.getElementById('page-' + tab).style.display = 'block';
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'garden') loadGarden();
+  if (tab === 'search') { document.getElementById('search-input').focus(); doSearch(); }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2500);
+}
+
+// ── Voice Capture ─────────────────────────────────────────────────────────────
+function setupSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('mic-btn').style.opacity = '0.4';
+    document.getElementById('mic-status').textContent = 'Voice not supported — use text below';
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = e => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('idea-input').value = transcript;
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-status').className = 'mic-status';
+    document.getElementById('mic-status').textContent = 'Hold to speak or use text below';
+    const val = document.getElementById('idea-input').value.trim();
+    if (val) document.getElementById('mic-status').textContent = '✓ Got it — tap Plant to save';
+  };
+
+  recognition.onerror = e => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('mic-status').className = 'mic-status';
+    if (e.error !== 'no-speech') showToast('Mic error: ' + e.error, 'error');
+  };
+}
+
+document.getElementById('mic-btn').addEventListener('click', () => {
+  if (!recognition) return;
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    document.getElementById('idea-input').value = '';
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('mic-status').className = 'mic-status listening';
+    document.getElementById('mic-status').textContent = '🔴 Listening…';
+    recognition.start();
+  }
+});
+
+// ── Plant Idea ────────────────────────────────────────────────────────────────
+async function plantIdea() {
+  const input = document.getElementById('idea-input');
+  const text = input.value.trim();
+  if (!text) { showToast('Type or speak your idea first', 'error'); return; }
+
+  const btn = document.getElementById('plant-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Planting…';
+
+  const seed = {
+    id: genId(),
+    intent: text,
+    status: 'planted',
+    platform: 'mobile',
+    date: new Date().toISOString(),
+    source: 'voice_capture',
+    tags: [],
+    synced: false,
+  };
+
+  try {
+    await dbPut('seeds', seed);
+
+    if (navigator.onLine) {
+      try {
+        const resp = await fetch('/api/v1/seeds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(seed),
+        });
+        if (resp.ok) {
+          seed.synced = true;
+          await dbPut('seeds', seed);
+        } else {
+          await queueForSync(seed);
+        }
+      } catch {
+        await queueForSync(seed);
+      }
+    } else {
+      await queueForSync(seed);
+    }
+
+    input.value = '';
+    showToast('🌱 Idea planted!', 'success');
+    loadRecentSeeds();
+    updatePendingBadge();
+  } catch (err) {
+    showToast('Error saving idea', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> Plant This Idea';
+  }
+}
+
+async function queueForSync(seed) {
+  await dbPut('pending_seeds', seed);
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    const reg = await navigator.serviceWorker.ready;
+    reg.sync.register('sync-seeds').catch(() => {});
+  }
+}
+
+// ── Load Recent Seeds ─────────────────────────────────────────────────────────
+async function loadRecentSeeds() {
+  try {
+    allSeeds = await dbGetAll('seeds');
+    allSeeds.sort((a, b) => new Date(b.date) - new Date(a.date));
+    renderRecentList(allSeeds.slice(0, 8));
+  } catch { renderRecentList([]); }
+}
+
+function renderRecentList(seeds) {
+  const el = document.getElementById('recent-list');
+  if (!seeds.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:12px 0">No ideas yet — plant your first one above!</div>';
+    return;
+  }
+  el.innerHTML = seeds.map(s => `
+    <div class="seed-item" onclick="showSeedDetail('${s.id}')">
+      <div class="seed-dot ${s.status === 'planted' ? 'pending' : s.status === 'wilted' ? 'wilted' : ''}"></div>
+      <div>
+        <div class="seed-text">${escHtml(s.intent)}</div>
+        <div class="seed-meta">
+          ${timeAgo(s.date)}
+          ${s.platform && s.platform !== 'mobile' ? `<span class="seed-platform" style="margin-left:6px">${escHtml(s.platform)}</span>` : ''}
+          ${!s.synced ? ' · <span style="color:var(--yellow)">pending sync</span>' : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  doSearch();
+}
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  if (!allSeeds.length) allSeeds = await dbGetAll('seeds');
+
+  let results = allSeeds;
+  if (activeFilter !== 'all') {
+    results = results.filter(s => {
+      if (['planted','growing','bloomed','wilted'].includes(activeFilter)) return s.status === activeFilter;
+      if (['chatgpt','claude','gemini'].includes(activeFilter)) return (s.platform||'').toLowerCase() === activeFilter;
+      return true;
+    });
+  }
+  if (q) {
+    results = results.filter(s => s.intent.toLowerCase().includes(q));
+  }
+  results = results.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const el = document.getElementById('search-results');
+  if (!results.length) {
+    el.innerHTML = `<div class="search-empty"><div class="icon">${q ? '🔍' : '💭'}</div>${q ? 'No ideas match "' + escHtml(q) + '"' : 'No ideas in this category'}</div>`;
+    return;
+  }
+
+  el.innerHTML = results.slice(0, 40).map(s => {
+    const highlighted = q ? s.intent.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<mark>$1</mark>') : escHtml(s.intent);
+    return `<div class="card card-sm" onclick="showSeedDetail('${s.id}')">
+      <div style="font-size:14px;line-height:1.5">${highlighted}</div>
+      <div class="seed-meta" style="margin-top:6px">${stageEmoji(s.status)} ${s.status} · ${timeAgo(s.date)}${s.platform ? ' · <span class="seed-platform">' + escHtml(s.platform) + '</span>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function stageEmoji(status) {
+  const map = { planted: '🌱', germinating: '🌿', growing: '🌿', bloomed: '🌸', wilted: '🥀' };
+  return map[status] || '🌱';
+}
+
+// ── Import ────────────────────────────────────────────────────────────────────
+function showPasteArea() {
+  const w = document.getElementById('paste-area-wrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+  if (w.style.display === 'block') document.getElementById('paste-area').focus();
+}
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('paste-area-wrap').style.display = 'block';
+    document.getElementById('paste-area').value = text;
+    showToast('✓ Pasted from clipboard', 'success');
+  } catch {
+    showPasteArea();
+    showToast('Tap the text box and paste manually', '');
+  }
+}
+
+function triggerCamera() {
+  document.getElementById('camera-input').click();
+}
+
+function handleCameraCapture(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  showToast('📷 Photo received — OCR coming soon', '');
+  // Future: send to /api/v1/ocr for text extraction
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      processImportData(data, file.name);
+    } catch {
+      document.getElementById('paste-area-wrap').style.display = 'block';
+      document.getElementById('paste-area').value = ev.target.result;
+      showToast('Loaded as plain text', '');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function extractFromPaste() {
+  const text = document.getElementById('paste-area').value.trim();
+  if (!text) { showToast('Paste a conversation first', 'error'); return; }
+
+  // Detect platform
+  const platform = detectPlatform(text);
+
+  // Extract idea candidates
+  const seeds = extractIdeasFromText(text, platform);
+
+  if (!seeds.length) {
+    showToast('No clear ideas found — try pasting more context', 'error');
+    return;
+  }
+
+  renderImportPreview(seeds, platform);
+}
+
+function detectPlatform(text) {
+  if (/chatgpt|openai/i.test(text)) return 'chatgpt';
+  if (/claude|anthropic/i.test(text)) return 'claude';
+  if (/gemini|bard|google/i.test(text)) return 'gemini';
+  return 'imported';
+}
+
+function extractIdeasFromText(text, platform) {
+  const seeds = [];
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Patterns that signal an idea/plan
+  const ideaPatterns = [
+    /^(?:idea|thought|plan|concept|feature|build|create|make|i want to|we could|what if|could we|let's|let me)\s*:?\s*(.+)/i,
+    /^[-•*]\s+(.{20,200})$/,
+    /^(?:\d+[.)]\s*)(.{20,200})$/,
+  ];
+
+  // Collect long non-trivial lines from human turns
+  let inHuman = false;
+  for (const line of lines) {
+    if (/^(?:you|human|user|me)\s*:/i.test(line)) { inHuman = true; continue; }
+    if (/^(?:assistant|claude|chatgpt|gpt|ai|bot|gemini)\s*:/i.test(line)) { inHuman = false; continue; }
+    if (!inHuman && line.length < 40) continue;
+
+    for (const pat of ideaPatterns) {
+      const m = line.match(pat);
+      if (m) {
+        const idea = m[1] || line;
+        if (idea.length > 15 && idea.length < 400 && !seeds.some(s => s.intent === idea)) {
+          seeds.push({ id: genId(), intent: idea.trim(), platform, status: 'planted', date: new Date().toISOString(), synced: false, source: 'import' });
+        }
+        break;
+      }
+    }
+
+    // Also grab long substantive lines from human turns
+    if (inHuman && line.length > 40 && line.length < 300 && !line.startsWith('http') && seeds.length < 20) {
+      if (!seeds.some(s => s.intent === line)) {
+        seeds.push({ id: genId(), intent: line, platform, status: 'planted', date: new Date().toISOString(), synced: false, source: 'import' });
+      }
+    }
+  }
+
+  return seeds.slice(0, 15);
+}
+
+function renderImportPreview(seeds, platform) {
+  const el = document.getElementById('import-results');
+  el.innerHTML = `
+    <div class="card">
+      <h3>Found ${seeds.length} Idea${seeds.length !== 1 ? 's' : ''} · ${platform}</h3>
+      ${seeds.map((s, i) => `
+        <div class="seed-item">
+          <input type="checkbox" id="imp-${i}" checked style="accent-color:var(--green);width:16px;height:16px;flex-shrink:0;margin-top:2px">
+          <div>
+            <div class="seed-text">${escHtml(s.intent)}</div>
+          </div>
+        </div>`).join('')}
+      <button class="plant-btn" style="margin-top:12px" onclick="saveImportedSeeds(${JSON.stringify(seeds).replace(/"/g, '&quot;')})">
+        Plant Selected Ideas
+      </button>
+    </div>`;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function saveImportedSeeds(seeds) {
+  let saved = 0;
+  for (let i = 0; i < seeds.length; i++) {
+    const cb = document.getElementById('imp-' + i);
+    if (cb && cb.checked) {
+      await dbPut('seeds', seeds[i]);
+      if (!navigator.onLine) await dbPut('pending_seeds', seeds[i]);
+      saved++;
+    }
+  }
+
+  if (navigator.onLine) syncNow();
+  else if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    const reg = await navigator.serviceWorker.ready;
+    reg.sync.register('sync-seeds').catch(() => {});
+  }
+
+  showToast('🌱 ' + saved + ' idea(s) planted!', 'success');
+  document.getElementById('import-results').innerHTML = '';
+  document.getElementById('paste-area').value = '';
+  document.getElementById('paste-area-wrap').style.display = 'none';
+  allSeeds = [];
+  loadRecentSeeds();
+  updatePendingBadge();
+}
+
+async function processImportData(data, filename) {
+  // Handle ChatGPT / Claude JSON export formats
+  const conversations = Array.isArray(data) ? data : [data];
+  const seeds = [];
+
+  for (const conv of conversations) {
+    const messages = conv.messages || conv.mapping ? extractChatGPTMessages(conv) : [];
+    for (const msg of messages) {
+      if (msg.role === 'user' && msg.content && msg.content.length > 30) {
+        seeds.push({ id: genId(), intent: msg.content.slice(0, 300), platform: detectPlatform(filename), status: 'planted', date: conv.create_time ? new Date(conv.create_time * 1000).toISOString() : new Date().toISOString(), synced: false, source: 'import' });
+      }
+    }
+    if (seeds.length >= 20) break;
+  }
+
+  if (seeds.length) renderImportPreview(seeds, 'imported');
+  else showToast('No ideas found in file', 'error');
+}
+
+function extractChatGPTMessages(conv) {
+  const msgs = [];
+  if (conv.mapping) {
+    Object.values(conv.mapping).forEach(node => {
+      const msg = node.message;
+      if (msg && msg.content && msg.content.parts) {
+        const text = msg.content.parts.join(' ').trim();
+        if (text) msgs.push({ role: msg.author?.role || 'user', content: text });
+      }
+    });
+  } else if (conv.messages) {
+    return conv.messages;
+  }
+  return msgs;
+}
+
+// ── Garden ────────────────────────────────────────────────────────────────────
+async function loadGarden() {
+  try {
+    const seeds = await dbGetAll('seeds');
+    const pending = await dbGetAll('pending_seeds');
+
+    document.getElementById('stat-total').textContent = seeds.length;
+    document.getElementById('stat-bloomed').textContent = seeds.filter(s => s.status === 'bloomed').length;
+    document.getElementById('stat-growing').textContent = seeds.filter(s => ['growing','germinating'].includes(s.status)).length;
+    document.getElementById('stat-pending').textContent = pending.length;
+
+    document.getElementById('count-planted').textContent = seeds.filter(s => s.status === 'planted').length;
+    document.getElementById('count-growing').textContent = seeds.filter(s => ['growing','germinating'].includes(s.status)).length;
+    document.getElementById('count-bloomed').textContent = seeds.filter(s => s.status === 'bloomed').length;
+    document.getElementById('count-wilted').textContent = seeds.filter(s => s.status === 'wilted').length;
+
+    updateGardenSync(pending.length);
+  } catch {}
+}
+
+function updateGardenSync(pendingCount) {
+  const icon = document.getElementById('sync-icon');
+  const title = document.getElementById('sync-title');
+  const desc = document.getElementById('sync-desc');
+
+  if (!navigator.onLine) {
+    icon.style.color = 'var(--text-muted)';
+    title.textContent = 'Offline';
+    desc.textContent = 'Ideas saved locally — will sync when connected';
+  } else if (pendingCount > 0) {
+    icon.style.color = 'var(--yellow)';
+    title.textContent = pendingCount + ' pending';
+    desc.textContent = 'Tap "Sync Now" to push to dashboard';
+  } else {
+    icon.style.color = 'var(--green)';
+    title.textContent = 'All synced';
+    desc.textContent = 'Your garden is up to date';
+  }
+}
+
+async function syncNow() {
+  const badge = document.getElementById('online-badge');
+  badge.className = 'header-badge syncing';
+  document.getElementById('online-text').textContent = 'syncing…';
+
+  try {
+    const pending = await dbGetAll('pending_seeds');
+    let synced = 0;
+    for (const seed of pending) {
+      try {
+        const resp = await fetch('/api/v1/seeds', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Offline-Sync': '1' },
+          body: JSON.stringify(seed),
+        });
+        if (resp.ok) {
+          seed.synced = true;
+          await dbPut('seeds', seed);
+          await dbDelete('pending_seeds', seed.id);
+          synced++;
+        }
+      } catch {}
+    }
+    if (synced) showToast('✓ ' + synced + ' idea(s) synced', 'success');
+    else if (pending.length === 0) showToast('Already up to date', '');
+  } catch {}
+
+  updateOnlineStatus();
+  updatePendingBadge();
+  if (currentTab === 'garden') loadGarden();
+}
+
+async function updatePendingBadge() {
+  try {
+    const pending = await dbGetAll('pending_seeds');
+    const badge = document.getElementById('pending-badge');
+    if (pending.length > 0) {
+      badge.textContent = pending.length > 9 ? '9+' : pending.length;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch {}
+}
+
+// ── Seed Detail ───────────────────────────────────────────────────────────────
+function showSeedDetail(id) {
+  const seed = allSeeds.find(s => s.id === id);
+  if (!seed) return;
+  const status = seed.status;
+  const actions = status === 'planted'
+    ? `<button onclick="updateSeedStatus('${id}','growing',this)" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Mark Growing</button>`
+    : status === 'growing'
+    ? `<button onclick="updateSeedStatus('${id}','bloomed',this)" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Mark Bloomed</button>`
+    : '';
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,0.7)';
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+  sheet.innerHTML = `
+    <div style="background:var(--bg2);border-radius:16px 16px 0 0;padding:20px;max-height:70vh;overflow-y:auto;padding-bottom:calc(var(--safe-bottom)+20px)">
+      <div style="width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px"></div>
+      <div style="font-size:16px;line-height:1.5;margin-bottom:12px">${escHtml(seed.intent)}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
+        ${stageEmoji(status)} ${status} · ${timeAgo(seed.date)}${seed.platform ? ' · ' + seed.platform : ''}
+        ${!seed.synced ? ' · <span style="color:var(--yellow)">not synced</span>' : ''}
+      </div>
+      <div style="display:flex;gap:8px">
+        ${actions}
+        <button onclick="updateSeedStatus('${id}','wilted',this)" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:13px;cursor:pointer">Wilt</button>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text-dim);font-size:13px;cursor:pointer">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(sheet);
+}
+
+async function updateSeedStatus(id, status, btn) {
+  const seed = allSeeds.find(s => s.id === id);
+  if (!seed) return;
+  seed.status = status;
+  await dbPut('seeds', seed);
+  if (!seed.synced) await dbPut('pending_seeds', seed);
+  btn.closest('[style*=fixed]').remove();
+  showToast(stageEmoji(status) + ' Marked as ' + status, 'success');
+  allSeeds = [];
+  loadRecentSeeds();
+  if (currentTab === 'garden') loadGarden();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return min + 'm ago';
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+// ── Handle hash-based routing ─────────────────────────────────────────────────
+function handleHash() {
+  const hash = location.hash.slice(1);
+  if (['capture','search','import','garden'].includes(hash)) switchTab(hash);
+}
+window.addEventListener('hashchange', handleHash);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try { db = await openDB(); } catch { showToast('Storage unavailable', 'error'); return; }
+  setupSpeech();
+  updateOnlineStatus();
+  handleHash();
+  await loadRecentSeeds();
+  await updatePendingBadge();
+}
+
+init();
+</script>
+</body>
+</html>

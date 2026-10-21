@@ -1,0 +1,14 @@
+{$SEED_REFLECTIONS_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy seed-reflections:8476
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+    request_body {
+        max_size {$SEED_REFLECTIONS_PROXY_MAX_BODY:2GB}
+    }
+}

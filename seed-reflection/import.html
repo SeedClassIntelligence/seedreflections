@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Conversations — Seed Reflection</title>
+  <meta name="description" content="Upload your ChatGPT or Claude conversation export. Get every conversation analyzed for lost ideas. Runs entirely in your browser.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .page-hero { padding: 60px 5% 40px; background: radial-gradient(ellipse at 50% 0%, rgba(6,182,212,.06) 0%, transparent 60%); }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(28px, 5vw, 48px); margin-bottom: 10px; }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 580px; }
+
+    .import-section { padding: 0 5% 80px; }
+    .import-shell { max-width: 860px; margin: 0 auto; }
+
+    .format-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 600px) { .format-cards { grid-template-columns: 1fr; } }
+    .format-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .format-card .fmt-icon { font-size: 28px; flex-shrink: 0; }
+    .format-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .format-card p { font-size: 12px; color: var(--text3); line-height: 1.5; }
+    .format-card .fmt-steps { font-size: 12px; color: var(--text3); margin-top: 8px; list-style: decimal; padding-left: 16px; line-height: 1.8; }
+
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 14px;
+      padding: 56px 24px; text-align: center; cursor: pointer;
+      transition: all .2s; background: var(--bg-card);
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--cyan); background: var(--cyan-dim); }
+    .upload-icon { font-size: 52px; margin-bottom: 16px; }
+    .upload-zone h2 { font-family: var(--font-head); font-size: 24px; margin-bottom: 8px; }
+    .upload-zone p { color: var(--text3); font-size: 14px; margin-bottom: 20px; }
+    .upload-zone .supported { font-family: var(--font-mono); font-size: 12px; color: var(--text3); background: var(--bg-raised); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; display: inline-block; margin-bottom: 20px; }
+    #file-input { display: none; }
+
+    .privacy-banner {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan); border-radius: 10px;
+      padding: 16px 20px; margin: 20px 0;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .privacy-banner .priv-icon { font-size: 22px; flex-shrink: 0; }
+    .privacy-banner h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--cyan); }
+    .privacy-banner p { font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+    .conv-header { display: flex; justify-content: space-between; align-items: center; margin: 28px 0 14px; flex-wrap: wrap; gap: 10px; }
+    .conv-header h2 { font-size: 18px; font-weight: 700; }
+    .conv-search { display: flex; gap: 8px; }
+    .conv-search input { width: 220px; }
+
+    .conv-list { display: flex; flex-direction: column; gap: 8px; }
+    .conv-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; cursor: pointer; transition: all .15s;
+    }
+    .conv-item:hover { border-color: var(--cyan); background: var(--bg-raised); }
+    .conv-item .ci-left { flex: 1; min-width: 0; }
+    .conv-item .ci-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-item .ci-preview { font-size: 12px; color: var(--text3); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-item .ci-meta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+    .conv-item .ci-chip { font-family: var(--font-mono); font-size: 11px; color: var(--text3); background: var(--bg-raised); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; }
+    .conv-item .ci-right { flex-shrink: 0; text-align: right; }
+
+    .selected-conv {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan); border-radius: 12px;
+      padding: 20px 24px; margin: 28px 0;
+    }
+    .selected-conv h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .selected-conv .conv-transcript {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px; font-size: 12.5px; font-family: var(--font-mono);
+      color: var(--text3); max-height: 200px; overflow-y: auto;
+      white-space: pre-wrap; line-height: 1.6; margin: 12px 0;
+    }
+
+    .result-area {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; margin-top: 24px;
+    }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+
+    .stats-bar { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+    .stat-chip {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 16px;
+      font-size: 12px; color: var(--text3);
+    }
+    .stat-chip strong { color: var(--text); font-size: 20px; display: block; font-family: var(--font-mono); }
+
+    .api-key-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .api-key-bar .key-status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .key-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .key-dot.set { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .key-dot.unset { background: var(--amber); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="index.html#generate">Generate</a>
+    <a href="snippets.html" class="hide-mobile">Snippets</a>
+    <a href="import.html" class="active">Import</a>
+    <a href="instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+    <a href="../dashboard.html" class="nav-badge dev-link hide-mobile" title="SRT-1 Command Center (requires local middleware)" target="_blank" rel="noopener">⚙ Dev Dashboard</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container-lg">
+    <div class="badge badge-cyan" style="margin-bottom:16px;">📤 Conversation Import</div>
+    <h1>Recover ideas from<br><em style="font-style:italic;color:var(--cyan);">every conversation</em> you've had.</h1>
+    <p>Upload your ChatGPT or Claude export. Browse every conversation. Reflect on any one of them — right in your browser.</p>
+  </div>
+</section>
+
+<section class="import-section">
+  <div class="import-shell">
+
+    <!-- HOW TO EXPORT -->
+    <div class="format-cards">
+      <div class="format-card">
+        <div class="fmt-icon">🟢</div>
+        <div>
+          <h3>ChatGPT Export</h3>
+          <p>Download your data from OpenAI's settings page.</p>
+          <ol class="fmt-steps">
+            <li>Open ChatGPT → Settings → Data Controls</li>
+            <li>Click "Export data"</li>
+            <li>Download the zip file from your email</li>
+            <li>Upload the zip <strong>or</strong> extract <code>conversations.json</code></li>
+          </ol>
+        </div>
+      </div>
+      <div class="format-card">
+        <div class="fmt-icon">🟣</div>
+        <div>
+          <h3>Claude Export</h3>
+          <p>Download your conversations from Anthropic's privacy portal.</p>
+          <ol class="fmt-steps">
+            <li>Visit claude.ai → Settings → Privacy</li>
+            <li>Click "Export conversations"</li>
+            <li>Download the JSON file</li>
+            <li>Upload it here</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIVACY NOTICE -->
+    <div class="privacy-banner">
+      <div class="priv-icon">🔒</div>
+      <div>
+        <h4>Your conversations stay private.</h4>
+        <p>All file parsing happens entirely in your browser using JavaScript. Nothing is uploaded to any server. Your conversations are never stored anywhere. When you click "Reflect," the conversation text is sent to Claude via the Anthropic API to generate your report — that is the only external request made.</p>
+      </div>
+    </div>
+
+    <!-- API KEY BAR -->
+    <div class="api-key-bar" id="api-key-bar">
+      <div class="key-status">
+        <div class="key-dot unset" id="key-dot"></div>
+        <span id="key-label">No API key set — <strong>required for reflection</strong></span>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-secondary" onclick="showKeyModal()">Set API Key</button>
+      </div>
+    </div>
+
+    <!-- UPLOAD ZONE -->
+    <div id="upload-section">
+      <div class="upload-zone" id="upload-zone"
+        onclick="document.getElementById('file-input').click()"
+        ondragover="handleDragOver(event)"
+        ondragleave="handleDragLeave(event)"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon">📁</div>
+        <h2>Upload your conversation export</h2>
+        <p>Drag and drop a file here, or click to browse.</p>
+        <div class="supported">.json &nbsp;/&nbsp; conversations.json</div>
+        <br>
+        <button class="btn btn-secondary" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choose file</button>
+        <input type="file" id="file-input" accept=".json,.zip" onchange="handleFileSelect(event)">
+      </div>
+    </div>
+
+    <!-- CONVERSATION LIST -->
+    <div id="conv-section" class="hidden">
+      <div class="conv-header">
+        <div>
+          <h2 id="conv-count-title">0 conversations</h2>
+          <div class="stats-bar" id="stats-bar"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="search-input" placeholder="Search conversations…" style="width:220px;" oninput="filterConvs()">
+          <button class="btn btn-ghost btn-sm" onclick="clearAll()">✕ Clear</button>
+        </div>
+      </div>
+      <div class="conv-list" id="conv-list"></div>
+    </div>
+
+    <!-- SELECTED CONVERSATION -->
+    <div id="selected-section" class="hidden">
+      <div class="selected-conv">
+        <h3 id="selected-title"></h3>
+        <div id="selected-meta" style="font-size:12px;color:var(--text3);margin-bottom:10px;"></div>
+        <div class="conv-transcript" id="selected-transcript"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="reflect-btn" onclick="runReflection()">🌱 Reflect on This Conversation</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearSelected()">← Back to list</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFLECTION RESULT -->
+    <div class="result-area hidden" id="result-area">
+      <div class="result-header">
+        <span style="font-family:var(--font-head);font-size:20px;">Seed Reflection Report</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-ghost" onclick="saveReport()">💾 Save</button>
+          <button class="btn btn-sm btn-secondary" onclick="clearResult()">✕ Clear</button>
+        </div>
+      </div>
+      <div id="loading-state" class="seed-growing hidden">
+        <div class="seed-anim">🌱</div>
+        <p>Reflecting on your conversation…</p>
+      </div>
+      <div class="reflection-output" id="reflection-output"></div>
+      <div id="sig-block"></div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand"><strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.</div>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA</div>
+</footer>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay hidden" id="key-modal">
+  <div class="modal">
+    <h2>🔑 Add your Anthropic API key</h2>
+    <p>Stored only in your browser. Never sent anywhere except Anthropic's API.</p>
+    <label>Anthropic API Key</label>
+    <input type="password" id="key-input" placeholder="sk-ant-api03-…" style="margin-bottom:16px;">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;">
+      Get yours at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+      <button class="btn btn-ghost" onclick="closeKeyModal()">Cancel</button>
+      <button class="btn btn-ghost" style="margin-left:auto;color:var(--red);" onclick="clearApiKey()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are a Seed Reflection specialist. Analyze this entire conversation and produce a structured Seed Reflection Report.
+
+A "Seed" is any idea, task, goal, project, question, or plan that was introduced. For each seed, identify: what it is, its status (active / completed / abandoned / drifting), and where it appears.
+
+## 🌱 Active Seeds
+## 🌿 Completed Seeds
+## 🍂 Abandoned Seeds
+For each abandoned seed: explain why it was left behind and what would restart it.
+## 🌊 Drift Points
+## 🎯 Recovery Recommendations
+Top 3 seeds to pick up, in priority order, with exact restart instructions.
+## 📊 Session Summary
+
+End with:
+---SEED-SIGNATURE---
+SRT-1 Reflection Complete
+Seed Signature: SCIA-REFLECT-FULL
+Seeds Found: [n]
+Abandoned: [n]
+Recovered: [n]
+Drift Points: [n]
+Coherence: [high/medium/low]
+Platform: [platform if visible, else Unknown]
+Timestamp: [ISO 8601]
+Protocol: SCIA v4.0
+---END-SIGNATURE---`;
+
+// ── API KEY ──────────────────────────────────────────────────────────────────
+function loadApiKey() { return localStorage.getItem('sr_api_key') || ''; }
+function updateKeyStatus() {
+  const key = loadApiKey();
+  document.getElementById('key-dot').className = 'key-dot ' + (key ? 'set' : 'unset');
+  document.getElementById('key-label').innerHTML = key
+    ? 'API key set — <strong>Reflect mode active</strong>'
+    : 'No API key — <strong>required for reflection</strong>';
+}
+function showKeyModal() { document.getElementById('key-input').value = loadApiKey(); document.getElementById('key-modal').classList.remove('hidden'); }
+function closeKeyModal() { document.getElementById('key-modal').classList.add('hidden'); }
+function saveApiKey() { const v = document.getElementById('key-input').value.trim(); if (!v) return alert('Please enter a key.'); localStorage.setItem('sr_api_key', v); closeKeyModal(); updateKeyStatus(); }
+function clearApiKey() { if (!confirm('Remove API key?')) return; localStorage.removeItem('sr_api_key'); closeKeyModal(); updateKeyStatus(); }
+document.getElementById('key-modal').addEventListener('click', e => { if (e.target === document.getElementById('key-modal')) closeKeyModal(); });
+
+// ── FILE HANDLING ────────────────────────────────────────────────────────────
+let allConversations = [];
+let filteredConversations = [];
+let selectedConv = null;
+let reportText = '';
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag-over'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }
+function handleFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+async function processFile(file) {
+  try {
+    if (file.name.endsWith('.zip')) {
+      alert('For ChatGPT ZIP exports: extract the zip and upload the conversations.json file directly.');
+      return;
+    }
+    const text = await file.text();
+    const data = JSON.parse(text);
+    allConversations = parseExport(data, file.name);
+    filteredConversations = [...allConversations];
+    renderStats();
+    renderList(filteredConversations);
+    document.getElementById('upload-section').classList.add('hidden');
+    document.getElementById('conv-section').classList.remove('hidden');
+  } catch (err) {
+    alert('Could not parse file. Make sure it is a valid JSON export.\n\n' + err.message);
+  }
+}
+
+function parseExport(data, filename) {
+  if (Array.isArray(data) && data[0]?.mapping) return data.map(parseChatGPT);
+  if (Array.isArray(data) && (data[0]?.chat_messages || data[0]?.messages)) return data.map(parseClaude);
+  if (data?.mapping) return [parseChatGPT(data)];
+  if (data?.chat_messages || data?.messages) return [parseClaude(data)];
+  if (Array.isArray(data)) return data.map((c, i) => ({ id: String(i), title: c.title || `Conversation ${i+1}`, date: '—', messageCount: 0, preview: '', transcript: JSON.stringify(c).slice(0, 2000), platform: 'Unknown' }));
+  return [];
+}
+
+function parseChatGPT(c) {
+  const messages = [];
+  const mapping = c.mapping || {};
+  function walk(nodeId) {
+    const node = mapping[nodeId]; if (!node) return;
+    const msg = node.message;
+    if (msg?.content?.parts && msg.author?.role !== 'system') {
+      const text = msg.content.parts.filter(p => typeof p === 'string').join('');
+      if (text.trim()) messages.push({ role: msg.author.role, content: text });
+    }
+    (node.children || []).forEach(walk);
+  }
+  const rootId = Object.values(mapping).find(n => !n.parent)?.id;
+  if (rootId) walk(rootId);
+  const transcript = messages.map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n\n');
+  return { id: c.id || String(Math.random()), title: c.title || 'Untitled', date: c.create_time ? new Date(c.create_time * 1000).toLocaleDateString() : '—', messageCount: messages.length, preview: messages.find(m => m.role === 'user')?.content?.slice(0, 120) || '', transcript, platform: 'ChatGPT' };
+}
+
+function parseClaude(c) {
+  const msgs = (c.chat_messages || c.messages || []).map(m => ({ role: m.sender || m.role || 'user', content: typeof m.text === 'string' ? m.text : (Array.isArray(m.content) ? m.content.map(b => b.text || '').join('') : String(m.content || '')) })).filter(m => m.content.trim());
+  const transcript = msgs.map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n\n');
+  return { id: c.uuid || String(Math.random()), title: c.name || 'Untitled', date: c.created_at ? new Date(c.created_at).toLocaleDateString() : '—', messageCount: msgs.length, preview: msgs.find(m => m.role === 'human' || m.role === 'user')?.content?.slice(0, 120) || '', transcript, platform: 'Claude' };
+}
+
+function renderStats() {
+  const total = allConversations.length;
+  const platforms = [...new Set(allConversations.map(c => c.platform))];
+  const totalMsgs = allConversations.reduce((s, c) => s + c.messageCount, 0);
+  document.getElementById('conv-count-title').textContent = `${total} conversation${total !== 1 ? 's' : ''} found`;
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-chip"><strong>${total}</strong>Conversations</div>
+    <div class="stat-chip"><strong>${totalMsgs.toLocaleString()}</strong>Messages</div>
+    <div class="stat-chip"><strong>${platforms.join(' + ')}</strong>Platform</div>`;
+}
+
+function filterConvs() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  filteredConversations = q ? allConversations.filter(c => c.title.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q)) : [...allConversations];
+  renderList(filteredConversations);
+}
+
+function renderList(convs) {
+  const list = document.getElementById('conv-list');
+  if (!convs.length) { list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);">No conversations match your search.</div>'; return; }
+  list.innerHTML = convs.map((c, i) => `
+    <div class="conv-item" onclick="selectConv('${escHtml(c.id)}')">
+      <div class="ci-left">
+        <div class="ci-title">${escHtml(c.title)}</div>
+        <div class="ci-preview">${escHtml(c.preview)}${c.preview.length >= 120 ? '…' : ''}</div>
+        <div class="ci-meta">
+          <span class="ci-chip">${escHtml(c.date)}</span>
+          <span class="ci-chip">${c.messageCount} messages</span>
+          <span class="ci-chip">${escHtml(c.platform)}</span>
+        </div>
+      </div>
+      <div class="ci-right">
+        <button class="btn btn-sm btn-primary">Reflect →</button>
+      </div>
+    </div>`).join('');
+}
+
+function selectConv(id) {
+  selectedConv = allConversations.find(c => c.id === id);
+  if (!selectedConv) return;
+  document.getElementById('selected-title').textContent = selectedConv.title;
+  document.getElementById('selected-meta').textContent = `${selectedConv.date} · ${selectedConv.messageCount} messages · ${selectedConv.platform}`;
+  document.getElementById('selected-transcript').textContent = selectedConv.transcript.slice(0, 1000) + (selectedConv.transcript.length > 1000 ? '\n\n[…truncated for preview…]' : '');
+  document.getElementById('selected-section').classList.remove('hidden');
+  document.getElementById('result-area').classList.add('hidden');
+  document.getElementById('selected-section').scrollIntoView({ behavior: 'smooth' });
+}
+function clearSelected() { document.getElementById('selected-section').classList.add('hidden'); }
+function clearAll() { allConversations = []; filteredConversations = []; selectedConv = null; document.getElementById('upload-section').classList.remove('hidden'); document.getElementById('conv-section').classList.add('hidden'); document.getElementById('selected-section').classList.add('hidden'); document.getElementById('result-area').classList.add('hidden'); document.getElementById('file-input').value = ''; }
+function clearResult() { document.getElementById('result-area').classList.add('hidden'); reportText = ''; }
+
+// ── REFLECTION ───────────────────────────────────────────────────────────────
+async function runReflection() {
+  if (!selectedConv) return;
+  const apiKey = loadApiKey();
+  if (!apiKey) { showKeyModal(); return; }
+
+  const area = document.getElementById('result-area');
+  const loading = document.getElementById('loading-state');
+  const output = document.getElementById('reflection-output');
+  const sigBlock = document.getElementById('sig-block');
+  const btn = document.getElementById('reflect-btn');
+
+  area.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  output.innerHTML = '';
+  sigBlock.innerHTML = '';
+  reportText = '';
+  btn.disabled = true;
+  area.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, stream: true, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: selectedConv.transcript }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `API error ${res.status}`); }
+    loading.classList.add('hidden');
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '', full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const d = line.slice(6).trim();
+        if (d === '[DONE]') continue;
+        try { const ev = JSON.parse(d); if (ev.type === 'content_block_delta' && ev.delta?.text) { full += ev.delta.text; reportText = full; output.innerHTML = renderMd(stripSig(full)); } } catch (_) {}
+      }
+    }
+    const sig = parseSig(full);
+    if (sig) sigBlock.innerHTML = renderSig(sig);
+    output.innerHTML = renderMd(stripSig(full));
+  } catch (err) {
+    loading.classList.add('hidden');
+    output.innerHTML = `<div style="color:var(--red);padding:20px;background:rgba(239,68,68,.08);border-radius:8px;border:1px solid rgba(239,68,68,.2);"><strong>Error:</strong> ${escHtml(err.message)}</div>`;
+  } finally { btn.disabled = false; }
+}
+
+function saveReport() { if (!reportText) return; const a = document.createElement('a'); a.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(reportText); a.download = 'seed-reflection-report.md'; a.click(); }
+
+// ── RENDERING ─────────────────────────────────────────────────────────────────
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function stripSig(t) { return t.replace(/---SEED-SIGNATURE---[\s\S]*?---END-SIGNATURE---/g,'').trim(); }
+function parseSig(t) { const m = t.match(/---SEED-SIGNATURE---([\s\S]*?)---END-SIGNATURE---/); if (!m) return null; const o = {}; m[1].trim().split('\n').forEach(l => { const i = l.indexOf(':'); if (i>-1) o[l.slice(0,i).trim()]=l.slice(i+1).trim(); }); return o; }
+function renderSig(s) { const id='SR-'+Date.now().toString(36).toUpperCase(); const st=s['Seed Signature']||s['Type']||'SCIA-REFLECT-FULL'; return `<div class="seed-signature"><div class="sig-header">SRT-1 Seed Reflection • SCIA v4.0</div><div class="sig-row"><div class="sig-field"><span class="sig-label">ID</span><span class="sig-value sig-id">${id}</span></div><div class="sig-field"><span class="sig-label">Type</span><span class="sig-value">${escHtml(st)}</span></div><div class="sig-field"><span class="sig-label">Seeds Found</span><span class="sig-value text-green">${escHtml(s['Seeds Found']||'—')}</span></div><div class="sig-field"><span class="sig-label">Abandoned</span><span class="sig-value">${escHtml(s['Abandoned']||'—')}</span></div><div class="sig-field"><span class="sig-label">Coherence</span><span class="sig-value text-cyan">${escHtml(s['Coherence']||'—')}</span></div><div class="sig-field"><span class="sig-label">Protocol</span><span class="sig-value text-purple">${escHtml(s['Protocol']||'SCIA v4.0')}</span></div></div><div class="sig-footer">${escHtml(s['Timestamp']||new Date().toISOString())} • Seed-Class Intelligence Architecture</div></div>`; }
+function renderMd(t) { if (!t) return ''; let h = escHtml(t); h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>'); h=h.replace(/^## (.+)$/gm,'<h2>$1</h2>'); h=h.replace(/^# (.+)$/gm,'<h2>$1</h2>'); h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); h=h.replace(/\*([^*]+)\*/g,'<em>$1</em>'); h=h.replace(/`([^`]+)`/g,'<code>$1</code>'); h=h.replace(/^---$/gm,'<hr>'); h=h.replace(/^[*\-] (.+)$/gm,'<li>$1</li>'); h=h.replace(/(<li>.*<\/li>\n?)+/g,m=>'<ul>'+m+'</ul>'); h=h.replace(/\n\n+/g,'</p><p>'); h=h.replace(/\n/g,'<br>'); return '<p>'+h+'</p>'; }
+
+updateKeyStatus();
+</script>
+</body>
+</html>

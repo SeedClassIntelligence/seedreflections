@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Thread Starter — SRT-1 Protocol</title>
+  <meta name="description" content="Start any AI conversation with the SRT-1 protocol activated. Copy your preferred thread starter and paste it to begin a focused, drift-free session.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* ── PAGE HERO ──────────────────────────── */
+    .page-hero {
+      padding: 64px 5% 44px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,.07) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 600; color: var(--green);
+      background: var(--green-dim); border: 1px solid rgba(34,197,94,.25);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 18px;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(30px, 5.5vw, 52px); margin-bottom: 12px; line-height: 1.15; }
+    .page-hero h1 em { font-style: italic; color: var(--green); }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 580px; line-height: 1.7; }
+    .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .hero-tag { font-size: 12px; color: var(--text3); background: var(--bg-raised); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; }
+
+    /* ── HOW IT WORKS ───────────────────────── */
+    .how-section { padding: 0 5% 48px; }
+    .how-inner { max-width: 1000px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text3); margin-bottom: 20px;
+    }
+    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .steps-row { grid-template-columns: 1fr; } }
+    .step-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      background: var(--green-dim); border: 1px solid rgba(34,197,94,.25);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: var(--green);
+    }
+    .step-text h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .step-text p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+    /* ── THREAD STARTER MAIN ────────────────── */
+    .starters-section { padding: 0 5% 80px; }
+    .starters-inner { max-width: 1000px; margin: 0 auto; }
+
+    /* Tab switcher */
+    .variant-tabs {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .vtab {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text3); cursor: pointer; font-family: var(--font-body);
+      transition: all .15s;
+    }
+    .vtab:hover { border-color: var(--border-hi); color: var(--text); }
+    .vtab.active { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+    /* Starter card */
+    .starter-panel { display: none; }
+    .starter-panel.active { display: block; }
+
+    .starter-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      border-left: 3px solid var(--green);
+      margin-bottom: 24px;
+    }
+
+    .starter-head {
+      padding: 20px 24px 16px;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .starter-head-left { display: flex; align-items: center; gap: 12px; }
+    .starter-icon {
+      width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+      background: var(--green-dim); border: 1px solid rgba(34,197,94,.25);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .starter-title { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+    .starter-when { font-size: 13px; color: var(--text3); }
+    .starter-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+    .starter-body { padding: 20px 24px 24px; }
+
+    .starter-text-wrap { position: relative; margin-bottom: 16px; }
+    .starter-text {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 18px 20px; font-family: var(--font-mono); font-size: 12.5px;
+      color: var(--text2); white-space: pre-wrap; word-break: break-word;
+      line-height: 1.75;
+    }
+    .starter-text .var-slot {
+      background: rgba(34,197,94,.15); color: var(--green);
+      border-radius: 4px; padding: 1px 5px; font-weight: 600;
+    }
+    .starter-text .section-head {
+      color: var(--cyan); font-weight: 600;
+    }
+    .starter-text .number-point {
+      color: var(--purple);
+    }
+
+    /* Fill-in helper */
+    .fill-helper {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 16px;
+    }
+    .fill-helper h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text2); }
+    .fill-row { display: flex; flex-direction: column; gap: 8px; }
+    .fill-input-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .fill-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .fill-input {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+      padding: 9px 14px; color: var(--text); font-family: var(--font-body);
+      font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    .fill-input:focus { border-color: var(--green); }
+    .fill-input::placeholder { color: var(--text3); }
+
+    /* Copy button with checkmark */
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; font-family: var(--font-body);
+      background: var(--green-dim); color: var(--green);
+      border: 1px solid rgba(34,197,94,.3);
+      transition: all .15s;
+    }
+    .copy-btn:hover { background: rgba(34,197,94,.2); }
+    .copy-btn.copied { background: rgba(34,197,94,.25); color: var(--green); border-color: var(--green); }
+    .copy-btn.copied::before { content: '✓ '; }
+
+    .copy-btn-primary {
+      padding: 10px 22px; background: var(--green); color: #000;
+      font-size: 14px; border: none;
+    }
+    .copy-btn-primary:hover { background: #1aaa4a; }
+    .copy-btn-primary.copied { background: #0d8a3a; }
+
+    .starter-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .platform-works { font-size: 12px; color: var(--text3); }
+    .platform-icons { display: inline-flex; gap: 6px; margin-left: 6px; }
+    .platform-chip {
+      font-size: 11px; background: var(--bg-raised); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 4px; color: var(--text3);
+    }
+
+    /* ── PLATFORM VARIANTS ──────────────────── */
+    .platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 700px) { .platform-grid { grid-template-columns: 1fr; } }
+
+    .platform-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      transition: border-color .2s;
+    }
+    .platform-card:hover { border-color: var(--border-hi); }
+
+    .platform-card.claude-card  { border-left: 3px solid #cc785c; }
+    .platform-card.chatgpt-card { border-left: 3px solid #10a37f; }
+    .platform-card.gemini-card  { border-left: 3px solid #4285f4; }
+    .platform-card.copilot-card { border-left: 3px solid #0078d4; }
+
+    .pc-head {
+      padding: 16px 18px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .pc-logo { display: flex; align-items: center; gap: 10px; }
+    .pc-emoji { font-size: 22px; }
+    .pc-name { font-size: 15px; font-weight: 700; }
+    .pc-note { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .pc-body { padding: 14px 18px 18px; }
+    .pc-text {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 16px; font-family: var(--font-mono); font-size: 12px;
+      color: var(--text2); white-space: pre-wrap; word-break: break-word;
+      line-height: 1.7; margin-bottom: 12px;
+      max-height: 180px; overflow: hidden; position: relative;
+    }
+    .pc-text.expanded { max-height: none; }
+    .pc-text.collapsible::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+    .pc-text.expanded.collapsible::after { display: none; }
+    .pc-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .pc-expand { background: none; border: none; color: var(--text3); font-size: 12px; cursor: pointer; font-family: var(--font-body); text-decoration: underline; padding: 0; }
+    .pc-expand:hover { color: var(--text2); }
+
+    /* ── TIPS SECTION ───────────────────────── */
+    .tips-section { padding: 0 5% 60px; }
+    .tips-inner { max-width: 1000px; margin: 0 auto; }
+    .tips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 640px) { .tips-grid { grid-template-columns: 1fr; } }
+    .tip-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .tip-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+    .tip-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .tip-body p { font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+    /* ── CTA ────────────────────────────────── */
+    .cta-section {
+      padding: 48px 5% 80px;
+      background: radial-gradient(ellipse at 50% 100%, rgba(34,197,94,.05) 0%, transparent 60%);
+    }
+    .cta-box {
+      max-width: 640px; margin: 0 auto; text-align: center;
+      background: var(--bg-card); border: 1px solid rgba(34,197,94,.2);
+      border-radius: 16px; padding: 40px 36px;
+    }
+    .cta-box h2 { font-family: var(--font-head); font-size: 28px; margin-bottom: 12px; }
+    .cta-box p { color: var(--text2); font-size: 15px; margin-bottom: 28px; line-height: 1.6; }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── FOOTER ─────────────────────────────── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 5%; font-size: 13px; color: var(--text3);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer a { color: var(--text3); }
+    .footer a:hover { color: var(--cyan); text-decoration: none; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="generator.html">Generator</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="new-thread.html" class="active">New Thread</a>
+    <a href="custom-instructions.html" class="hide-mobile">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="page-hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    SRT-1 Protocol
+  </div>
+  <h1>Start <em>every conversation</em><br>with intention.</h1>
+  <p>Paste a thread starter into any AI before you begin. Activates seed tracking, drift detection, and automatic reflection summaries — in any AI assistant.</p>
+  <div class="hero-tags">
+    <span class="hero-tag">✅ Works in Claude</span>
+    <span class="hero-tag">✅ Works in ChatGPT</span>
+    <span class="hero-tag">✅ Works in Gemini</span>
+    <span class="hero-tag">✅ Works in Copilot</span>
+    <span class="hero-tag">✅ Works anywhere</span>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="how-inner">
+    <div class="section-label">How it works</div>
+    <div class="steps-row">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <h3>Copy your starter</h3>
+          <p>Choose the full protocol, quick version, or a platform-optimized variant. Fill in your seed goal.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <h3>Paste at the start</h3>
+          <p>Open a new chat in any AI assistant and paste the starter as your first message before anything else.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <h3>Work with focus</h3>
+          <p>The AI will track your seed, flag drift, and deliver a reflection report when you're done.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THREAD STARTERS -->
+<section class="starters-section">
+  <div class="starters-inner">
+
+    <!-- Tabs -->
+    <div class="variant-tabs">
+      <button class="vtab active" onclick="switchTab('full',this)">🌱 Full Protocol</button>
+      <button class="vtab" onclick="switchTab('quick',this)">⚡ Quick Version</button>
+      <button class="vtab" onclick="switchTab('platform',this)">🎯 Platform-Optimized</button>
+      <button class="vtab" onclick="switchTab('developer',this)">💻 Developer Mode</button>
+    </div>
+
+    <!-- ── FULL PROTOCOL ── -->
+    <div class="starter-panel active" id="panel-full">
+      <div class="starter-card">
+        <div class="starter-head">
+          <div class="starter-head-left">
+            <div class="starter-icon">🌱</div>
+            <div>
+              <div class="starter-title">Full SRT-1 Protocol</div>
+              <div class="starter-when">Use when: Starting an important session — research, planning, debugging, writing</div>
+            </div>
+          </div>
+          <div class="starter-actions">
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-full', this)">Copy Protocol</button>
+          </div>
+        </div>
+        <div class="starter-body">
+
+          <div class="fill-helper">
+            <h4>✏️ Personalize before copying</h4>
+            <div class="fill-row">
+              <div class="fill-input-wrap">
+                <span class="fill-label">Your seed goal for this conversation</span>
+                <input class="fill-input" id="seed-goal-full" type="text"
+                  placeholder="e.g., Design the database schema for a multi-tenant SaaS app"
+                  oninput="updateSeedGoal('full')">
+              </div>
+            </div>
+          </div>
+
+          <div class="starter-text-wrap">
+            <div class="starter-text" id="text-full">=== SRT-1 PROTOCOL ACTIVATED ===
+
+I want this conversation to follow the SRT-1 (Seed Reflection Tool) protocol:
+
+<span class="number-point">1. SEED TRACKING:</span> My main goal/task for this conversation is:
+<span class="var-slot" id="goal-full-display">[ YOUR GOAL HERE ]</span>
+
+<span class="number-point">2. DRIFT DETECTION:</span> If we go off-topic, remind me of the original seed and ask if I want to branch or refocus.
+
+<span class="number-point">3. PROGRESS TRACKING:</span> Every few exchanges, briefly note what we've accomplished toward the seed.
+
+<span class="number-point">4. SEED COLLECTION:</span> Note any new ideas that come up as "[SEED FOUND: idea]" but don't chase them unless I ask.
+
+<span class="number-point">5. SESSION SUMMARY:</span> When we're done (or I say "reflect"), give me a reflection report:
+   • What we accomplished
+   • What's still pending
+   • New seeds discovered
+   • Recommended next actions
+
+Please acknowledge this protocol with "🌱 SRT-1 Active — Seed locked: [your summary of my goal]" and then let's begin.
+
+===</div>
+          </div>
+
+          <div class="starter-footer">
+            <div class="platform-works">
+              Works in:
+              <span class="platform-icons">
+                <span class="platform-chip">Claude</span>
+                <span class="platform-chip">ChatGPT</span>
+                <span class="platform-chip">Gemini</span>
+                <span class="platform-chip">Copilot</span>
+                <span class="platform-chip">Any LLM</span>
+              </span>
+            </div>
+            <button class="copy-btn" onclick="copyText('text-full', this)">📋 Copy plain text</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUICK VERSION ── -->
+    <div class="starter-panel" id="panel-quick">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <div class="starter-card">
+          <div class="starter-head">
+            <div class="starter-head-left">
+              <div class="starter-icon">⚡</div>
+              <div>
+                <div class="starter-title">One-Line Quick Start</div>
+                <div class="starter-when">Use when: You're in a hurry. Gets you 80% of SRT-1 in seconds.</div>
+              </div>
+            </div>
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-quick-1',this)">Copy</button>
+          </div>
+          <div class="starter-body">
+            <div class="fill-helper">
+              <h4>✏️ Fill in your goal</h4>
+              <input class="fill-input" id="seed-goal-quick" type="text"
+                placeholder="e.g., Refactor the auth module to use JWT"
+                oninput="updateSeedGoal('quick')">
+            </div>
+            <div class="starter-text" id="text-quick-1">Use SRT-1 protocol. My seed (goal) for this conversation: <span class="var-slot" id="goal-quick-display">[ YOUR GOAL ]</span>. Track progress, flag drift, note new ideas as [SEED], give reflection summary at the end.</div>
+            <div class="starter-footer" style="margin-top:14px">
+              <span class="platform-works">Works in any AI</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="starter-card">
+          <div class="starter-head">
+            <div class="starter-head-left">
+              <div class="starter-icon">🎯</div>
+              <div>
+                <div class="starter-title">Short Protocol (3 rules)</div>
+                <div class="starter-when">Use when: Medium-length sessions. Concise but structured.</div>
+              </div>
+            </div>
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-quick-2',this)">Copy</button>
+          </div>
+          <div class="starter-body">
+            <div class="starter-text" id="text-quick-2">SRT-1 Protocol — 3 rules for this conversation:
+1. My seed: <span class="var-slot">[YOUR GOAL]</span> — keep me focused on this.
+2. If we drift off-topic, say "Drift detected — refocus?"
+3. When I say "reflect", summarize: done, pending, new ideas found, next actions.
+
+Acknowledge with: "🌱 Seed locked."</div>
+            <div class="starter-footer" style="margin-top:14px">
+              <span class="platform-works">Works in any AI</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="starter-card">
+          <div class="starter-head">
+            <div class="starter-head-left">
+              <div class="starter-icon">📌</div>
+              <div>
+                <div class="starter-title">Resume Conversation</div>
+                <div class="starter-when">Use when: Continuing yesterday's session or picking up a paused project.</div>
+              </div>
+            </div>
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-quick-3',this)">Copy</button>
+          </div>
+          <div class="starter-body">
+            <div class="starter-text" id="text-quick-3">Resuming an SRT-1 session. Context:
+• Original seed: <span class="var-slot">[ORIGINAL GOAL]</span>
+• What we accomplished last time: <span class="var-slot">[SUMMARY OF PROGRESS]</span>
+• Where we left off: <span class="var-slot">[LAST THING DISCUSSED]</span>
+• Pending items: <span class="var-slot">[WHAT'S STILL TO DO]</span>
+
+Please pick up from where we left off. Use SRT-1 protocol: track progress, flag drift, summarize when done.</div>
+            <div class="starter-footer" style="margin-top:14px">
+              <span class="platform-works">Perfect for multi-session projects</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PLATFORM OPTIMIZED ── -->
+    <div class="starter-panel" id="panel-platform">
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">Tuned for each platform's response style and personality. Claude gets a more conversational opener; ChatGPT gets structure; Gemini gets personal context framing.</p>
+      <div class="platform-grid">
+
+        <!-- Claude -->
+        <div class="platform-card claude-card">
+          <div class="pc-head">
+            <div class="pc-logo">
+              <span class="pc-emoji">🟠</span>
+              <div>
+                <div class="pc-name">Claude (Anthropic)</div>
+                <div class="pc-note">New conversation → start of chat</div>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyText('pt-claude',this)">Copy</button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-text collapsible" id="pt-claude">Before we dive in, I'd like to set up a working protocol for our conversation.
+
+I'm using SRT-1 — a seed-based reflection system. Here's how I'd like this to work:
+
+My seed for this conversation is: [YOUR GOAL]
+
+As we work together, please:
+• Gently note if we start drifting from this goal
+• Flag any new ideas that emerge as "(New seed: ...)"
+• Every 4-5 exchanges, acknowledge progress briefly
+• When I say "reflect" or we wrap up, give me a summary: accomplished, pending, seeds found, next steps
+
+Ready? Please confirm with "Seed locked: [your one-line summary of my goal]" and then we can begin.</div>
+            <div class="pc-actions">
+              <button class="pc-expand" onclick="toggleExpand('pt-claude',this)">Show more</button>
+              <button class="copy-btn" onclick="copyText('pt-claude',this)">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ChatGPT -->
+        <div class="platform-card chatgpt-card">
+          <div class="pc-head">
+            <div class="pc-logo">
+              <span class="pc-emoji">🟢</span>
+              <div>
+                <div class="pc-name">ChatGPT (OpenAI)</div>
+                <div class="pc-note">Works best as the very first message</div>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyText('pt-chatgpt',this)">Copy</button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-text collapsible" id="pt-chatgpt">CONVERSATION SETUP — SRT-1 PROTOCOL
+
+This conversation has a structured goal. Please follow these rules:
+
+SEED (main goal): [YOUR GOAL]
+
+RULES:
+1. Keep every response focused on the seed above
+2. If I ask something off-topic, say "Off-seed: should I answer this or refocus?"
+3. Label any new ideas that come up: [SEED FOUND: idea]
+4. At the end (or when I say "reflect"), respond with:
+   ✅ ACCOMPLISHED: [list]
+   ⏳ PENDING: [list]
+   🌱 NEW SEEDS: [list]
+   ▶ NEXT ACTIONS: [list]
+
+Confirm with: "SRT-1 Active. Seed: [your 10-word summary]"</div>
+            <div class="pc-actions">
+              <button class="pc-expand" onclick="toggleExpand('pt-chatgpt',this)">Show more</button>
+              <button class="copy-btn" onclick="copyText('pt-chatgpt',this)">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gemini -->
+        <div class="platform-card gemini-card">
+          <div class="pc-head">
+            <div class="pc-logo">
+              <span class="pc-emoji">💠</span>
+              <div>
+                <div class="pc-name">Gemini (Google)</div>
+                <div class="pc-note">Personal context framing works best</div>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyText('pt-gemini',this)">Copy</button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-text collapsible" id="pt-gemini">Personal context: I use a productivity system called SRT-1 to stay focused during AI conversations. It works like this:
+
+At the start of each conversation, I define a "seed" — my main goal. Throughout our chat, I'd like you to help me stay on track.
+
+My seed for today: [YOUR GOAL]
+
+Please:
+1. Keep our conversation anchored to this goal
+2. Note if we wander with "Drift noticed — still relevant to your seed?"
+3. Capture any valuable tangents as "New seed: ..." without abandoning our main goal
+4. When I say "end session", give me a brief reflection: what we did, what's left, ideas captured
+
+This helps me stay productive and never lose good ideas. Ready?</div>
+            <div class="pc-actions">
+              <button class="pc-expand" onclick="toggleExpand('pt-gemini',this)">Show more</button>
+              <button class="copy-btn" onclick="copyText('pt-gemini',this)">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copilot -->
+        <div class="platform-card copilot-card">
+          <div class="pc-head">
+            <div class="pc-logo">
+              <span class="pc-emoji">🔵</span>
+              <div>
+                <div class="pc-name">Microsoft Copilot</div>
+                <div class="pc-note">Task-oriented framing preferred</div>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyText('pt-copilot',this)">Copy</button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-text collapsible" id="pt-copilot">Task-focused conversation setup:
+
+Primary objective: [YOUR GOAL]
+
+Conversation rules (SRT-1 Protocol):
+- Help me stay focused on the primary objective above
+- If we go off-track, say "Off-topic — want to return to main objective?"
+- Label new ideas that come up: [IDEA: description]
+- Progress check every few responses: note what we've covered
+- Session close (when I say "wrap up"): list completed, remaining, ideas found, suggested next steps
+
+Confirm you've noted the primary objective and we can begin.</div>
+            <div class="pc-actions">
+              <button class="pc-expand" onclick="toggleExpand('pt-copilot',this)">Show more</button>
+              <button class="copy-btn" onclick="copyText('pt-copilot',this)">Copy</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── DEVELOPER MODE ── -->
+    <div class="starter-panel" id="panel-developer">
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="starter-card">
+          <div class="starter-head">
+            <div class="starter-head-left">
+              <div class="starter-icon">💻</div>
+              <div>
+                <div class="starter-title">Developer / Code Session Starter</div>
+                <div class="starter-when">Use when: Debugging, building features, refactoring, architecture decisions</div>
+              </div>
+            </div>
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-dev',this)">Copy</button>
+          </div>
+          <div class="starter-body">
+            <div class="fill-helper">
+              <h4>✏️ Fill in your context</h4>
+              <div class="fill-row">
+                <div class="fill-input-wrap">
+                  <span class="fill-label">What you're building / fixing</span>
+                  <input class="fill-input" id="dev-task" type="text" placeholder="e.g., Fix the race condition in the payment webhook handler" oninput="updateDevText()">
+                </div>
+                <div class="fill-input-wrap">
+                  <span class="fill-label">Tech stack / language</span>
+                  <input class="fill-input" id="dev-stack" type="text" placeholder="e.g., Python / FastAPI / PostgreSQL" oninput="updateDevText()">
+                </div>
+              </div>
+            </div>
+            <div class="starter-text" id="text-dev">SRT-1 Developer Session — Protocol Activated
+
+Seed: <span class="var-slot" id="dev-task-display">[ TASK ]</span>
+Stack: <span class="var-slot" id="dev-stack-display">[ TECH STACK ]</span>
+
+Protocol rules for this session:
+1. SCOPE LOCK: Keep suggestions relevant to the seed above. Flag scope creep.
+2. DECISION LOG: When we make an architectural decision, note it as [DECISION: ...]
+3. DEBT TRACKER: If we introduce technical debt, note it as [DEBT: ...]
+4. IDEA CAPTURE: New feature ideas → [SEED: idea] — don't chase unless I say so
+5. SESSION WRAP: When I say "reflect", give me:
+   • What we built/fixed
+   • Decisions made (with rationale)
+   • Technical debt introduced
+   • Follow-up seeds / next steps
+   • Files modified
+
+Acknowledge: "🌱 Dev seed locked: [your summary]. Let's build."</div>
+            <div class="starter-footer" style="margin-top:14px">
+              <span class="platform-works">Optimized for Claude + ChatGPT code sessions</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="starter-card">
+          <div class="starter-head">
+            <div class="starter-head-left">
+              <div class="starter-icon">🔍</div>
+              <div>
+                <div class="starter-title">Research Session Starter</div>
+                <div class="starter-when">Use when: Deep research, competitive analysis, learning a new topic</div>
+              </div>
+            </div>
+            <button class="copy-btn-primary copy-btn" onclick="copyText('text-research',this)">Copy</button>
+          </div>
+          <div class="starter-body">
+            <div class="starter-text" id="text-research">SRT-1 Research Session
+
+Research seed: [WHAT YOU WANT TO UNDERSTAND / DECIDE]
+End goal: [WHAT DECISION OR OUTPUT THIS RESEARCH FEEDS INTO]
+Constraints: [TIMEFRAME / SCOPE / WHAT TO EXCLUDE]
+
+Protocol:
+1. Track which sub-questions we've answered vs. still open
+2. Flag when we're going deeper than needed for the end goal
+3. Capture sources / references as [SOURCE: ...]
+4. Note contradicting information as [CONFLICT: ...]
+5. Research wrap (when I say "synthesize"):
+   • Key findings (bullet summary)
+   • Open questions remaining
+   • Recommended decision / conclusion
+   • References cited
+
+Begin: acknowledge the research seed and ask your first clarifying question.</div>
+            <div class="starter-footer" style="margin-top:14px">
+              <span class="platform-works">Great for Perplexity, Claude, ChatGPT with browsing</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TIPS -->
+<section class="tips-section">
+  <div class="tips-inner">
+    <div class="section-label">Pro tips</div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon">📍</div>
+        <div class="tip-body">
+          <h4>Pin it as your first message</h4>
+          <p>The protocol only works if it's your very first message. Don't start chatting and add it later — the AI needs the context from the beginning.</p>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🌿</div>
+        <div class="tip-body">
+          <h4>Be specific with your seed</h4>
+          <p>"Write better code" → bad seed. "Refactor the UserAuth class to use dependency injection and add unit tests" → great seed. Specificity drives focus.</p>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">⚡</div>
+        <div class="tip-body">
+          <h4>Say "reflect" at any time</h4>
+          <p>Don't wait until the conversation ends. Mid-session reflections help you course-correct early and capture ideas before they're buried in long threads.</p>
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🔗</div>
+        <div class="tip-body">
+          <h4>Save the seeds that emerge</h4>
+          <p>The AI will label new ideas [SEED: ...]. Copy those into the <a href="index.html">Seed Reflection tool</a> or your task manager. Those are your next projects.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>Want SRT-1 always on?</h2>
+    <p>Set up custom instructions in your AI settings so the protocol activates automatically — no thread starter needed. Works in Claude, ChatGPT, Gemini, and Copilot.</p>
+    <div class="cta-btns">
+      <a href="custom-instructions.html" class="btn btn-primary">View Custom Instructions →</a>
+      <a href="snippets.html" class="btn btn-ghost">Browse All Snippets</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span>© 2026 SeedClassIntelligence — SRT-1 Protocol</span>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="custom-instructions.html">Instructions</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Home</a>
+  </div>
+</footer>
+
+<script>
+  // ── Tab switching ─────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.starter-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.vtab').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Copy to clipboard ─────────────────────
+  function copyText(id, btn) {
+    const el = document.getElementById(id);
+    const text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove('copied');
+      }, 2200);
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 2200);
+    });
+  }
+
+  // ── Expand/collapse ───────────────────────
+  function toggleExpand(id, btn) {
+    const el = document.getElementById(id);
+    el.classList.toggle('expanded');
+    btn.textContent = el.classList.contains('expanded') ? 'Show less' : 'Show more';
+  }
+
+  // ── Live seed goal updates ─────────────────
+  function updateSeedGoal(variant) {
+    if (variant === 'full') {
+      const val = document.getElementById('seed-goal-full').value.trim();
+      const display = document.getElementById('goal-full-display');
+      display.textContent = val || '[ YOUR GOAL HERE ]';
+    } else if (variant === 'quick') {
+      const val = document.getElementById('seed-goal-quick').value.trim();
+      const display = document.getElementById('goal-quick-display');
+      display.textContent = val || '[ YOUR GOAL ]';
+    }
+  }
+
+  function updateDevText() {
+    const task = document.getElementById('dev-task').value.trim() || '[ TASK ]';
+    const stack = document.getElementById('dev-stack').value.trim() || '[ TECH STACK ]';
+    document.getElementById('dev-task-display').textContent = task;
+    document.getElementById('dev-stack-display').textContent = stack;
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRT-1 · Idea Intelligence</title>
+<style>
+  :root {
+    --bg-deep: #06080f;
+    --bg-card: #0d1117;
+    --bg-elevated: #161b22;
+    --border: #21262d;
+    --border-bright: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim: #484f58;
+    --accent: #58a6ff;
+    --accent-glow: rgba(88,166,255,0.15);
+    --green: #3fb950;
+    --green-glow: rgba(63,185,80,0.15);
+    --amber: #d29922;
+    --amber-glow: rgba(210,153,34,0.15);
+    --red: #f85149;
+    --purple: #8b5cf6;
+    --purple-glow: rgba(139,92,246,0.15);
+    --cyan: #22d3ee;
+    --cyan-glow: rgba(34,211,238,0.12);
+    --chatgpt: #10a37f;
+    --chatgpt-glow: rgba(16,163,127,0.18);
+    --claude-color: #d97706;
+    --claude-glow: rgba(217,119,6,0.18);
+    --gemini: #4285f4;
+    --gemini-glow: rgba(66,133,244,0.18);
+    --seed-discovered: #8b5cf6;
+    --seed-active: #22d3ee;
+    --seed-completed: #3fb950;
+    --seed-abandoned: #d29922;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg-deep); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── Nav ── */
+  nav { background: rgba(13,17,23,0.95); border-bottom: 1px solid var(--border); padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-brand svg { color: var(--accent); }
+  .nav-brand-text { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+  .nav-brand-sub { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+  #nav-auth { display: flex; align-items: center; gap: 12px; }
+  .btn { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all .15s; text-decoration: none; display: inline-flex; align-items: center; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border-bright); color: var(--text-muted); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #79b8ff; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+
+  /* ── Layout ── */
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* ── Hero ── */
+  .hero { background: linear-gradient(135deg, rgba(88,166,255,0.07) 0%, rgba(139,92,246,0.07) 50%, rgba(34,211,238,0.05) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; margin-bottom: 28px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -60px; right: -60px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(88,166,255,0.12) 0%, transparent 70%); pointer-events: none; }
+  .hero-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-glow); border: 1px solid rgba(88,166,255,0.3); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; }
+  .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); max-width: 560px; line-height: 1.6; }
+  .hero-stats { display: flex; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+  .hero-stat { display: flex; flex-direction: column; gap: 3px; }
+  .hero-stat-val { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+  .hero-stat-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .hero-last-sync { position: absolute; bottom: 18px; right: 24px; font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  /* ── Section headings ── */
+  .section { margin-bottom: 28px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
+  .section-action { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; }
+  .section-action:hover { text-decoration: underline; }
+
+  /* ── Cards ── */
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+  .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .card-body { padding: 18px; }
+
+  /* ── Grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  @media(max-width:900px){ .grid-3 { grid-template-columns: 1fr 1fr; } }
+  @media(max-width:600px){ .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+  /* ── Idea Garden ── */
+  .garden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:700px){ .garden-grid { grid-template-columns: 1fr; } }
+  .seed-ring-wrap { display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 12px; }
+  .garden-lifecycle { padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .lifecycle-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .lc-row { display: flex; align-items: center; }
+  .lc-node { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .lc-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid; }
+  .lc-dot.discovered { background: var(--purple-glow); border-color: var(--seed-discovered); color: var(--seed-discovered); }
+  .lc-dot.active { background: var(--cyan-glow); border-color: var(--seed-active); color: var(--seed-active); }
+  .lc-dot.pickedup { background: var(--green-glow); border-color: var(--seed-completed); color: var(--seed-completed); }
+  .lc-dot.completed { background: var(--green-glow); border-color: var(--seed-completed); color: var(--seed-completed); }
+  .lc-node-lbl { font-size: 10px; color: var(--text-muted); text-align: center; white-space: nowrap; }
+  .lc-node-count { font-size: 16px; font-weight: 800; color: var(--text); }
+  .lc-connector { flex: 0 0 20px; height: 2px; background: var(--border-bright); margin-bottom: 22px; }
+
+  /* ── Platform cards ── */
+  .platform-card { border-radius: 10px; padding: 20px; border: 1px solid; position: relative; overflow: hidden; }
+  .platform-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .platform-card.chatgpt { background: var(--chatgpt-glow); border-color: rgba(16,163,127,0.3); }
+  .platform-card.chatgpt::before { background: var(--chatgpt); }
+  .platform-card.claude { background: var(--claude-glow); border-color: rgba(217,119,6,0.3); }
+  .platform-card.claude::before { background: var(--claude-color); }
+  .platform-card.gemini { background: var(--gemini-glow); border-color: rgba(66,133,244,0.3); }
+  .platform-card.gemini::before { background: var(--gemini); }
+  .platform-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .platform-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .platform-icon.chatgpt { background: rgba(16,163,127,0.2); color: var(--chatgpt); }
+  .platform-icon.claude { background: rgba(217,119,6,0.2); color: var(--claude-color); }
+  .platform-icon.gemini { background: rgba(66,133,244,0.2); color: var(--gemini); }
+  .platform-name { font-size: 14px; font-weight: 700; }
+  .platform-status { margin-left: auto; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .platform-status.active { background: var(--green-glow); color: var(--green); }
+  .platform-status.idle { background: var(--amber-glow); color: var(--amber); }
+  .platform-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .p-stat-val { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .p-stat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .platform-bar { margin-top: 14px; }
+  .platform-bar-lbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+  .bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .chatgpt .bar-fill { background: var(--chatgpt); }
+  .claude .bar-fill { background: var(--claude-color); }
+  .gemini .bar-fill { background: var(--gemini); }
+
+  /* ── Intelligence panels ── */
+  .intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:700px){ .intel-grid { grid-template-columns: 1fr; } }
+  .gauge-wrap { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .gauge-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .pattern-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; }
+  .pattern-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-elevated); border-radius: 8px; border: 1px solid var(--border); }
+  .pattern-icon { font-size: 16px; }
+  .pattern-info { flex: 1; }
+  .pattern-name { font-size: 13px; font-weight: 600; }
+  .pattern-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .pattern-pct { font-size: 14px; font-weight: 700; }
+  .recovery-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 18px; }
+  .r-stat { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .r-stat-val { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .r-stat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+  /* ── Idea Browser ── */
+  .browser-controls { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-wrap input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 12px 7px 32px; font-size: 13px; outline: none; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 13px; pointer-events: none; }
+  .filter-select { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none; cursor: pointer; }
+  .filter-select:focus { border-color: var(--accent); }
+  .seed-list { display: flex; flex-direction: column; gap: 8px; }
+  .seed-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .seed-item:hover { border-color: var(--border-bright); background: var(--bg-elevated); }
+  .seed-item.expanded { border-color: var(--accent); }
+  .seed-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .seed-status-dot.discovered { background: var(--seed-discovered); }
+  .seed-status-dot.active { background: var(--seed-active); box-shadow: 0 0 6px var(--cyan); }
+  .seed-status-dot.completed { background: var(--seed-completed); }
+  .seed-status-dot.abandoned { background: var(--seed-abandoned); }
+  .seed-content { flex: 1; min-width: 0; }
+  .seed-text { font-size: 13px; line-height: 1.5; font-weight: 500; }
+  .seed-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+  .seed-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .seed-badge.discovered { background: var(--purple-glow); color: var(--seed-discovered); }
+  .seed-badge.active { background: var(--cyan-glow); color: var(--seed-active); }
+  .seed-badge.completed { background: var(--green-glow); color: var(--seed-completed); }
+  .seed-badge.abandoned { background: var(--amber-glow); color: var(--seed-abandoned); }
+  .seed-badge.platform-chatgpt { background: var(--chatgpt-glow); color: var(--chatgpt); }
+  .seed-badge.platform-claude { background: var(--claude-glow); color: var(--claude-color); }
+  .seed-badge.platform-gemini { background: var(--gemini-glow); color: var(--gemini); }
+  .seed-badge.platform-unknown { background: rgba(125,133,144,0.15); color: var(--text-muted); }
+  .seed-date { font-size: 11px; color: var(--text-dim); }
+  .seed-confidence { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .conf-bar { width: 40px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .conf-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+  .seed-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: none; flex-direction: column; gap: 8px; }
+  .seed-item.expanded .seed-detail { display: flex; }
+  .seed-recovery { background: var(--accent-glow); border: 1px solid rgba(88,166,255,0.25); border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+  .seed-recovery strong { color: var(--accent); display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .seed-keywords { display: flex; gap: 5px; flex-wrap: wrap; }
+  .kw { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; color: var(--text-muted); }
+  .empty-state { padding: 48px 24px; text-align: center; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text-muted); max-width: 360px; margin: 0 auto 20px; line-height: 1.6; }
+
+  /* ── Chat ── */
+  .chat-wrap { display: flex; flex-direction: column; height: 400px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+  .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+  .chat-bubble.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 500; border-radius: 10px 10px 2px 10px; }
+  .chat-bubble.assistant { align-self: flex-start; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px 10px 10px 2px; }
+  .chat-bubble.system { align-self: center; background: transparent; color: var(--text-dim); font-size: 11px; font-style: italic; }
+  .chat-input-row { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  .chat-input { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 9px 14px; font-size: 13px; outline: none; resize: none; font-family: inherit; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send { background: var(--accent); color: #000; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+  .chat-send:hover { background: #79b8ff; }
+  .chat-send:disabled { opacity: 0.5; cursor: default; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 12px; }
+  .chip { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); border-radius: 20px; padding: 5px 12px; font-size: 11px; cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Loading ── */
+  .loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 32px; color: var(--text-dim); font-size: 13px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 999; }
+  #toast.show { transform: none; opacity: 1; }
+
+  /* ── API Key Panel ── */
+  .key-panel { display: flex; flex-direction: column; gap: 12px; }
+  .platform-key-row { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .platform-key-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .platform-key-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; }
+  .platform-key-icon.openai { background: rgba(16,163,127,0.2); color: var(--chatgpt); }
+  .platform-key-icon.anthropic { background: rgba(217,119,6,0.2); color: var(--claude-color); }
+  .platform-key-icon.google { background: rgba(66,133,244,0.2); color: var(--gemini); }
+  .platform-key-name { font-size: 14px; font-weight: 600; }
+  .key-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .key-status-dot.connected { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .key-status-dot.disconnected { background: var(--border-bright); }
+  .key-status-dot.testing { background: var(--amber); box-shadow: 0 0 5px var(--amber); animation: pulse 1s infinite; }
+  .key-status-label { font-size: 12px; color: var(--text-muted); }
+  .key-input-row { display: flex; gap: 8px; align-items: center; }
+  .key-input-row input { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 12px; font-size: 12px; font-family: monospace; outline: none; min-width: 0; }
+  .key-input-row input:focus { border-color: var(--accent); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+  /* ── Reflect Panel ── */
+  .reflect-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .rtabs { display: flex; border-bottom: 1px solid var(--border); }
+  .rtab { flex: 1; padding: 11px 16px; font-size: 13px; font-weight: 500; cursor: pointer; background: none; border: none; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all .15s; text-align: center; }
+  .rtab:hover { color: var(--text); }
+  .rtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .rpanel { padding: 20px; display: none; }
+  .rpanel.active { display: block; }
+  .reflect-textarea { width: 100%; min-height: 180px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 14px; font-size: 13px; font-family: inherit; resize: vertical; outline: none; line-height: 1.6; }
+  .reflect-textarea:focus { border-color: var(--accent); }
+  .reflect-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px; flex-wrap: wrap; }
+  .reflect-char { font-size: 11px; color: var(--text-dim); font-family: monospace; }
+  .reflect-output { margin-top: 16px; }
+  .reflect-report { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-size: 13px; line-height: 1.8; color: var(--text); }
+  .reflect-report h1,.reflect-report h2,.reflect-report h3 { font-size: 15px; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
+  .reflect-report h2 { color: var(--accent); }
+  .reflect-report h3 { color: var(--green); font-size: 13px; }
+  .reflect-report p { margin-bottom: 10px; }
+  .reflect-report ul { padding-left: 18px; margin-bottom: 10px; }
+  .reflect-report li { margin-bottom: 5px; }
+  .reflect-report code { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }
+  .reflect-report pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 12px; font-family: monospace; margin-bottom: 12px; }
+  .reflect-report strong { color: var(--text); font-weight: 600; }
+  .reflect-report em { color: var(--cyan); }
+  .reflect-loading { display: flex; align-items: center; gap: 10px; padding: 24px; color: var(--text-muted); font-size: 13px; }
+  .reflect-sig { margin-top: 16px; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--purple); border-radius: 6px; padding: 12px 14px; font-family: monospace; font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+  .reflect-result-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .reflect-result-title { font-size: 14px; font-weight: 700; }
+  .reflect-result-actions { display: flex; gap: 6px; }
+
+  /* ── Upload drop zone in dashboard ── */
+  .dash-upload-zone { border: 2px dashed var(--border-bright); border-radius: 10px; padding: 36px 24px; text-align: center; cursor: pointer; transition: all .2s; }
+  .dash-upload-zone:hover, .dash-upload-zone.drag-over { border-color: var(--accent); background: var(--accent-glow); }
+  .dash-upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .dash-upload-zone p { color: var(--text-muted); font-size: 13px; }
+  #dash-file-input { display: none; }
+  .dash-conv-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .dash-conv-item { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; cursor: pointer; transition: border-color .15s; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .dash-conv-item:hover { border-color: var(--accent); }
+  .dash-conv-title { font-size: 13px; font-weight: 600; }
+  .dash-conv-meta { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+</style>
+<link rel="manifest" href="/seed-reflection/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Seed Reflection">
+<meta name="theme-color" content="#06080f">
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <div><span class="nav-brand-text">SRT-1</span> <span class="nav-brand-sub">Idea Intelligence</span></div>
+  </div>
+  <div id="nav-auth"></div>
+</nav>
+
+<main>
+
+  <!-- ── Hero ── -->
+  <div class="hero" id="hero">
+    <div class="hero-tag"><span class="pulse"></span><span>ACTIVE ANALYSIS</span></div>
+    <h1>I Know Your <span>Conversations</span></h1>
+    <p>Every idea you've ever discussed, rediscovered and organised. Your cross-platform thought history, made actionable.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val" id="h-conversations" style="color:var(--accent)">—</div><div class="hero-stat-lbl">Conversations Analysed</div></div>
+      <div class="hero-stat"><div class="hero-stat-val" id="h-seeds" style="color:var(--purple)">—</div><div class="hero-stat-lbl">Ideas Discovered</div></div>
+      <div class="hero-stat"><div class="hero-stat-val" id="h-recovered" style="color:var(--green)">—</div><div class="hero-stat-lbl">Ideas Recovered</div></div>
+      <div class="hero-stat"><div class="hero-stat-val" id="h-platforms">—</div><div class="hero-stat-lbl">Platforms Connected</div></div>
+    </div>
+    <div class="hero-last-sync"><span class="pulse"></span><span id="last-sync">Waiting for data…</span></div>
+  </div>
+
+  <!-- ── Connect Your Platforms ── -->
+  <div class="section" id="section-keys">
+    <div class="section-head">
+      <div class="section-title">Connect Your Platforms</div>
+      <span style="font-size:12px;color:var(--text-muted)">Keys stored locally in your browser</span>
+    </div>
+    <div class="key-panel">
+      <!-- OpenAI -->
+      <div class="platform-key-row">
+        <div class="platform-key-header">
+          <div class="platform-key-icon openai">OAI</div>
+          <span class="platform-key-name">OpenAI (ChatGPT)</span>
+          <div class="key-status-dot disconnected" id="openai-dot"></div>
+          <span class="key-status-label" id="openai-status">Not connected</span>
+        </div>
+        <div class="key-input-row">
+          <input type="password" id="openai-key" placeholder="sk-..." autocomplete="off">
+          <button class="btn btn-ghost btn-sm" onclick="testApiKey('openai')">Test</button>
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey('openai')">Save</button>
+        </div>
+      </div>
+      <!-- Anthropic -->
+      <div class="platform-key-row">
+        <div class="platform-key-header">
+          <div class="platform-key-icon anthropic">ANT</div>
+          <span class="platform-key-name">Anthropic (Claude)</span>
+          <div class="key-status-dot disconnected" id="anthropic-dot"></div>
+          <span class="key-status-label" id="anthropic-status">Not connected</span>
+        </div>
+        <div class="key-input-row">
+          <input type="password" id="anthropic-key" placeholder="sk-ant-api03-..." autocomplete="off">
+          <button class="btn btn-ghost btn-sm" onclick="testApiKey('anthropic')">Test</button>
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey('anthropic')">Save</button>
+        </div>
+      </div>
+      <!-- Google -->
+      <div class="platform-key-row">
+        <div class="platform-key-header">
+          <div class="platform-key-icon google">GEM</div>
+          <span class="platform-key-name">Google (Gemini)</span>
+          <div class="key-status-dot disconnected" id="google-dot"></div>
+          <span class="key-status-label" id="google-status">Not connected</span>
+        </div>
+        <div class="key-input-row">
+          <input type="password" id="google-key" placeholder="AIza..." autocomplete="off">
+          <button class="btn btn-ghost btn-sm" onclick="testApiKey('google')">Test</button>
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey('google')">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Analyse a Conversation ── -->
+  <div class="section" id="section-reflect">
+    <div class="section-head">
+      <div class="section-title">Analyse a Conversation</div>
+    </div>
+    <div class="reflect-shell" id="reflect-shell">
+      <div class="rtabs">
+        <button class="rtab active" id="rtab-paste" onclick="switchReflectTab('paste')">✦ Paste Text</button>
+        <button class="rtab" id="rtab-upload" onclick="switchReflectTab('upload')">📤 Upload JSON</button>
+      </div>
+
+      <!-- Paste panel -->
+      <div class="rpanel active" id="rpanel-paste">
+        <textarea class="reflect-textarea" id="dash-conv-input"
+          placeholder="Paste a conversation here — from ChatGPT, Claude, Gemini, Copilot, or any AI assistant."
+          oninput="this.nextElementSibling && (this.nextElementSibling.textContent = this.value.length + ' chars')"></textarea>
+        <div class="reflect-actions">
+          <span class="reflect-char" id="dash-char-count">0 chars</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dash-conv-input').value='';document.getElementById('dash-char-count').textContent='0 chars'">Clear</button>
+            <button class="btn btn-primary" id="dash-reflect-btn" onclick="runDashReflection()">🌱 Find My Seeds</button>
+          </div>
+        </div>
+
+        <div id="dash-result-area" style="display:none;" class="reflect-output">
+          <div id="dash-reflect-loading" class="reflect-loading" style="display:none;">
+            <div class="spinner"></div><span>Reflecting on your conversation…</span>
+          </div>
+          <div class="reflect-result-bar">
+            <span class="reflect-result-title">Seed Reflection Report</span>
+            <div class="reflect-result-actions">
+              <button class="btn btn-ghost btn-sm" onclick="saveDashReport()">💾 Download</button>
+              <button class="btn btn-ghost btn-sm" onclick="clearDashResult()">✕ Clear</button>
+            </div>
+          </div>
+          <div class="reflect-report" id="dash-reflect-output"></div>
+          <div class="reflect-sig" id="dash-sig-block" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Upload panel -->
+      <div class="rpanel" id="rpanel-upload">
+        <div class="dash-upload-zone" id="dash-upload-zone"
+          onclick="document.getElementById('dash-file-input').click()"
+          ondragover="dashDragOver(event)" ondragleave="dashDragLeave(event)" ondrop="dashDrop(event)">
+          <div style="font-size:36px;margin-bottom:10px;">📁</div>
+          <h3>Upload ChatGPT or Claude export</h3>
+          <p>Supports <strong>.json</strong> files and <strong>.zip</strong> archives<br>Your file is parsed entirely in your browser.</p>
+          <input type="file" id="dash-file-input" accept=".json,.zip" onchange="handleDashFileSelect(event)">
+          <br><br>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();document.getElementById('dash-file-input').click()">Choose file</button>
+        </div>
+        <div id="dash-conv-list" class="dash-conv-list" style="display:none;"></div>
+        <div id="dash-upload-result-area" style="display:none;" class="reflect-output" style="margin-top:16px;">
+          <div id="dash-upload-loading" class="reflect-loading" style="display:none;">
+            <div class="spinner"></div><span>Reflecting on your conversation…</span>
+          </div>
+          <div class="reflect-result-bar">
+            <span class="reflect-result-title" id="dash-upload-result-title">Seed Reflection Report</span>
+            <div class="reflect-result-actions">
+              <button class="btn btn-ghost btn-sm" onclick="saveDashUploadReport()">💾 Download</button>
+              <button class="btn btn-ghost btn-sm" onclick="clearDashUploadResult()">✕ Clear</button>
+            </div>
+          </div>
+          <div class="reflect-report" id="dash-upload-output"></div>
+          <div class="reflect-sig" id="dash-upload-sig-block" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Idea Garden ── -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Idea Garden</div>
+      <button class="section-action" onclick="refreshData()">↻ Refresh</button>
+    </div>
+    <div class="garden-grid">
+      <div class="card">
+        <div class="card-header">Seed Growth Rings <span style="font-size:11px;color:var(--text-muted)">All-time</span></div>
+        <div class="seed-ring-wrap">
+          <svg width="160" height="160" viewBox="0 0 160 160" style="overflow:visible">
+            <circle cx="80" cy="80" r="70" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle id="ring-discovered" cx="80" cy="80" r="70" fill="none" stroke="var(--seed-discovered)" stroke-width="8" stroke-linecap="round" stroke-dasharray="440" stroke-dashoffset="440" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.2s ease"/>
+            <circle cx="80" cy="80" r="56" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle id="ring-active" cx="80" cy="80" r="56" fill="none" stroke="var(--seed-active)" stroke-width="8" stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.4s ease"/>
+            <circle cx="80" cy="80" r="42" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle id="ring-completed" cx="80" cy="80" r="42" fill="none" stroke="var(--seed-completed)" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.6s ease"/>
+            <text x="80" y="76" text-anchor="middle" fill="var(--text)" font-size="22" font-weight="800" id="ring-center-val">—</text>
+            <text x="80" y="93" text-anchor="middle" fill="var(--text-muted)" font-size="10">total ideas</text>
+          </svg>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:var(--seed-discovered);display:inline-block"></span>Discovered</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:var(--seed-active);display:inline-block"></span>Active</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:var(--seed-completed);display:inline-block"></span>Completed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Lifecycle Pipeline</div>
+        <div class="garden-lifecycle">
+          <div class="lifecycle-title">Idea Journey</div>
+          <div class="lc-row">
+            <div class="lc-node"><div class="lc-node-count" id="lc-discovered">—</div><div class="lc-dot discovered">💡</div><div class="lc-node-lbl">Discovered</div></div>
+            <div class="lc-connector"></div>
+            <div class="lc-node"><div class="lc-node-count" id="lc-active">—</div><div class="lc-dot active">⚡</div><div class="lc-node-lbl">Active</div></div>
+            <div class="lc-connector"></div>
+            <div class="lc-node"><div class="lc-node-count" id="lc-pickedup">—</div><div class="lc-dot pickedup">🔨</div><div class="lc-node-lbl">Picked Up</div></div>
+            <div class="lc-connector"></div>
+            <div class="lc-node"><div class="lc-node-count" id="lc-completed">—</div><div class="lc-dot completed">✓</div><div class="lc-node-lbl">Completed</div></div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div class="lifecycle-title" style="margin-bottom:8px">Abandoned — waiting for recovery</div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:28px;font-weight:800;color:var(--amber)" id="lc-abandoned">—</div>
+              <div><div style="font-size:12px;font-weight:600">ideas left behind</div><div style="font-size:11px;color:var(--text-muted)">SRT-1 can help you recover them</div></div>
+            </div>
+            <div class="bar-track" style="margin-top:8px"><div id="abandoned-bar" style="height:100%;background:var(--amber);border-radius:3px;width:0%;transition:width 1s ease"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Cross-platform breakdown ── -->
+  <div class="section">
+    <div class="section-head"><div class="section-title">Cross-Platform Intelligence</div></div>
+    <div class="grid-3" id="platform-grid"><div class="loading"><div class="spinner"></div> Loading platforms…</div></div>
+  </div>
+
+  <!-- ── Conversation Intelligence ── -->
+  <div class="section">
+    <div class="section-head"><div class="section-title">Conversation Intelligence</div></div>
+    <div class="intel-grid">
+      <div class="card">
+        <div class="card-header">Coherence Score</div>
+        <div class="gauge-wrap">
+          <svg width="140" height="90" viewBox="0 0 140 90" style="overflow:visible">
+            <path d="M15 80 A55 55 0 0 1 125 80" fill="none" stroke="var(--border)" stroke-width="10" stroke-linecap="round"/>
+            <path id="coherence-arc" d="M15 80 A55 55 0 0 1 125 80" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="173" stroke-dashoffset="173" style="transition:stroke-dashoffset 1.2s ease"/>
+            <text x="70" y="75" text-anchor="middle" fill="var(--text)" font-size="22" font-weight="800" id="coherence-val">—</text>
+          </svg>
+          <div class="gauge-lbl">Average Idea Coherence</div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;max-width:200px">How clearly your ideas were expressed and understood</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Drift Patterns</div>
+        <ul class="pattern-list" id="pattern-list"><li class="loading"><div class="spinner"></div> Analysing patterns…</li></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Recovery Intelligence</div>
+        <div class="recovery-stats">
+          <div class="r-stat"><div class="r-stat-val" style="color:var(--green)" id="r-success">—%</div><div class="r-stat-lbl">Recovery Rate</div></div>
+          <div class="r-stat"><div class="r-stat-val" style="color:var(--accent)" id="r-suggestions">—</div><div class="r-stat-lbl">Suggestions Made</div></div>
+          <div class="r-stat"><div class="r-stat-val" style="color:var(--purple)" id="r-drift">—</div><div class="r-stat-lbl">Drift Events</div></div>
+          <div class="r-stat"><div class="r-stat-val" id="r-avg-conf">—%</div><div class="r-stat-lbl">Avg Confidence</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Top Keywords Across Ideas</div>
+        <div class="card-body"><div id="keyword-cloud" style="display:flex;flex-wrap:wrap;gap:6px"><div class="loading"><div class="spinner"></div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Idea Browser ── -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Idea Browser</div>
+      <span id="idea-count" style="font-size:12px;color:var(--text-muted)">Loading…</span>
+    </div>
+    <div class="browser-controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search ideas…" oninput="filterSeeds()">
+      </div>
+      <select class="filter-select" id="filter-platform" onchange="filterSeeds()">
+        <option value="">All Platforms</option>
+        <option value="chatgpt">ChatGPT</option>
+        <option value="claude">Claude</option>
+        <option value="gemini">Gemini</option>
+        <option value="unknown">Other</option>
+      </select>
+      <select class="filter-select" id="filter-status" onchange="filterSeeds()">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="discovered">Discovered</option>
+        <option value="completed">Completed</option>
+        <option value="abandoned">Abandoned</option>
+      </select>
+      <select class="filter-select" id="filter-sort" onchange="filterSeeds()">
+        <option value="confidence">Sort: Confidence</option>
+        <option value="date">Sort: Date</option>
+        <option value="platform">Sort: Platform</option>
+      </select>
+    </div>
+    <div id="seed-list" class="seed-list"><div class="loading"><div class="spinner"></div> Loading your ideas…</div></div>
+  </div>
+
+  <!-- ── Ask About My Ideas ── -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Ask About My Ideas</div>
+      <span style="font-size:11px;color:var(--text-muted)">Powered by SRT-1 Reflect</span>
+    </div>
+    <div class="card">
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-bubble system">SRT-1 has analysed your conversations. Ask anything.</div>
+          <div class="chat-bubble assistant">👋 Hi! I've indexed all your saved reflections. You can ask me things like:<br><br>• <em>"What are my most abandoned ideas?"</em><br>• <em>"Which platform do I get my best ideas on?"</em><br>• <em>"What themes keep coming up?"</em><br>• <em>"Which ideas should I prioritize?"</em></div>
+        </div>
+        <div class="chips">
+          <span class="chip" onclick="sendChip(this)">What are my top ideas?</span>
+          <span class="chip" onclick="sendChip(this)">Which ideas did I abandon?</span>
+          <span class="chip" onclick="sendChip(this)">What patterns do you see?</span>
+          <span class="chip" onclick="sendChip(this)">Best platform for ideas?</span>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask about your ideas…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+          <button class="chat-send" id="chat-send" onclick="sendChat()">Ask ↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script src="../js/platform.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+var ALL_SEEDS = [];
+var ALL_FILES = [];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+async function boot() {
+  renderNav();
+  await loadAllData();
+}
+
+function renderNav() {
+  var el = document.getElementById('nav-auth');
+  if (typeof SRT1Platform !== 'undefined' && SRT1Platform.isLoggedIn()) {
+    var u = SRT1Platform.getCachedUser();
+    var init = (u && u.name) ? u.name[0].toUpperCase() : '?';
+    var email = (u && u.email) ? u.email : '';
+    el.innerHTML = '<div class="avatar">' + init + '</div>'
+      + '<span style="font-size:13px;color:var(--text-muted)">' + escHtml(email) + '</span>'
+      + '<button class="btn btn-ghost" onclick="SRT1Platform.logout().then(()=>location.reload())">Sign out</button>';
+  } else {
+    el.innerHTML = '<a href="../website/login.html" class="btn btn-ghost">Sign in</a>'
+      + '<a href="../website/signup.html" class="btn btn-primary">Get started</a>';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data loading
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadAllData() {
+  ALL_SEEDS = [];
+  ALL_FILES = [];
+
+  if (typeof SRT1Platform !== 'undefined') {
+    try {
+      var resp = await SRT1Platform.listReflections();
+      ALL_FILES = (resp && resp.files) ? resp.files : (Array.isArray(resp) ? resp : []);
+    } catch(e) { ALL_FILES = []; }
+
+    var downloads = ALL_FILES.map(function(f){ return downloadReflection(f); });
+    var results = await Promise.allSettled(downloads);
+    results.forEach(function(r){
+      if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+        ALL_SEEDS = ALL_SEEDS.concat(r.value);
+      }
+    });
+  }
+
+  if (ALL_SEEDS.length === 0 && ALL_FILES.length === 0) {
+    ALL_SEEDS = demoSeeds();
+  }
+
+  renderAll();
+  document.getElementById('last-sync').textContent = 'Last synced ' + new Date().toLocaleTimeString();
+}
+
+async function downloadReflection(fileObj) {
+  try {
+    var resp = await SRT1Platform.apiRequest('/api/v1/files/' + fileObj.id + '/download');
+    if (resp) {
+      var json = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+      return parseReflectionPayload(json, fileObj);
+    }
+  } catch(e) {}
+  return [];
+}
+
+function parseReflectionPayload(payload, fileObj) {
+  var seeds = [];
+  var raw = payload.seeds || [];
+  var platform = detectPlatform(fileObj.filename || fileObj.original_filename || fileObj.name || '');
+  raw.forEach(function(s) {
+    seeds.push({
+      content: s.content || s.text || '',
+      status: normalizeStatus(s.status),
+      type: s.type || 'idea',
+      confidence: s.confidence || 0.5,
+      keywords: s.keywords || [],
+      recovery_suggestion: s.recovery_suggestion || '',
+      context: s.context || '',
+      platform: s.platform || platform,
+      date: fileObj.created_at || fileObj.uploaded_at || new Date().toISOString(),
+    });
+  });
+  return seeds;
+}
+
+function detectPlatform(filename) {
+  var f = filename.toLowerCase();
+  if (f.indexOf('chatgpt') >= 0 || f.indexOf('gpt') >= 0) return 'chatgpt';
+  if (f.indexOf('claude') >= 0 || f.indexOf('anthropic') >= 0) return 'claude';
+  if (f.indexOf('gemini') >= 0 || f.indexOf('bard') >= 0) return 'gemini';
+  return 'unknown';
+}
+
+function normalizeStatus(s) {
+  if (!s) return 'discovered';
+  s = s.toLowerCase();
+  if (s === 'active' || s === 'in_progress') return 'active';
+  if (s === 'completed' || s === 'done' || s === 'bloomed') return 'completed';
+  if (s === 'abandoned' || s === 'dropped' || s === 'wilted') return 'abandoned';
+  return 'discovered';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo seeds
+// ─────────────────────────────────────────────────────────────────────────────
+function demoSeeds() {
+  return [
+    { content: "Build a habit tracker that uses AI to identify patterns in my daily mood journal and suggest micro-habits", status: 'active', confidence: 0.91, keywords: ['habit','AI','mood','journal'], platform: 'chatgpt', date: '2026-03-14T10:00:00Z', recovery_suggestion: "Start with a simple daily logging interface, then layer the AI pattern recognition on top.", type: 'project' },
+    { content: "Write a Rust CLI that watches filesystem changes and auto-generates TypeScript type definitions", status: 'discovered', confidence: 0.78, keywords: ['rust','CLI','typescript','codegen'], platform: 'claude', date: '2026-03-12T14:22:00Z', recovery_suggestion: "Use notify crate for filesystem watching, syn for Rust parsing.", type: 'technical' },
+    { content: "Create a 'context capsule' — a shareable document that captures everything an AI needs to understand my project", status: 'abandoned', confidence: 0.85, keywords: ['context','AI','documentation','sharing'], platform: 'chatgpt', date: '2026-03-10T09:15:00Z', recovery_suggestion: "This is essentially what SRT-1's Context Bundler does. You could contribute to or fork that project.", type: 'product' },
+    { content: "Explore using vector embeddings to cluster old conversations by topic and surface forgotten threads", status: 'discovered', confidence: 0.72, keywords: ['embeddings','clustering','conversations','memory'], platform: 'gemini', date: '2026-03-08T16:40:00Z', recovery_suggestion: "Use OpenAI embeddings + FAISS for local clustering. Start with 20 conversations as proof of concept.", type: 'research' },
+    { content: "Build a browser extension that saves conversation highlights to a personal knowledge base automatically", status: 'abandoned', confidence: 0.88, keywords: ['browser','extension','knowledge base','highlight'], platform: 'claude', date: '2026-03-06T11:55:00Z', recovery_suggestion: "Chrome MV3 extension with a simple side panel. Use the Selection API for highlights.", type: 'project' },
+    { content: "Write a short book about the psychology of context switching and its effect on creative work", status: 'discovered', confidence: 0.65, keywords: ['psychology','writing','creativity','focus'], platform: 'chatgpt', date: '2026-03-04T08:30:00Z', recovery_suggestion: "Start with a Substack series to validate the content before committing to a full book.", type: 'creative' },
+    { content: "Implement a personal finance dashboard that auto-categorizes transactions using local LLM inference", status: 'completed', confidence: 0.94, keywords: ['finance','LLM','local AI','categorization'], platform: 'claude', date: '2026-03-02T13:00:00Z', recovery_suggestion: '', type: 'project' },
+    { content: "Design a minimalist productivity system that works on paper first, then optionally syncs to digital", status: 'active', confidence: 0.76, keywords: ['productivity','paper','system','design'], platform: 'gemini', date: '2026-02-28T15:20:00Z', recovery_suggestion: "GTD meets Bullet Journal. Define the core ritual first.", type: 'system' },
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderHero();
+  renderGarden();
+  renderPlatforms();
+  renderIntelligence();
+  renderSeedList(ALL_SEEDS);
+  document.getElementById('idea-count').textContent = ALL_SEEDS.length + ' ideas';
+}
+
+function renderHero() {
+  var platforms = new Set(ALL_SEEDS.map(function(s){ return s.platform; }).filter(function(p){ return p && p !== 'unknown'; }));
+  var recovered = ALL_SEEDS.filter(function(s){ return s.status === 'completed'; }).length;
+  var conversations = ALL_FILES.length || Math.ceil(ALL_SEEDS.length * 1.4);
+  animateCount('h-conversations', conversations);
+  animateCount('h-seeds', ALL_SEEDS.length);
+  animateCount('h-recovered', recovered);
+  document.getElementById('h-platforms').textContent = Math.max(platforms.size, 1);
+}
+
+function renderGarden() {
+  var total = ALL_SEEDS.length || 1;
+  var disc = ALL_SEEDS.filter(function(s){ return s.status === 'discovered'; }).length;
+  var act  = ALL_SEEDS.filter(function(s){ return s.status === 'active'; }).length;
+  var comp = ALL_SEEDS.filter(function(s){ return s.status === 'completed'; }).length;
+  var aband = ALL_SEEDS.filter(function(s){ return s.status === 'abandoned'; }).length;
+
+  document.getElementById('lc-discovered').textContent = disc;
+  document.getElementById('lc-active').textContent = act;
+  document.getElementById('lc-pickedup').textContent = act;
+  document.getElementById('lc-completed').textContent = comp;
+  document.getElementById('lc-abandoned').textContent = aband;
+  document.getElementById('ring-center-val').textContent = ALL_SEEDS.length;
+  document.getElementById('abandoned-bar').style.width = Math.round(aband / total * 100) + '%';
+
+  setTimeout(function() {
+    setRing('ring-discovered', 2 * Math.PI * 70, disc / total);
+    setRing('ring-active',     2 * Math.PI * 56, act  / total);
+    setRing('ring-completed',  2 * Math.PI * 42, comp / total);
+  }, 300);
+}
+
+function setRing(id, circ, pct) {
+  var el = document.getElementById(id);
+  if (el) el.style.strokeDashoffset = circ * (1 - Math.min(pct, 1));
+}
+
+function renderPlatforms() {
+  var platforms = ['chatgpt','claude','gemini'];
+  var names = { chatgpt:'ChatGPT', claude:'Claude', gemini:'Gemini' };
+  var icons = { chatgpt:'GP', claude:'C', gemini:'G' };
+  var total = ALL_SEEDS.length || 1;
+  var grid = document.getElementById('platform-grid');
+  grid.innerHTML = '';
+
+  platforms.forEach(function(p) {
+    var seeds = ALL_SEEDS.filter(function(s){ return s.platform === p; });
+    var pct = Math.round(seeds.length / total * 100);
+    var active  = seeds.filter(function(s){ return s.status === 'active'; }).length;
+    var comp    = seeds.filter(function(s){ return s.status === 'completed'; }).length;
+    var aband   = seeds.filter(function(s){ return s.status === 'abandoned'; }).length;
+    var hasData = seeds.length > 0;
+
+    var div = document.createElement('div');
+    div.className = 'platform-card ' + p;
+    div.innerHTML = '<div class="platform-header">'
+      + '<div class="platform-icon ' + p + '">' + icons[p] + '</div>'
+      + '<div class="platform-name">' + names[p] + '</div>'
+      + '<span class="platform-status ' + (hasData ? 'active' : 'idle') + '">' + (hasData ? 'Active' : 'Idle') + '</span>'
+      + '</div>'
+      + '<div class="platform-stats">'
+      + '<div class="p-stat"><div class="p-stat-val">' + seeds.length + '</div><div class="p-stat-lbl">Ideas</div></div>'
+      + '<div class="p-stat"><div class="p-stat-val">' + active + '</div><div class="p-stat-lbl">Active</div></div>'
+      + '<div class="p-stat"><div class="p-stat-val">' + comp + '</div><div class="p-stat-lbl">Done</div></div>'
+      + '<div class="p-stat"><div class="p-stat-val">' + aband + '</div><div class="p-stat-lbl">Abandoned</div></div>'
+      + '</div>'
+      + '<div class="platform-bar"><div class="platform-bar-lbl"><span>Share of ideas</span><span>' + pct + '%</span></div>'
+      + '<div class="bar-track"><div class="bar-fill" style="width:0%" data-target="' + pct + '"></div></div></div>';
+    grid.appendChild(div);
+  });
+
+  setTimeout(function() {
+    document.querySelectorAll('.bar-fill[data-target]').forEach(function(el){
+      el.style.width = el.getAttribute('data-target') + '%';
+    });
+  }, 400);
+}
+
+function renderIntelligence() {
+  var avgConf = ALL_SEEDS.length
+    ? ALL_SEEDS.reduce(function(a,s){ return a + (s.confidence || 0.5); }, 0) / ALL_SEEDS.length
+    : 0;
+  var score = Math.round(avgConf * 100);
+  document.getElementById('coherence-val').textContent = score + '%';
+  document.getElementById('r-avg-conf').textContent = score + '%';
+
+  setTimeout(function(){
+    document.getElementById('coherence-arc').style.strokeDashoffset = 173 * (1 - avgConf);
+  }, 400);
+
+  var comp = ALL_SEEDS.filter(function(s){ return s.status==='completed'; }).length;
+  var sugg = ALL_SEEDS.filter(function(s){ return s.recovery_suggestion; }).length;
+  var drift = Math.round(ALL_SEEDS.length * 0.35);
+  var rate  = ALL_SEEDS.length ? Math.round(comp / ALL_SEEDS.length * 100) : 0;
+  document.getElementById('r-success').textContent = rate + '%';
+  document.getElementById('r-suggestions').textContent = sugg;
+  document.getElementById('r-drift').textContent = drift;
+
+  // Drift patterns
+  var total = ALL_SEEDS.length || 1;
+  var techKw = ['API','code','build','app','tool','CLI','database','rust','python','typescript'];
+  var creativKw = ['write','book','essay','story','design','content'];
+  var techCount = ALL_SEEDS.filter(function(s){ return (s.keywords||[]).some(function(k){ return techKw.indexOf(k) >= 0; }); }).length;
+  var creativCount = ALL_SEEDS.filter(function(s){ return (s.keywords||[]).some(function(k){ return creativKw.indexOf(k) >= 0; }); }).length;
+  var aband = ALL_SEEDS.filter(function(s){ return s.status==='abandoned'; }).length;
+
+  var patterns = [
+    { icon:'↗', name:'Scope Expansion', desc:'Ideas grew beyond original intent', pct: Math.min(Math.round(techCount / total * 80), 65), color:'var(--amber)' },
+    { icon:'⏸', name:'Interrupted Flow', desc:'Promising ideas paused mid-discussion', pct: Math.min(Math.round(aband / total * 100), 48), color:'var(--accent)' },
+    { icon:'🔁', name:'Rediscovery Loop', desc:'Same ideas surfacing across platforms', pct: Math.min(Math.round(creativCount / total * 60), 32), color:'var(--purple)' },
+    { icon:'✓', name:'Clean Resolution', desc:'Ideas with clear actionable outcomes', pct: Math.max(Math.round(comp / total * 100), 15), color:'var(--green)' },
+  ].sort(function(a,b){ return b.pct - a.pct; });
+
+  document.getElementById('pattern-list').innerHTML = patterns.map(function(p){
+    return '<li class="pattern-item"><span class="pattern-icon">' + p.icon + '</span>'
+      + '<div class="pattern-info"><div class="pattern-name">' + p.name + '</div><div class="pattern-desc">' + p.desc + '</div></div>'
+      + '<span class="pattern-pct" style="color:' + p.color + '">' + p.pct + '%</span></li>';
+  }).join('');
+
+  // Keyword cloud
+  var kwMap = {};
+  ALL_SEEDS.forEach(function(s){ (s.keywords||[]).forEach(function(k){ kwMap[k] = (kwMap[k]||0) + 1; }); });
+  var topKw = Object.entries(kwMap).sort(function(a,b){ return b[1]-a[1]; }).slice(0, 20);
+  var maxFreq = topKw[0] ? topKw[0][1] : 1;
+  var cloud = document.getElementById('keyword-cloud');
+  if (!topKw.length) {
+    cloud.innerHTML = '<span style="color:var(--text-dim);font-size:12px">No keywords found yet</span>';
+  } else {
+    cloud.innerHTML = topKw.map(function(e){
+      var size = 10 + Math.round((e[1] / maxFreq) * 6);
+      var opacity = 0.5 + (e[1] / maxFreq) * 0.5;
+      return '<span class="kw" style="font-size:' + size + 'px;opacity:' + opacity + '">' + escHtml(e[0]) + '</span>';
+    }).join('');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Idea Browser
+// ─────────────────────────────────────────────────────────────────────────────
+function filterSeeds() {
+  var q  = document.getElementById('search-input').value.toLowerCase();
+  var pf = document.getElementById('filter-platform').value;
+  var st = document.getElementById('filter-status').value;
+  var sort = document.getElementById('filter-sort').value;
+
+  var seeds = ALL_SEEDS.slice();
+  if (q) seeds = seeds.filter(function(s){
+    return s.content.toLowerCase().indexOf(q) >= 0
+      || (s.keywords||[]).some(function(k){ return k.toLowerCase().indexOf(q) >= 0; })
+      || (s.recovery_suggestion||'').toLowerCase().indexOf(q) >= 0;
+  });
+  if (pf) seeds = seeds.filter(function(s){ return s.platform === pf; });
+  if (st) seeds = seeds.filter(function(s){ return s.status === st; });
+
+  if (sort === 'confidence') seeds.sort(function(a,b){ return (b.confidence||0) - (a.confidence||0); });
+  else if (sort === 'date') seeds.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  else if (sort === 'platform') seeds.sort(function(a,b){ return (a.platform||'').localeCompare(b.platform||''); });
+
+  document.getElementById('idea-count').textContent = seeds.length + ' ideas';
+  renderSeedList(seeds);
+}
+
+function renderSeedList(seeds) {
+  var container = document.getElementById('seed-list');
+  if (!seeds.length) {
+    container.innerHTML = '<div class="card empty-state">'
+      + '<div class="empty-icon">🌱</div>'
+      + '<div class="empty-title">No ideas yet</div>'
+      + '<div class="empty-sub">Upload a conversation transcript using the Reflect page to start discovering your ideas across platforms.</div>'
+      + '<a href="index.html" class="btn btn-primary" style="margin-top:12px">Analyse a Conversation</a>'
+      + '</div>';
+    return;
+  }
+
+  var pfLabels = { chatgpt:'ChatGPT', claude:'Claude', gemini:'Gemini', unknown:'Other' };
+  container.innerHTML = seeds.map(function(s, i){
+    var conf = Math.round((s.confidence||0.5) * 100);
+    var pf = s.platform || 'unknown';
+    var dateStr = s.date ? new Date(s.date).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : '';
+    var kws = (s.keywords||[]).length
+      ? '<div class="seed-keywords">' + s.keywords.map(function(k){ return '<span class="kw">'+escHtml(k)+'</span>'; }).join('') + '</div>'
+      : '';
+    var ctx = s.context ? '<div style="font-size:12px;color:var(--text-muted);line-height:1.5"><em>"'+escHtml(s.context)+'"</em></div>' : '';
+    var rec = s.recovery_suggestion
+      ? '<div class="seed-recovery"><strong>💡 Recovery suggestion</strong>'+escHtml(s.recovery_suggestion)+'</div>'
+      : '';
+    return '<div class="seed-item" onclick="this.classList.toggle(\'expanded\')">'
+      + '<div class="seed-status-dot ' + s.status + '"></div>'
+      + '<div class="seed-content">'
+      + '<div class="seed-text">' + escHtml(s.content) + '</div>'
+      + '<div class="seed-meta">'
+      + '<span class="seed-badge ' + s.status + '">' + s.status + '</span>'
+      + '<span class="seed-badge platform-' + pf + '">' + (pfLabels[pf]||pf) + '</span>'
+      + '<span class="seed-date">' + dateStr + '</span>'
+      + '<span class="seed-confidence"><div class="conf-bar"><div class="conf-fill" style="width:'+conf+'%"></div></div> ' + conf + '%</span>'
+      + '</div>'
+      + '<div class="seed-detail">' + kws + ctx + rec + '</div>'
+      + '</div></div>';
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat
+// ─────────────────────────────────────────────────────────────────────────────
+async function sendChat() {
+  var input = document.getElementById('chat-input');
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendChat(msg, 'user');
+  var btn = document.getElementById('chat-send');
+  btn.disabled = true;
+  var thinking = appendChat('Thinking…', 'assistant');
+
+  try {
+    var seedCtx = ALL_SEEDS.slice(0, 40).map(function(s){
+      return '[' + s.platform + '/' + s.status + '] "' + s.content.slice(0, 100) + '" (conf:' + Math.round((s.confidence||0.5)*100) + '%)';
+    }).join('\n');
+    var transcript = 'I have ' + ALL_SEEDS.length + ' ideas across platforms.\n\nIdea Index:\n' + seedCtx;
+    var resp = await SRT1Platform.reflect(transcript, { question: msg, mode: 'ask' });
+    thinking.remove();
+    appendChat(resp.answer || resp.text || resp.response || localAnswer(msg), 'assistant');
+  } catch(e) {
+    thinking.remove();
+    appendChat(localAnswer(msg), 'assistant');
+  }
+  btn.disabled = false;
+}
+
+function localAnswer(q) {
+  q = q.toLowerCase();
+  var total = ALL_SEEDS.length;
+  var aband   = ALL_SEEDS.filter(function(s){ return s.status==='abandoned'; });
+  var active  = ALL_SEEDS.filter(function(s){ return s.status==='active'; });
+  var comp    = ALL_SEEDS.filter(function(s){ return s.status==='completed'; });
+
+  if (q.indexOf('abandon') >= 0 || q.indexOf('forgot') >= 0 || q.indexOf('lost') >= 0) {
+    if (!aband.length) return "Great news — I don't see any abandoned ideas in your reflections yet!";
+    var top = aband.sort(function(a,b){ return (b.confidence||0)-(a.confidence||0); })[0];
+    return 'You have ' + aband.length + ' abandoned idea' + (aband.length>1?'s':'') + '. The most promising: "' + top.content.slice(0,120) + '…"';
+  }
+  if (q.indexOf('platform') >= 0 || q.indexOf('best') >= 0) {
+    var counts = {};
+    ALL_SEEDS.forEach(function(s){ counts[s.platform] = (counts[s.platform]||0)+1; });
+    var entries = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+    if (!entries.length) return "I need more reflections to determine your best platform.";
+    var names = { chatgpt:'ChatGPT', claude:'Claude', gemini:'Gemini', unknown:'Other' };
+    return 'Your most idea-generating platform is ' + (names[entries[0][0]]||entries[0][0]) + ' with ' + entries[0][1] + ' ideas. That\'s where your creative flow is strongest!';
+  }
+  if (q.indexOf('pattern') >= 0 || q.indexOf('theme') >= 0 || q.indexOf('topic') >= 0) {
+    var kwMap = {};
+    ALL_SEEDS.forEach(function(s){ (s.keywords||[]).forEach(function(k){ kwMap[k]=(kwMap[k]||0)+1; }); });
+    var top5 = Object.entries(kwMap).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5).map(function(e){ return e[0]; });
+    if (!top5.length) return "Upload more reflections and I'll identify strong theme patterns.";
+    return 'The dominant themes across your ideas are: ' + top5.join(', ') + '. You seem particularly drawn to ' + top5[0] + '-related work.';
+  }
+  if (q.indexOf('priorit') >= 0 || q.indexOf('focus') >= 0 || q.indexOf('should') >= 0) {
+    var pending = ALL_SEEDS.filter(function(s){ return s.status !== 'completed'; })
+      .sort(function(a,b){ return (b.confidence||0)-(a.confidence||0); });
+    if (!pending.length) return "No pending ideas found. Upload a conversation transcript to get started!";
+    return 'Based on confidence scores, I\'d prioritize: "' + pending[0].content.slice(0,100) + '…" — it scored ' + Math.round((pending[0].confidence||0)*100) + '% confidence.';
+  }
+  if (q.indexOf('top') >= 0 || q.indexOf('best idea') >= 0 || q.indexOf('my idea') >= 0) {
+    var topIdeas = ALL_SEEDS.slice().sort(function(a,b){ return (b.confidence||0)-(a.confidence||0); }).slice(0,3);
+    if (!topIdeas.length) return "No ideas found yet. Upload a reflection to get started!";
+    return 'Your top ' + topIdeas.length + ' highest-confidence ideas:\n\n' + topIdeas.map(function(s,i){
+      return (i+1) + '. "' + s.content.slice(0,80) + '…" (' + Math.round((s.confidence||0)*100) + '%)';
+    }).join('\n');
+  }
+  return 'I found ' + total + ' ideas across your reflections — ' + active.length + ' active, ' + comp.length + ' completed, and ' + aband.length + ' abandoned. What specific aspect would you like to explore?';
+}
+
+function sendChip(el) {
+  document.getElementById('chat-input').value = el.textContent;
+  sendChat();
+}
+
+function appendChat(text, role) {
+  var msgs = document.getElementById('chat-messages');
+  var div = document.createElement('div');
+  div.className = 'chat-bubble ' + role;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function animateCount(id, target) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var current = 0;
+  var step = Math.ceil(target / 30);
+  var t = setInterval(function(){
+    current = Math.min(current + step, target);
+    el.textContent = current;
+    if (current >= target) clearInterval(t);
+  }, 30);
+}
+
+function refreshData() {
+  document.getElementById('last-sync').textContent = 'Refreshing…';
+  loadAllData();
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  boot();
+  loadApiKeys();
+  if (location.hash === '#reflect') {
+    setTimeout(function() {
+      var el = document.getElementById('section-reflect');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API Key Management
+// ─────────────────────────────────────────────────────────────────────────────
+var KEY_STORAGE = { openai: 'srt1_key_openai', anthropic: 'srt1_key_anthropic', google: 'srt1_key_google' };
+
+function loadApiKeys() {
+  Object.keys(KEY_STORAGE).forEach(function(platform) {
+    var stored = localStorage.getItem(KEY_STORAGE[platform]);
+    if (stored) {
+      var inp = document.getElementById(platform + '-key');
+      if (inp) inp.value = stored;
+      setKeyStatus(platform, 'connected', 'Connected');
+    }
+  });
+}
+
+function saveApiKey(platform) {
+  var inp = document.getElementById(platform + '-key');
+  if (!inp) return;
+  var val = inp.value.trim();
+  if (!val) {
+    localStorage.removeItem(KEY_STORAGE[platform]);
+    setKeyStatus(platform, 'disconnected', 'Removed');
+    return;
+  }
+  localStorage.setItem(KEY_STORAGE[platform], val);
+  setKeyStatus(platform, 'connected', 'Saved ✓');
+  showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' key saved.');
+}
+
+async function testApiKey(platform) {
+  var inp = document.getElementById(platform + '-key');
+  if (!inp || !inp.value.trim()) { showToast('Enter a key first.'); return; }
+  setKeyStatus(platform, 'testing', 'Testing…');
+  var ok = false;
+  try {
+    if (platform === 'anthropic') {
+      var r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': inp.value.trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 10, messages: [{ role: 'user', content: 'hi' }] })
+      });
+      ok = r.ok;
+    } else if (platform === 'openai') {
+      var r = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': 'Bearer ' + inp.value.trim() }
+      });
+      ok = r.ok;
+    } else if (platform === 'google') {
+      var r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(inp.value.trim()));
+      ok = r.ok;
+    }
+  } catch(e) {}
+  if (ok) {
+    setKeyStatus(platform, 'connected', 'Connected ✓');
+    showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' key is valid!');
+  } else {
+    setKeyStatus(platform, 'disconnected', 'Invalid key');
+    showToast('Key test failed for ' + platform + '.');
+  }
+}
+
+function setKeyStatus(platform, state, label) {
+  var dot = document.getElementById(platform + '-dot');
+  var lbl = document.getElementById(platform + '-status');
+  if (dot) { dot.className = 'key-status-dot ' + state; }
+  if (lbl) lbl.textContent = label;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reflect Panel
+// ─────────────────────────────────────────────────────────────────────────────
+function switchReflectTab(tab) {
+  ['paste', 'upload'].forEach(function(t) {
+    document.getElementById('rtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('rpanel-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+var DASH_SCIA_PROMPT = `You are the SRT-1 Seed Reflection Engine (SCIA v4.0).
+
+Analyse the conversation below and produce a structured Seed Reflection Report.
+
+OUTPUT FORMAT (use exactly these section headers):
+
+# 🌱 SEED REFLECTION REPORT
+
+## ✦ ACTIVE SEEDS
+[Seeds that are live, in-progress, or recently discussed. Include confidence % and a brief status note.]
+
+## ◎ ABANDONED SEEDS
+[Seeds started but dropped. Include why they were abandoned if clear, and a recovery suggestion.]
+
+## ⚡ DRIFT POINTS
+[Moments where the conversation changed direction and left ideas behind.]
+
+## 🔮 RECOVERY RECOMMENDATIONS
+[Ordered list of what to pick up first, with a 1-sentence action for each.]
+
+---
+SCIA v4.0 · SRT-1 Platform · Signature: [generate a short hex hash of the report content]`;
+
+async function runDashReflection() {
+  var inp = document.getElementById('dash-conv-input');
+  if (!inp || !inp.value.trim()) { showToast('Paste a conversation first.'); return; }
+  var text = inp.value.trim();
+
+  document.getElementById('dash-result-area').style.display = '';
+  document.getElementById('dash-reflect-loading').style.display = 'flex';
+  document.getElementById('dash-reflect-output').textContent = '';
+  document.getElementById('dash-sig-block').style.display = 'none';
+  document.getElementById('dash-reflect-btn').disabled = true;
+
+  var anthropicKey = localStorage.getItem('srt1_key_anthropic');
+  if (anthropicKey) {
+    await streamDashReflection(text, anthropicKey);
+  } else if (typeof SRT1Platform !== 'undefined' && SRT1Platform.isLoggedIn()) {
+    try {
+      var result = await SRT1Platform.reflect(text, {});
+      document.getElementById('dash-reflect-loading').style.display = 'none';
+      document.getElementById('dash-reflect-output').innerHTML = dashRenderMarkdown(result.report || result.content || JSON.stringify(result));
+      document.getElementById('dash-reflect-btn').disabled = false;
+    } catch(e) {
+      document.getElementById('dash-reflect-loading').style.display = 'none';
+      document.getElementById('dash-reflect-output').textContent = 'Error: ' + (e.message || 'Reflect failed. Add an Anthropic API key above.');
+      document.getElementById('dash-reflect-btn').disabled = false;
+    }
+  } else {
+    document.getElementById('dash-reflect-loading').style.display = 'none';
+    document.getElementById('dash-reflect-output').textContent = 'Add an Anthropic API key above to use Reflect, or sign in for managed access.';
+    document.getElementById('dash-reflect-btn').disabled = false;
+  }
+}
+
+async function streamDashReflection(text, apiKey) {
+  var outputEl = document.getElementById('dash-reflect-output');
+  var loadEl = document.getElementById('dash-reflect-loading');
+  var btnEl = document.getElementById('dash-reflect-btn');
+  var full = '';
+
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        stream: true,
+        messages: [{ role: 'user', content: DASH_SCIA_PROMPT + '\n\n---\nCONVERSATION:\n' + text.slice(0, 40000) }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    loadEl.style.display = 'none';
+
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+    while (true) {
+      var _ref = await reader.read(), done = _ref.done, value = _ref.value;
+      if (done) break;
+      var chunk = decoder.decode(value, { stream: true });
+      chunk.split('\n').forEach(function(line) {
+        if (!line.startsWith('data: ')) return;
+        var d = line.slice(6).trim();
+        if (d === '[DONE]') return;
+        try {
+          var ev = JSON.parse(d);
+          if (ev.type === 'content_block_delta' && ev.delta && ev.delta.text) {
+            full += ev.delta.text;
+            outputEl.innerHTML = dashRenderMarkdown(full);
+          }
+        } catch(e) {}
+      });
+    }
+    if (full.includes('Signature:')) {
+      var sigEl = document.getElementById('dash-sig-block');
+      sigEl.textContent = full.split('Signature:')[1].trim().split('\n')[0];
+      sigEl.style.display = '';
+    }
+  } catch(e) {
+    loadEl.style.display = 'none';
+    outputEl.textContent = 'Error: ' + (e.message || 'Stream failed.');
+  }
+  btnEl.disabled = false;
+}
+
+function dashRenderMarkdown(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^---+$/gm,'<hr>')
+    .replace(/^\- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/^([^<].+)$/gm, function(m) {
+      return m.startsWith('<') ? m : '<p>' + m + '</p>';
+    });
+}
+
+function saveDashReport() {
+  var out = document.getElementById('dash-reflect-output');
+  if (!out || !out.textContent.trim()) { showToast('No report to save.'); return; }
+  var blob = new Blob([out.textContent], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'seed-reflection-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+}
+
+function clearDashResult() {
+  document.getElementById('dash-result-area').style.display = 'none';
+  document.getElementById('dash-reflect-output').textContent = '';
+  document.getElementById('dash-conv-input').value = '';
+  document.getElementById('dash-char-count').textContent = '0 chars';
+}
+
+// Upload tab
+function dashDragOver(e) { e.preventDefault(); document.getElementById('dash-upload-zone').classList.add('drag-over'); }
+function dashDragLeave(e) { document.getElementById('dash-upload-zone').classList.remove('drag-over'); }
+function dashDrop(e) { e.preventDefault(); dashDragLeave(e); var f = e.dataTransfer.files[0]; if (f) processDashFile(f); }
+function handleDashFileSelect(e) { var f = e.target.files[0]; if (f) processDashFile(f); }
+
+function processDashFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      var convs = [];
+      if (Array.isArray(data)) convs = data;
+      else if (data.conversations) convs = data.conversations;
+      else convs = [data];
+      showDashConvList(convs);
+    } catch(err) {
+      showToast('Could not parse file. Try a .json export.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showDashConvList(convs) {
+  var list = document.getElementById('dash-conv-list');
+  list.style.display = '';
+  list.innerHTML = '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-muted)">Found ' + convs.length + ' conversation(s) — click to reflect:</div>';
+  convs.slice(0, 50).forEach(function(conv, i) {
+    var title = conv.title || conv.name || ('Conversation ' + (i+1));
+    var msgs = conv.mapping ? Object.values(conv.mapping) : (conv.messages || []);
+    var count = Array.isArray(msgs) ? msgs.length : '?';
+    var div = document.createElement('div');
+    div.className = 'dash-conv-item';
+    div.innerHTML = '<div><div class="dash-conv-title">' + escHtml(title.slice(0,80)) + '</div>'
+      + '<div class="dash-conv-meta">' + count + ' messages</div></div>'
+      + '<button class="btn btn-primary btn-sm">Reflect</button>';
+    div.querySelector('button').addEventListener('click', function() {
+      var text = extractConvText(conv);
+      document.getElementById('rpanel-paste').querySelector('textarea').value = text;
+      switchReflectTab('paste');
+      runDashReflection();
+    });
+    list.appendChild(div);
+  });
+}
+
+function extractConvText(conv) {
+  var lines = [];
+  if (conv.mapping) {
+    Object.values(conv.mapping).forEach(function(node) {
+      var msg = node.message;
+      if (!msg) return;
+      var role = (msg.author && msg.author.role) || 'unknown';
+      var parts = (msg.content && msg.content.parts) ? msg.content.parts : [];
+      var text = parts.filter(function(p){ return typeof p === 'string'; }).join(' ').trim();
+      if (text) lines.push(role.toUpperCase() + ': ' + text);
+    });
+  } else if (conv.messages) {
+    conv.messages.forEach(function(m) {
+      var role = m.role || m.author || 'unknown';
+      var text = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+      if (text) lines.push(role.toUpperCase() + ': ' + text.slice(0, 2000));
+    });
+  }
+  return lines.join('\n\n');
+}
+
+function saveDashUploadReport() {
+  var out = document.getElementById('dash-upload-output');
+  if (!out || !out.textContent.trim()) { showToast('No report to save.'); return; }
+  var blob = new Blob([out.textContent], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'seed-reflection-upload-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+}
+
+function clearDashUploadResult() {
+  document.getElementById('dash-upload-result-area').style.display = 'none';
+  document.getElementById('dash-upload-output').textContent = '';
+  document.getElementById('dash-conv-list').style.display = 'none';
+  document.getElementById('dash-file-input').value = '';
+}
+
+// char count wiring for dash textarea
+document.addEventListener('DOMContentLoaded', function() {
+  var ta = document.getElementById('dash-conv-input');
+  var cc = document.getElementById('dash-char-count');
+  if (ta && cc) {
+    ta.addEventListener('input', function() { cc.textContent = ta.value.length + ' chars'; });
+  }
+});
+</script>
+<script src="/pwa-install.js" defer></script>
+</body>
+</html>

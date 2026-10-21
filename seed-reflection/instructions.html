@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom AI Instructions — Seed Reflection</title>
+  <meta name="description" content="Paste these instructions into ChatGPT, Claude, Gemini, or Copilot to make every conversation seed-aware. Never lose an idea again.">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .page-hero { padding: 60px 5% 40px; background: radial-gradient(ellipse at 50% 0%, rgba(6,182,212,.06) 0%, transparent 60%); }
+    .page-hero h1 { font-family: var(--font-head); font-size: clamp(28px, 5vw, 48px); margin-bottom: 10px; line-height: 1.2; }
+    .page-hero p { color: var(--text2); font-size: 16px; max-width: 580px; }
+
+    .instructions-section { padding: 0 5% 80px; }
+    .instructions-shell { max-width: 860px; margin: 0 auto; }
+
+    .version-selector { display: flex; gap: 12px; margin: 32px 0 24px; flex-wrap: wrap; }
+    .version-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text3); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .version-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+    .version-btn:hover:not(.active) { border-color: var(--border-hi); color: var(--text); }
+
+    .version-panel { display: none; }
+    .version-panel.active { display: block; }
+
+    .instruction-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 24px;
+    }
+    .instr-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    .instr-head-left h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .instr-head-left p { font-size: 13px; color: var(--text3); max-width: 500px; line-height: 1.5; }
+    .instr-body { padding: 0; }
+    .instr-text {
+      background: var(--bg); padding: 20px 24px;
+      font-family: var(--font-mono); font-size: 12.5px; color: var(--text2);
+      white-space: pre-wrap; line-height: 1.7;
+      max-height: 320px; overflow-y: auto;
+    }
+    .instr-text.expanded { max-height: none; }
+    .instr-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .instr-footer .platform-list { display: flex; gap: 6px; flex-wrap: wrap; }
+    .plat-tag { font-size: 11px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text3); padding: 3px 8px; border-radius: 4px; }
+    .expand-toggle { font-size: 12px; color: var(--text3); background: none; border: none; cursor: pointer; font-family: var(--font-body); text-decoration: underline; padding: 0; }
+    .expand-toggle:hover { color: var(--text); }
+
+    .platform-guide { margin-top: 40px; }
+    .platform-guide h2 { font-family: var(--font-head); font-size: 28px; margin-bottom: 20px; }
+    .platform-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .platform-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    .platform-card .plat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .platform-card .plat-icon { font-size: 24px; }
+    .platform-card h3 { font-size: 15px; font-weight: 700; }
+    .platform-card ol { padding-left: 20px; color: var(--text3); font-size: 13px; line-height: 1.9; }
+    .platform-card ol li { padding: 2px 0; }
+    .platform-card .plat-note { font-size: 11px; color: var(--text3); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+    .what-it-does { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--cyan); border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
+    .what-it-does h4 { font-size: 13px; font-weight: 700; color: var(--cyan); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
+    .what-it-does ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .what-it-does li { font-size: 13px; color: var(--text2); padding-left: 20px; position: relative; line-height: 1.5; }
+    .what-it-does li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <span class="seed-icon">🌱</span>
+    <span class="brand-name">Seed <span>Reflection</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Reflect</a>
+    <a href="index.html#generate" onclick="return true;">Generate</a>
+    <a href="snippets.html" class="hide-mobile">Snippets</a>
+    <a href="import.html" class="hide-mobile">Import</a>
+    <a href="instructions.html" class="active">Instructions</a>
+    <a href="about.html" class="hide-mobile">About</a>
+    <div class="nav-divider"></div>
+    <span class="nav-badge">Powered by <a href="../index.html">SRT-1</a></span>
+    <a href="../dashboard.html" class="nav-badge dev-link hide-mobile" title="SRT-1 Command Center (requires local middleware)" target="_blank" rel="noopener">⚙ Dev Dashboard</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container-lg">
+    <div class="badge badge-cyan" style="margin-bottom:16px;">💬 Custom AI Instructions</div>
+    <h1>Make every AI conversation<br><em style="font-style:italic;color:var(--cyan);">seed-aware</em>.</h1>
+    <p>Paste these instructions into your AI platform's custom settings once. Every conversation you have will automatically track your ideas, detect drift, and never let a seed get lost.</p>
+  </div>
+</section>
+
+<section class="instructions-section">
+  <div class="instructions-shell">
+
+    <p style="color:var(--text2);font-size:14px;max-width:600px;">Two versions: <strong>Standard</strong> is clean and unobtrusive — most people won't even notice it's there. <strong>Advanced</strong> tells the AI exactly how the SCIA protocol works and what you expect from every session.</p>
+
+    <div class="version-selector">
+      <button class="version-btn active" onclick="switchVersion('standard', this)">Standard</button>
+      <button class="version-btn" onclick="switchVersion('advanced', this)">Advanced</button>
+    </div>
+
+    <!-- STANDARD -->
+    <div class="version-panel active" id="version-standard">
+      <div class="what-it-does">
+        <h4>What Standard does</h4>
+        <ul>
+          <li>Identifies your goal at the start of every conversation</li>
+          <li>Alerts you when the conversation drifts from that goal</li>
+          <li>Tracks progress every few exchanges</li>
+          <li>Collects new ideas that come up mid-conversation as "unplanted seeds"</li>
+          <li>Delivers a Session Summary when you wrap up</li>
+        </ul>
+      </div>
+      <div class="instruction-card">
+        <div class="instr-head">
+          <div class="instr-head-left">
+            <h3>Standard Instructions</h3>
+            <p>Quiet and unobtrusive. Keeps you focused without changing how conversations feel.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="copyInstructions('standard-text', this)">📋 Copy</button>
+        </div>
+        <div class="instr-body">
+          <pre class="instr-text" id="standard-text">How I want you to operate:
+
+I work on many ideas across multiple conversations. I need you to help me stay focused and not lose track of what we're building. Please follow these practices in every conversation:
+
+1. SEED AWARENESS — At the start of each conversation, identify what my goal is (the "seed"). If I don't state one clearly, ask me: "What are we building today?" Remember this seed throughout our conversation.
+
+2. DRIFT DETECTION — If you notice our conversation moving away from the original seed, tell me directly. Say something like: "We started working on X but we've shifted to Y. Should I refocus on X or is Y the new priority?"
+
+3. PROGRESS TRACKING — Every 3-4 exchanges, briefly note what we've accomplished so far and what's remaining. Just a sentence or two. This keeps us both oriented.
+
+4. SEED COLLECTION — When I mention new ideas during our conversation, note them but don't chase them unless I ask. At the end of the conversation, list any new ideas that came up that we didn't act on — these are seeds for future sessions.
+
+5. SESSION SUMMARY — When I say "wrap up" or when it seems like we're done, provide:
+   - What we accomplished
+   - What's still pending
+   - Any new ideas that came up (unplanted seeds)
+   - What I should do next
+
+6. HONEST FEEDBACK — If I'm going in circles, tell me. If I'm overcomplicating something, say so. If we should stop and rethink, suggest it. I value directness over politeness.
+
+I may not always write code. Sometimes I'm designing, planning, or just thinking out loud. Help me organize my thoughts and turn them into actionable seeds.</pre>
+        </div>
+        <div class="instr-footer">
+          <div class="platform-list">
+            <span class="plat-tag">ChatGPT</span>
+            <span class="plat-tag">Claude</span>
+            <span class="plat-tag">Gemini</span>
+            <span class="plat-tag">Copilot</span>
+            <span class="plat-tag">Any AI</span>
+          </div>
+          <button class="expand-toggle" onclick="toggleExpand('standard-text', this)">▼ Expand</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADVANCED -->
+    <div class="version-panel" id="version-advanced">
+      <div class="what-it-does">
+        <h4>What Advanced does</h4>
+        <ul>
+          <li>Everything Standard does, plus explicit SCIA protocol awareness</li>
+          <li>Formal reflection checkpoints with structured output</li>
+          <li>Session Close format with Seed, Status, Accomplished, Remaining, Unplanted Seeds, Next Action</li>
+          <li>Handles non-coder workflows — design, planning, thinking out loud</li>
+          <li>Instructs the AI to mine pasted conversations before continuing</li>
+        </ul>
+      </div>
+      <div class="instruction-card">
+        <div class="instr-head">
+          <div class="instr-head-left">
+            <h3>Advanced Instructions</h3>
+            <p>Full SCIA protocol. Structured checkpoints. Best for power users building complex projects across sessions.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="copyInstructions('advanced-text', this)">📋 Copy</button>
+        </div>
+        <div class="instr-body">
+          <pre class="instr-text" id="advanced-text">How I want you to operate:
+
+I use a system called SRT-1 (Seed Reflection Tool) to track my ideas across conversations. Here's how to work with me:
+
+SEED PROTOCOL:
+- Every conversation has a seed — the core idea or task we're working on
+- When I start a conversation, identify the seed. If it's unclear, ask me
+- Track the seed throughout. If we drift, call it out immediately
+- When new ideas come up mid-conversation, collect them as "unplanted seeds"
+- Never let a seed get lost. If I try to move on before finishing something, note it
+
+REFLECTION CHECKPOINTS:
+- Every 3-4 exchanges, do a quick check: What was the seed? What have we done? Are we on track?
+- Keep it brief — a sentence or two is fine
+- If coherence is dropping (we're going in circles or losing focus), say so explicitly
+- Use the phrase "Coherence check:" to signal when you're doing this
+
+SESSION CLOSE:
+When I say "wrap up", "let's stop", or when the session seems complete, provide a Seed Reflection:
+
+Seed: [what we set out to do]
+Status: [not started / in progress / completed / blocked]
+Accomplished: [what's done — be specific]
+Remaining: [what's left unfinished]
+Unplanted Seeds: [new ideas that came up but weren't pursued — list them]
+Next Action: [the single most important thing to do next — one sentence]
+
+COMMUNICATION:
+- Be direct. If something won't work, say so immediately
+- If I'm a non-coder working on technical projects, explain in plain language
+- Keep me focused. I have many ideas — help me finish one before starting another
+- If I paste a previous conversation, mine it for seeds before continuing
+- If I ask about something off-topic, answer briefly and return to the current seed
+
+SEED SIGNATURE:
+When the session closes, append this block:
+---
+SRT-1 Reflection Complete
+Seed Signature: SCIA-REFLECT-SESSION
+Seeds Found: [count of seeds in this session]
+Completed: [count completed]
+Unplanted: [count of new ideas not pursued]
+Timestamp: [current date and time]
+Protocol: SCIA v4.0
+---
+
+This is how every conversation should flow. Acknowledge this and let's begin.</pre>
+        </div>
+        <div class="instr-footer">
+          <div class="platform-list">
+            <span class="plat-tag">ChatGPT</span>
+            <span class="plat-tag">Claude</span>
+            <span class="plat-tag">Gemini</span>
+            <span class="plat-tag">Copilot</span>
+          </div>
+          <button class="expand-toggle" onclick="toggleExpand('advanced-text', this)">▼ Expand</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHERE TO PASTE -->
+    <div class="platform-guide">
+      <h2>Where to paste these instructions</h2>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">Every major AI platform has a place for custom instructions. Paste once — it applies to every conversation forever.</p>
+
+      <div class="platform-cards">
+
+        <div class="platform-card">
+          <div class="plat-head">
+            <span class="plat-icon">🟢</span>
+            <h3>ChatGPT</h3>
+          </div>
+          <ol>
+            <li>Open ChatGPT</li>
+            <li>Click your profile → <strong>Settings</strong></li>
+            <li>Click <strong>Personalization</strong></li>
+            <li>Click <strong>Custom Instructions</strong></li>
+            <li>Paste into the <em>"How would you like ChatGPT to respond?"</em> box</li>
+            <li>Click <strong>Save</strong></li>
+          </ol>
+          <div class="plat-note">Also applies to GPT-4o, o1, and all models. Turn it on/off per conversation.</div>
+        </div>
+
+        <div class="platform-card">
+          <div class="plat-head">
+            <span class="plat-icon">🟣</span>
+            <h3>Claude</h3>
+          </div>
+          <ol>
+            <li>Open Claude</li>
+            <li>Click your name → <strong>Settings</strong></li>
+            <li>Click <strong>Profile</strong></li>
+            <li>Find <strong>What personal preferences should Claude consider?</strong></li>
+            <li>Paste your instructions</li>
+            <li>Click <strong>Save Changes</strong></li>
+          </ol>
+          <div class="plat-note">Applies to all Claude models and projects.</div>
+        </div>
+
+        <div class="platform-card">
+          <div class="plat-head">
+            <span class="plat-icon">🔵</span>
+            <h3>Gemini</h3>
+          </div>
+          <ol>
+            <li>Open Google Gemini</li>
+            <li>Click <strong>Extensions</strong> or <strong>Settings</strong></li>
+            <li>Look for <strong>Personal context</strong> or <strong>About me</strong></li>
+            <li>Paste your instructions</li>
+            <li>Save</li>
+          </ol>
+          <div class="plat-note">Gemini may display this differently across platforms. Check your account settings if you don't see it immediately.</div>
+        </div>
+
+        <div class="platform-card">
+          <div class="plat-head">
+            <span class="plat-icon">🪟</span>
+            <h3>Microsoft Copilot</h3>
+          </div>
+          <ol>
+            <li>Open Copilot in Edge or at copilot.microsoft.com</li>
+            <li>Click your profile icon</li>
+            <li>Look for <strong>Personalization</strong> or <strong>My Profile</strong></li>
+            <li>Add to the personalization/about me section</li>
+            <li>Save</li>
+          </ol>
+          <div class="plat-note">Also works in Microsoft 365 Copilot — add to your profile in M365 admin.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SIG BLOCK -->
+    <div class="seed-signature" style="margin-top:48px;">
+      <div class="sig-header">SRT-1 Seed Reflection • SCIA v4.0</div>
+      <div class="sig-row">
+        <div class="sig-field"><span class="sig-label">Page</span><span class="sig-value">Custom AI Instructions</span></div>
+        <div class="sig-field"><span class="sig-label">Versions</span><span class="sig-value text-green">Standard + Advanced</span></div>
+        <div class="sig-field"><span class="sig-label">Platforms</span><span class="sig-value">ChatGPT · Claude · Gemini · Copilot</span></div>
+        <div class="sig-field"><span class="sig-label">Protocol</span><span class="sig-value text-purple">SCIA v4.0</span></div>
+      </div>
+      <div class="sig-footer">Seed-Class Intelligence Architecture • Paste once. Seed forever.</div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand"><strong>Seed Reflection</strong> — Find every lost idea in your AI conversations.</div>
+  <div class="footer-links">
+    <a href="index.html">Reflect</a>
+    <a href="snippets.html">Snippets</a>
+    <a href="import.html">Import</a>
+    <a href="about.html">About</a>
+    <a href="../index.html">SRT-1 Code Indexer</a>
+  </div>
+  <div class="footer-sig mono">Powered by SRT-1 • SCIA v4.0</div>
+</footer>
+
+<script>
+function switchVersion(name, btn) {
+  document.querySelectorAll('.version-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.version-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('version-' + name).classList.add('active');
+}
+
+function copyInstructions(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => { btn.textContent = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 2500);
+  });
+}
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id);
+  const expanded = el.classList.toggle('expanded');
+  btn.textContent = expanded ? '▲ Collapse' : '▼ Expand';
+}
+
+// Expand both on load so text is fully readable
+document.querySelectorAll('.instr-text').forEach(el => {
+  el.classList.add('expanded');
+});
+document.querySelectorAll('.expand-toggle').forEach(btn => {
+  btn.textContent = '▲ Collapse';
+});
+</script>
+</body>
+</html>

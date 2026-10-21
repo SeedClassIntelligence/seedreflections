@@ -1,0 +1,3384 @@
+<!DOCTYPE html>
+<!-- saved from url=(0066).index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Reflections — Never Lose Another AI Conversation</title>
+  <meta name="description" content="Recover abandoned projects across ChatGPT, Claude, Gemini, and every AI platform. Plant seeds from your phone. Track what you&#39;re building. Keep every AI on task.">
+  <meta property="og:title" content="Never Lose Another AI Conversation — Seed Reflections">
+  <meta property="og:description" content="Recover abandoned projects. Track ideas across ChatGPT, Claude, Gemini. Plant seeds from your phone.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#06080f;--bg-card:#0d1117;--bg-surface:#161b22;--bg-raised:#1c2128;
+      --border:#21262d;--border-light:#30363d;
+      --text:#f0f6fc;--text2:#c9d1d9;--text3:#8b949e;
+      --blue:#58a6ff;--cyan:#39d0d8;--teal:#2dd4bf;
+      --green:#3fb950;--green-dim:rgba(63,185,80,.1);
+      --amber:#d29922;--red:#f85149;--purple:#bc8cff;
+      --font-head:'Inter',sans-serif;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+    a{color:var(--blue);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* ── NAV ── */
+    nav{position:sticky;top:0;z-index:100;background:rgba(6,8,15,.92);backdrop-filter:blur(20px);
+        border-bottom:1px solid var(--border);padding:0 5%;height:58px;
+        display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .nav-logo{font-weight:900;font-size:17px;color:var(--green);letter-spacing:-.5px;white-space:nowrap;display:inline-flex;align-items:center}
+    .nav-logo em{color:inherit;font-style:normal}
+    .nav-links{display:flex;gap:24px;font-size:13px}
+    .nav-links a{color:var(--text3);font-weight:500}
+    .nav-links a:hover{color:var(--text);text-decoration:none}
+    .nav-links a.hi{color:var(--green);font-weight:600}
+    .nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .btn-nav-ghost{border:1px solid var(--border-light);color:var(--text2);padding:6px 14px;
+                   border-radius:6px;font-weight:600;font-size:13px;display:inline-block}
+    .btn-nav-ghost:hover{border-color:var(--blue);color:var(--blue);text-decoration:none}
+    .btn-nav-cta{background:var(--green);color:#000;padding:7px 16px;border-radius:6px;font-weight:700;font-size:13px;display:inline-block}
+    .btn-nav-cta:hover{background:#4ade80;text-decoration:none}
+    @media(max-width:640px){.nav-links{display:none}}
+
+    /* ── BUTTONS ── */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:13px 24px;border-radius:9px;
+         font-weight:700;font-size:15px;cursor:pointer;border:none;font-family:inherit;
+         text-decoration:none;transition:filter .15s,background .15s,border-color .15s;white-space:nowrap}
+    .btn:hover{text-decoration:none;filter:brightness(1.1)}
+    .btn-green{background:var(--green);color:#000}
+    .btn-blue{background:var(--blue);color:#000}
+    .btn-outline{border:1px solid var(--border-light);background:transparent;color:var(--text2)}
+    .btn-outline:hover{border-color:var(--green);color:var(--green);filter:none}
+    .btn-outline-blue{border:1px solid var(--border-light);background:transparent;color:var(--text2)}
+    .btn-outline-blue:hover{border-color:var(--blue);color:var(--blue);filter:none}
+    .btn-sm{padding:8px 16px;font-size:13px}
+    .btn-ghost-sm{background:transparent;border:1px solid var(--border);color:var(--text3);
+                  padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+    .btn-ghost-sm:hover{border-color:var(--border-light);color:var(--text)}
+
+    /* ── HERO ── */
+    .hero{padding:96px 5% 80px;text-align:center;
+          background:radial-gradient(ellipse at 50% -10%,rgba(63,185,80,.10) 0%,transparent 55%),
+                      radial-gradient(ellipse at 80% 60%,rgba(88,166,255,.05) 0%,transparent 40%)}
+    .hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--green-dim);
+                border:1px solid rgba(63,185,80,.3);color:var(--green);padding:5px 14px;
+                border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:28px}
+    .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+                    animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+    .hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:900;line-height:1.08;
+             letter-spacing:-2.5px;margin-bottom:24px;max-width:900px;margin-left:auto;margin-right:auto}
+    .hero h1 .hl{background:linear-gradient(135deg,var(--green) 0%,var(--cyan) 100%);
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-sub{font-size:clamp(16px,2vw,20px);color:var(--text2);max-width:640px;
+              margin:0 auto 44px;line-height:1.65;font-weight:400}
+    .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+    .hero-footnote{font-size:13px;color:var(--text3)}
+    .hero-footnote a{color:var(--text3);text-decoration:underline}
+
+    /* ── PLATFORMS ROW ── */
+    .platforms{padding:36px 5%;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+               text-align:center}
+    .platforms-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;
+                     font-weight:600;margin-bottom:20px}
+    .platforms-row{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap}
+    .platform-item{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+                   color:var(--text3);opacity:.7}
+    .platform-item:hover{opacity:1}
+    .platform-icon{font-size:20px}
+
+    /* ── PROOF STRIP ── */
+    .proof{display:flex;justify-content:center;gap:0;border-bottom:1px solid var(--border);overflow:hidden}
+    .proof-item{flex:1;max-width:200px;text-align:center;padding:28px 16px;border-right:1px solid var(--border)}
+    .proof-item:last-child{border-right:none}
+    .proof-num{font-size:30px;font-weight:900;color:var(--green);line-height:1}
+    .proof-label{font-size:12px;color:var(--text3);margin-top:5px}
+
+    /* ── SECTION COMMON ── */
+    .section{padding:96px 5%}
+    .section-inner{max-width:1100px;margin:0 auto}
+    .eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.15em;
+             text-transform:uppercase;color:var(--green);margin-bottom:14px}
+    .section-h2{font-size:clamp(28px,4vw,46px);font-weight:900;letter-spacing:-1.5px;
+                line-height:1.12;margin-bottom:16px}
+    .section-h2 .hl{color:var(--green)}
+    .section-h2 .hlb{color:var(--blue)}
+    .section-p{font-size:17px;color:var(--text2);line-height:1.7;max-width:580px}
+
+    /* ── FEATURE SPLIT ── */
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+    .split.flip{direction:rtl}
+    .split.flip > *{direction:ltr}
+    @media(max-width:768px){.split,.split.flip{grid-template-columns:1fr;gap:40px}}
+
+    /* ── FEATURE CARDS ── */
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:48px}
+    .fcard{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;
+           transition:border-color .2s,transform .2s}
+    .fcard:hover{border-color:var(--border-light);transform:translateY(-2px)}
+    .fcard-icon{font-size:28px;margin-bottom:16px}
+    .fcard h3{font-size:15px;font-weight:700;margin-bottom:8px;line-height:1.3}
+    .fcard p{font-size:13px;color:var(--text3);line-height:1.65}
+    .fcard-accent-green{border-top:2px solid var(--green)}
+    .fcard-accent-blue{border-top:2px solid var(--blue)}
+    .fcard-accent-purple{border-top:2px solid var(--purple)}
+    .fcard-accent-amber{border-top:2px solid var(--amber)}
+
+    /* ── DEMO SCREEN ── */
+    .demo-wrap{position:relative}
+    .demo-screen{background:var(--bg-card);border:1px solid var(--border-light);border-radius:14px;
+                 overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+    .demo-bar{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:10px 16px;
+              display:flex;align-items:center;gap:8px}
+    .demo-dot{width:10px;height:10px;border-radius:50%}
+    .demo-url{margin-left:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+    .demo-body{padding:20px;display:flex;flex-direction:column;gap:12px}
+    .demo-row{display:grid;gap:10px}
+
+    /* Conversation Recovery mock */
+    .conv-msg{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+    .conv-role{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+    .conv-text{font-size:12px;color:var(--text2);line-height:1.55}
+    .seed-found{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:10px;
+                padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+    .seed-found .seed-icon{font-size:16px;flex-shrink:0}
+    .seed-title{font-size:12px;font-weight:700;color:var(--green);margin-bottom:2px}
+    .seed-desc{font-size:11px;color:var(--text3)}
+
+    /* Snippets mock */
+    .snippet-item{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .snip-label{font-size:12px;font-weight:600;color:var(--text2)}
+    .snip-platforms{font-size:10px;color:var(--text3);margin-top:2px}
+    .snip-copy{font-size:10px;font-weight:600;color:var(--blue);background:rgba(88,166,255,.1);
+               border:1px solid rgba(88,166,255,.2);padding:4px 8px;border-radius:4px;cursor:pointer;
+               white-space:nowrap;flex-shrink:0}
+    .snip-copy:hover{background:rgba(88,166,255,.2)}
+
+    /* Mobile seed mock */
+    .phone-mock{background:var(--bg-card);border:2px solid var(--border-light);border-radius:20px;
+                padding:16px;max-width:240px;margin:0 auto}
+    .phone-time{font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+    .phone-rec{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:12px;
+               padding:16px;text-align:center;margin-bottom:12px}
+    .phone-rec-icon{font-size:24px;margin-bottom:6px}
+    .phone-rec-label{font-size:11px;color:var(--green);font-weight:700}
+    .phone-rec-wave{height:24px;display:flex;align-items:center;justify-content:center;gap:2px;margin:8px 0}
+    .wave-bar{width:3px;border-radius:2px;background:var(--green);animation:wave .8s ease-in-out infinite}
+    @keyframes wave{0%,100%{height:4px}50%{height:20px}}
+    .phone-seed{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2)}
+    .phone-seed-title{font-weight:700;color:var(--text);margin-bottom:3px}
+    .phone-seed-status{font-size:10px;color:var(--green)}
+
+    /* Cross-platform mock */
+    .platform-row{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 14px;display:flex;align-items:center;gap:10px}
+    .platform-avatar{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;
+                     justify-content:center;font-size:14px;flex-shrink:0}
+    .plat-info{flex:1}
+    .plat-name{font-size:11px;font-weight:700;color:var(--text)}
+    .plat-meta{font-size:10px;color:var(--text3)}
+    .plat-seeds{font-size:12px;font-weight:700;color:var(--cyan)}
+
+    /* ── SNIPPETS SECTION ── */
+    .snippets-showcase{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+                       padding:32px;margin-top:48px}
+    .snippet-grid{display:flex;flex-direction:column;gap:10px}
+    .snippet-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;
+                  padding:14px 18px;display:flex;align-items:center;gap:16px;cursor:pointer;
+                  transition:border-color .15s}
+    .snippet-card:hover{border-color:var(--border-light)}
+    .snippet-card.active{border-color:var(--green);background:rgba(63,185,80,.05)}
+    .snippet-num{width:26px;height:26px;border-radius:50%;background:rgba(63,185,80,.1);
+                 border:1px solid rgba(63,185,80,.3);color:var(--green);font-size:11px;font-weight:700;
+                 display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .snippet-info{flex:1}
+    .snippet-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+    .snippet-desc{font-size:12px;color:var(--text3)}
+    .snippet-badge-row{display:flex;gap:5px;flex-wrap:wrap}
+    .plat-badge{background:var(--bg-raised);border:1px solid var(--border);color:var(--text3);
+                font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600}
+    .snippet-cta{flex-shrink:0}
+
+    /* ── DEVELOPER GATEWAY ── */
+    .dev-gateway{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 5%;
+                 background:linear-gradient(180deg,var(--bg-card) 0%,rgba(88,166,255,.03) 50%,var(--bg-card) 100%)}
+    .dev-gateway-inner{max-width:1100px;margin:0 auto}
+    .dev-gateway-top{text-align:center;margin-bottom:52px}
+    .dev-gateway-label{display:inline-flex;align-items:center;gap:7px;background:rgba(88,166,255,.1);
+                       border:1px solid rgba(88,166,255,.25);color:var(--blue);font-size:11px;font-weight:700;
+                       letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:20px}
+    .dev-gateway-h2{font-size:clamp(26px,4vw,44px);font-weight:900;letter-spacing:-1.5px;
+                    line-height:1.12;margin-bottom:16px}
+    .dev-gateway-h2 .hlb{color:var(--blue)}
+    .dev-gateway-hook{font-size:17px;color:var(--text2);max-width:640px;margin:0 auto;line-height:1.7}
+    /* comparison grid */
+    .dev-compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;margin-bottom:40px}
+    @media(max-width:768px){.dev-compare{grid-template-columns:1fr;gap:12px}}
+    .dev-col-without{background:rgba(248,81,73,.05);border:1px solid rgba(248,81,73,.2);border-radius:14px;padding:24px}
+    .dev-col-with{background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.2);border-radius:14px;padding:24px}
+    .dev-col-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 8px}
+    @media(max-width:768px){.dev-col-mid{flex-direction:row;padding:0 0 4px}}
+    .dev-col-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+    .dev-col-without .dev-col-title{color:var(--red)}
+    .dev-col-with .dev-col-title{color:var(--green)}
+    .dev-compare-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);
+                     padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .dev-compare-row:last-child{border-bottom:none;padding-bottom:0}
+    .dev-compare-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+    .dev-vs{font-size:20px;font-weight:900;color:var(--text3);opacity:.5}
+    /* stat callout */
+    .dev-stat-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;
+                  margin-bottom:36px;padding:24px;background:var(--bg-surface);
+                  border:1px solid var(--border);border-radius:12px}
+    .dev-stat-item{text-align:center}
+    .dev-stat-num{font-size:28px;font-weight:900;color:var(--blue);line-height:1;font-family:'JetBrains Mono',monospace}
+    .dev-stat-lbl{font-size:12px;color:var(--text3);margin-top:4px}
+    /* bullets */
+    .dev-bullets-row{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:32px}
+    .dev-bullet-item{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--text2);max-width:280px}
+    .dev-bullet-item::before{content:'→';color:var(--blue);font-weight:800;flex-shrink:0;margin-top:1px}
+    /* CTA box */
+    .dev-cta-box{background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.25);border-radius:14px;
+                 padding:28px 32px;display:flex;align-items:center;justify-content:space-between;
+                 gap:24px;flex-wrap:wrap}
+    .dev-cta-copy h4{font-size:17px;font-weight:800;margin-bottom:4px}
+    .dev-cta-copy p{font-size:13px;color:var(--text3)}
+    .dev-cta-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+    @media(max-width:600px){.dev-cta-right{align-items:flex-start}}
+    .dev-positioning{margin-top:20px;text-align:center;font-size:13px;color:var(--text3);font-style:italic}
+    .dev-positioning strong{color:var(--blue);font-style:normal}
+
+    /* ── CONSUMER PRICING ── */
+    .pricing-section{padding:96px 5%;text-align:center;
+                     background:radial-gradient(ellipse at 50% 100%,rgba(63,185,80,.05) 0%,transparent 60%)}
+    .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+                  gap:20px;margin-top:56px;max-width:900px;margin-left:auto;margin-right:auto}
+    .pcard{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+           padding:36px 28px;text-align:left;position:relative}
+    .pcard.featured{border-color:var(--green);
+                    background:linear-gradient(180deg,rgba(63,185,80,.07) 0%,var(--bg-card) 100%)}
+    .pcard-label{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+                 color:var(--text3);margin-bottom:14px}
+    .pcard.featured .pcard-label{color:var(--green)}
+    .pcard-popular{position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+                   background:var(--green);color:#000;font-size:11px;font-weight:700;
+                   padding:4px 12px;border-radius:20px;white-space:nowrap}
+    .pcard-price{font-size:44px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+    .pcard-price sub{font-size:16px;font-weight:400;color:var(--text3);letter-spacing:0;vertical-align:middle}
+    .pcard-tagline{font-size:13px;color:var(--text3);margin-bottom:24px}
+    .pcard-features{list-style:none;margin-bottom:28px}
+    .pcard-features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);
+                       display:flex;align-items:center;gap:9px}
+    .pcard-features li:last-child{border-bottom:none}
+    .pcard-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+    .pcard-features li.dim{color:var(--text3)}
+    .pcard-features li.dim::before{content:'—';color:var(--border-light)}
+    .pcard-btn{display:block;text-align:center;padding:13px;border-radius:9px;font-weight:700;
+               font-size:14px;border:1px solid var(--border-light);color:var(--text2);
+               cursor:pointer;background:none;font-family:inherit;width:100%;transition:all .15s}
+    .pcard-btn:hover{border-color:var(--green);color:var(--green)}
+    .pcard-btn.primary{background:var(--green);color:#000;border-color:var(--green)}
+    .pcard-btn.primary:hover{background:#4ade80;filter:none}
+    .pricing-note{margin-top:24px;font-size:13px;color:var(--text3)}
+    .pricing-note a{color:var(--text3);text-decoration:underline}
+
+    /* ── TESTIMONIAL / SOCIAL PROOF ── */
+    .social-section{padding:80px 5%;border-top:1px solid var(--border)}
+    .testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:48px}
+    .tcard{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px}
+    .tcard-quote{font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+    .tcard-author{display:flex;align-items:center;gap:12px}
+    .tcard-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg-surface);
+                  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px}
+    .tcard-name{font-size:14px;font-weight:600}
+    .tcard-meta{font-size:12px;color:var(--text3)}
+
+    /* ── HOW IT WORKS ── */
+    .how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:56px}
+    .how-step{text-align:center;padding:8px}
+    .how-num{width:48px;height:48px;border-radius:50%;background:rgba(63,185,80,.1);
+             border:2px solid rgba(63,185,80,.3);display:flex;align-items:center;justify-content:center;
+             font-weight:900;font-size:15px;color:var(--green);margin:0 auto 16px}
+    .how-step h3{font-size:14px;font-weight:700;margin-bottom:6px}
+    .how-step p{font-size:13px;color:var(--text3);line-height:1.6}
+    .how-connector{height:2px;background:linear-gradient(90deg,var(--green),transparent);
+                   margin-top:-32px;margin-bottom:24px;display:none}
+    @media(min-width:769px){.how-connector{display:block}}
+
+    /* ── FOOTER ── */
+    footer{padding:48px 5% 32px;border-top:1px solid var(--border)}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+    @media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr;gap:32px}}
+    @media(max-width:480px){.footer-grid{grid-template-columns:1fr}}
+    .footer-brand p{font-size:13px;color:var(--text3);line-height:1.7;margin-top:10px;max-width:280px}
+    .footer-col-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                      color:var(--text3);margin-bottom:14px}
+    .footer-links{display:flex;flex-direction:column;gap:8px}
+    .footer-links a{font-size:13px;color:var(--text3)}
+    .footer-links a:hover{color:var(--text);text-decoration:none}
+    .footer-bottom{display:flex;justify-content:space-between;align-items:center;
+                   flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid var(--border);
+                   font-size:12px;color:var(--text3)}
+  
+    /* ── PROMPT WIZARD WORKSPACE ── */
+    .wiz-progress-bar { background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .wiz-progress-fill { background: var(--green); height: 100%; width: 25%; transition: width .3s ease; }
+    .wiz-step { display: none; margin-top: 20px; animation: wizFadeIn .3s ease; }
+    .wiz-step.active { display: block; }
+    @keyframes wizFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .wiz-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+    @media (max-width: 800px) { .wiz-cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .wiz-cards { grid-template-columns: 1fr; } }
+    
+    .wiz-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all .2s; position: relative; }
+    .wiz-card:hover { border-color: var(--border-hi); }
+    .wiz-card.active { border-color: var(--green); background: var(--green-dim); }
+    .wiz-card-icon { font-size: 28px; margin-bottom: 12px; }
+    .wiz-card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .wiz-card-desc { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.4; }
+    
+    /* Snippet specific grid sub-selection */
+    .snippets-subgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; grid-column: 1 / -1; }
+    @media (max-width: 768px) { .snippets-subgrid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .snippets-subgrid { grid-template-columns: 1fr; } }
+    
+    .snippet-select-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all .15s; }
+    .snippet-select-card:hover { border-color: var(--border-hi); }
+    .snippet-select-card.active { border-color: var(--green); background: var(--green-dim); }
+    .snippet-select-title { font-size: 12px; font-weight: 700; color: var(--text); }
+    .snippet-select-desc { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    
+    .wiz-footer { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1.5px solid var(--border); }
+    
+    /* Output Console styling */
+    .output-console { background: #03070b; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text2); line-height: 1.7; overflow: hidden; margin-top: 14px; }
+    .output-console-header { background: #070d14; border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .output-console-body { padding: 16px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+
+    /* ── PROMPT GENERATOR INCORPORATION ── */
+    .gen-layout { display: flex; gap: 32px; max-width: 1100px; margin: 24px auto 0; align-items: flex-start; text-align: left; }
+    .gen-form-col { flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 100px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .form-section-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title span { font-size: 16px; }
+    .intent-input { width: 100%; min-height: 80px; resize: vertical; font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px 12px; outline: none; font-family: inherit; }
+    .intent-input:focus { border-color: var(--green); }
+    .intent-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .length-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .length-option + label .len-icon { font-size: 16px; }
+    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
+    .chunking-note.visible { display: flex; }
+    .focus-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .focus-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 12px; }
+    .focus-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item.checked { border-color: var(--green); background: var(--green-dim); }
+    .focus-text { flex: 1; color: var(--text2); }
+    .focus-item.checked .focus-text { color: var(--green); font-weight: 600; }
+    .generate-btn-wrap { margin-top: 12px; }
+    .generate-btn { width: 100%; padding: 12px 24px; font-size: 15px; font-weight: 700; background: var(--green); color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .generate-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px var(--green-dim); }
+    .output-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .output-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .output-prompt { padding: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); white-space: pre-wrap; line-height: 1.7; max-height: 480px; overflow-y: auto; min-height: 180px; }
+    .output-placeholder { padding: 48px 20px; text-align: center; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .output-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .output-placeholder p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .sig-block { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg); font-family: var(--font-mono); font-size: 11px; color: var(--text3); line-height: 1.7; }
+    .sig-block .sig-label { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── UNIFIED CONSOLE CARD ── */
+    .console-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1040px; margin: 32px auto 0; box-shadow: 0 16px 48px rgba(0,0,0,.4); text-align: left; }
+    .console-tabs { display: flex; background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 0 16px; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .console-tab { background: transparent; border: none; border-bottom: 2.5px solid transparent; color: var(--text3); padding: 14px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; outline: none; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .console-tab:hover { color: var(--text); }
+    .console-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .console-body { padding: 24px; }
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    /* ── SEED SIGNATURE RECEIPT VISUAL ── */
+    .sig-receipt-card { background: #070d14; border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-mono); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.5); border-left: 3px solid var(--green); position: relative; overflow: hidden; }
+    .sig-receipt-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle, rgba(63,185,80,0.08) 0%, transparent 70%); pointer-events: none; }
+    .sig-receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 12px; margin-bottom: 16px; font-size: 11px; letter-spacing: .5px; }
+    .sig-receipt-title { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sig-receipt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: sigPulse 2s infinite; }
+    @keyframes sigPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .sig-receipt-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.03); font-size: 12px; }
+    .sig-receipt-row:last-of-type { border-bottom: none; }
+    .sig-receipt-label { color: var(--text3); }
+    .sig-receipt-val { color: var(--text2); text-align: right; }
+    .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
+</style>
+  <!-- PWA restricted to Developer + Enterprise tiers -->
+  <meta name="theme-color" content="#06080f">
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<style>
+/* ── Two-Row Nav ── */
+.site-header { position:sticky; top:0; z-index:100; background:rgba(6,8,15,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+.nav-top { display:flex; align-items:center; justify-content:space-between; padding:0 5%; height:50px; border-bottom:1px solid rgba(33,38,45,.5); }
+.nav-logo { font-weight:900; font-size:17px; color:var(--green); letter-spacing:-.5px; text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; }
+.nav-logo em { color:inherit; font-style:normal; }
+.nav-top-right { display:flex; align-items:center; gap:12px; }
+.nav-top-right a { font-size:13px; font-weight:600; text-decoration:none; }
+.nav-top-right .signin { color:var(--text3,#8b949e); }
+.nav-top-right .signin:hover { color:var(--text,#f0f6fc); }
+.nav-top-right .signup { background:var(--green,#3fb950); color:#000; padding:6px 14px; border-radius:6px; font-weight:700; }
+.nav-top-right .signup:hover { filter:brightness(1.1); }
+.nav-bottom { display:flex; align-items:center; justify-content:center; gap:6px; padding:0 5%; height:38px; overflow-x:auto; white-space:nowrap; }
+.nav-bottom a { font-size:12px; font-weight:600; color:var(--text3,#8b949e); text-decoration:none; padding:4px 10px; border-radius:4px; transition:color .15s, background .15s; flex-shrink:0; }
+.nav-bottom a:hover { color:var(--text,#f0f6fc); background:rgba(255,255,255,.05); text-decoration:none; }
+.nav-bottom a.active { color:var(--cyan,#39d0d8); }
+.nav-bottom .sep { width:1px; height:16px; background:var(--border,#21262d); flex-shrink:0; margin:0 4px; }
+@media(max-width:640px) { .nav-bottom { justify-content:flex-start; } .nav-bottom a { font-size:11px; padding:4px 7px; } }
+
+    /* ── PROMPT GENERATOR INCORPORATION ── */
+    .gen-layout { display: flex; gap: 32px; max-width: 1100px; margin: 24px auto 0; align-items: flex-start; text-align: left; }
+    .gen-form-col { flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 100px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .form-section-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title span { font-size: 16px; }
+    .intent-input { width: 100%; min-height: 80px; resize: vertical; font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px 12px; outline: none; font-family: inherit; }
+    .intent-input:focus { border-color: var(--green); }
+    .intent-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .length-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .length-option + label .len-icon { font-size: 16px; }
+    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
+    .chunking-note.visible { display: flex; }
+    .focus-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .focus-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 12px; }
+    .focus-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item.checked { border-color: var(--green); background: var(--green-dim); }
+    .focus-text { flex: 1; color: var(--text2); }
+    .focus-item.checked .focus-text { color: var(--green); font-weight: 600; }
+    .generate-btn-wrap { margin-top: 12px; }
+    .generate-btn { width: 100%; padding: 12px 24px; font-size: 15px; font-weight: 700; background: var(--green); color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .generate-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px var(--green-dim); }
+    .output-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .output-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .output-prompt { padding: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); white-space: pre-wrap; line-height: 1.7; max-height: 480px; overflow-y: auto; min-height: 180px; }
+    .output-placeholder { padding: 48px 20px; text-align: center; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .output-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .output-placeholder p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .sig-block { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg); font-family: var(--font-mono); font-size: 11px; color: var(--text3); line-height: 1.7; }
+    .sig-block .sig-label { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── UNIFIED CONSOLE CARD ── */
+    .console-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1040px; margin: 32px auto 0; box-shadow: 0 16px 48px rgba(0,0,0,.4); text-align: left; }
+    .console-tabs { display: flex; background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 0 16px; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .console-tab { background: transparent; border: none; border-bottom: 2.5px solid transparent; color: var(--text3); padding: 14px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; outline: none; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .console-tab:hover { color: var(--text); }
+    .console-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .console-body { padding: 24px; }
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    /* ── SEED SIGNATURE RECEIPT VISUAL ── */
+    .sig-receipt-card { background: #070d14; border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-mono); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.5); border-left: 3px solid var(--green); position: relative; overflow: hidden; }
+    .sig-receipt-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle, rgba(63,185,80,0.08) 0%, transparent 70%); pointer-events: none; }
+    .sig-receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 12px; margin-bottom: 16px; font-size: 11px; letter-spacing: .5px; }
+    .sig-receipt-title { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sig-receipt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: sigPulse 2s infinite; }
+    @keyframes sigPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .sig-receipt-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.03); font-size: 12px; }
+    .sig-receipt-row:last-of-type { border-bottom: none; }
+    .sig-receipt-label { color: var(--text3); }
+    .sig-receipt-val { color: var(--text2); text-align: right; }
+    .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
+</style>
+<header class="site-header">
+  <div class="nav-top">
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">SeedReflections</a>
+    <div class="nav-top-right" id="nav-auth">
+      <a href="auth.html?mode=login" class="signin">Sign In</a>
+      <a href="auth.html?mode=signup" class="signup">Sign Up</a>
+    </div>
+  </div>
+  <div class="nav-bottom">
+    <a href="#" class="active">🌱 Home</a>
+    <a href="/consumer">Go to Dashboard</a>
+    <a href="#section-generator">📋 Prompt Engine</a>
+    <a href="comparison.html">⚔️ Compare</a>
+    <a href="auth.html?mode=admin">🛡️ Admin</a>
+  </div>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Seed-Class Intelligence Architecture
+  </div>
+  <h1>Every idea you lost<br>in your AI conversations.<br><span class="hl">Found and filed.</span></h1>
+  <p class="hero-sub">Seed Reflection scans your AI conversations for abandoned ideas, lost decisions, and unfinished seeds — then organizes, tracks, and helps you act on them. Never lose a breakthrough again.</p>
+  <div class="hero-btns">
+    <a href="auth.html?mode=signup" class="btn btn-green">Start for Free</a>
+    <a href="#demo-video" class="btn btn-outline" style="border-color:var(--cyan);color:var(--cyan);">See Seed Reflection →</a>
+  </div>
+  <p class="hero-footnote">Free forever — no credit card · <a href="auth.html?mode=signup">Create account for saved history</a></p>
+</section>
+
+<!-- ── INTERACTIVE DEMO VIDEO ── -->
+<section class="section" id="demo-video" style="padding:64px 5% 80px;background:radial-gradient(ellipse at 50% 80%,rgba(63,185,80,.06) 0%,transparent 55%);">
+  <div class="section-inner" style="max-width:900px;">
+    <div style="text-align:center;margin-bottom:36px;">
+      <div class="eyebrow">See It In Action</div>
+      <h2 class="section-h2">Watch Seed Reflections <span class="hl">recover lost ideas</span> in real time.</h2>
+      <p class="section-p" style="margin:12px auto 0;text-align:center;">No signup. No install. Paste any AI conversation and watch the magic happen.</p>
+    </div>
+
+    <!-- Demo Player -->
+    <div class="demo-player" id="demoPlayer">
+      <!-- Progress bar -->
+      <div class="demo-progress">
+        <div class="demo-progress-bar" id="demoProgressBar"></div>
+      </div>
+      <!-- Browser chrome -->
+      <div class="demo-bar">
+        <div class="demo-dot" style="background:#ff5f57"></div>
+        <div class="demo-dot" style="background:#febc2e"></div>
+        <div class="demo-dot" style="background:#28c840"></div>
+        <span class="demo-url">seed reflections.dev — Seed Reflection</span>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+          <button class="demo-control" onclick="toggleDemoPause()" id="demoPauseBtn" title="Pause/Play">⏸</button>
+        </div>
+      </div>
+      <!-- Scene container -->
+      <div class="demo-scenes" id="demoScenes">
+        <!-- Scene 1: Paste conversation -->
+        <div class="demo-scene active" data-scene="0">
+          <div class="ds-label">STEP 1 — Paste your conversation</div>
+          <div class="ds-textarea">
+            <div class="ds-typing" id="dsTyping"></div>
+            <div class="ds-cursor">|</div>
+          </div>
+          <div class="ds-btn-row">
+            <div class="ds-action-btn">🌱 Reflect on this conversation</div>
+          </div>
+        </div>
+        <!-- Scene 2: Seeds discovered -->
+        <div class="demo-scene" data-scene="1">
+          <div class="ds-label">STEP 2 — Seeds discovered automatically</div>
+          <div class="ds-results">
+            <div class="ds-seed ds-seed-pop" style="animation-delay:0s;">
+              <div class="ds-seed-icon">🌱</div>
+              <div class="ds-seed-body">
+                <div class="ds-seed-title">Habit Tracker App</div>
+                <div class="ds-seed-meta">Status: <span style="color:var(--amber)">Abandoned</span> · Mentioned 4x · High value</div>
+                <div class="ds-seed-action">→ Next: "Set up React Native project with daily reminder system"</div>
+              </div>
+            </div>
+            <div class="ds-seed ds-seed-pop" style="animation-delay:.15s;">
+              <div class="ds-seed-icon">🌱</div>
+              <div class="ds-seed-body">
+                <div class="ds-seed-title">Auth with Passkeys</div>
+                <div class="ds-seed-meta">Status: <span style="color:var(--red)">Forgotten</span> · Quick win · 30 min</div>
+                <div class="ds-seed-action">→ Next: "Integrate WebAuthn flow into existing login page"</div>
+              </div>
+            </div>
+            <div class="ds-seed ds-seed-pop" style="animation-delay:.3s;">
+              <div class="ds-seed-icon">🌱</div>
+              <div class="ds-seed-body">
+                <div class="ds-seed-title">Export to Apple Health</div>
+                <div class="ds-seed-meta">Status: <span style="color:var(--amber)">Drifted</span> · CSS debugging took over</div>
+                <div class="ds-seed-action">→ Next: "Add HealthKit integration using HKWorkoutSession"</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Scene 3: Drift detection -->
+        <div class="demo-scene" data-scene="2">
+          <div class="ds-label">STEP 3 — Drift points identified</div>
+          <div class="ds-drift-timeline">
+            <div class="ds-drift-line"></div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:0s;">
+              <div class="ds-drift-dot green"></div>
+              <div class="ds-drift-info">
+                <div class="ds-drift-time">Message #1</div>
+                <div class="ds-drift-text">"Let's build a habit tracker app with daily reminders..."</div>
+              </div>
+            </div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.2s;">
+              <div class="ds-drift-dot green"></div>
+              <div class="ds-drift-info">
+                <div class="ds-drift-time">Message #8</div>
+                <div class="ds-drift-text">"Can you add a streak counter with animations?"</div>
+              </div>
+            </div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.4s;">
+              <div class="ds-drift-dot amber"></div>
+              <div class="ds-drift-info">
+                <div class="ds-drift-time">Message #14 — ⚠ DRIFT</div>
+                <div class="ds-drift-text">"Actually, the CSS grid is broken on mobile…"</div>
+              </div>
+            </div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.6s;">
+              <div class="ds-drift-dot red"></div>
+              <div class="ds-drift-info">
+                <div class="ds-drift-time">Message #23 — ABANDONED</div>
+                <div class="ds-drift-text">Original goal never resumed. Habit tracker lost.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Scene 4: Provenance stamp -->
+        <div class="demo-scene" data-scene="3">
+          <div class="ds-label">STEP 4 — Provenance stamp sealed</div>
+          <div class="ds-stamp">
+            <div class="ds-stamp-header">🔒 SEED-SIGNATURE</div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Type:</span><span class="ds-stamp-v">SCIA-REFLECT-FULL</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Timestamp:</span><span class="ds-stamp-v" id="stampTime">2026-04-25T20:57:23Z</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">ID:</span><span class="ds-stamp-v" style="color:var(--purple);font-weight:700;">SR-L8KQ2MNP</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Seeds Found:</span><span class="ds-stamp-v" style="color:var(--green);font-weight:700;">3</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Abandoned:</span><span class="ds-stamp-v">2</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Drift Points:</span><span class="ds-stamp-v">1</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Coherence:</span><span class="ds-stamp-v" style="color:var(--amber)">42%</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Platform:</span><span class="ds-stamp-v">ChatGPT</span></div>
+            <div class="ds-stamp-footer">✓ Verified — tamper-proof provenance record</div>
+          </div>
+        </div>
+      </div>
+      <!-- Step indicators -->
+      <div class="demo-steps">
+        <button class="demo-step active" onclick="goToScene(0)"><span>1</span> Paste</button>
+        <button class="demo-step" onclick="goToScene(1)"><span>2</span> Discover</button>
+        <button class="demo-step" onclick="goToScene(2)"><span>3</span> Drift</button>
+        <button class="demo-step" onclick="goToScene(3)"><span>4</span> Stamp</button>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+/* ── DEMO PLAYER ── */
+.demo-player{background:var(--bg-card);border:1px solid var(--border-light);border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.55),0 0 0 1px rgba(63,185,80,.08);position:relative;}
+.demo-progress{height:3px;background:var(--border);position:relative;overflow:hidden;}
+.demo-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:0%;transition:width .1s linear;}
+.demo-player .demo-bar{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px;}
+.demo-player .demo-dot{width:10px;height:10px;border-radius:50%;}
+.demo-player .demo-url{margin-left:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.demo-control{background:transparent;border:1px solid var(--border);color:var(--text3);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.demo-control:hover{border-color:var(--green);color:var(--green);}
+.demo-scenes{min-height:320px;position:relative;overflow:hidden;}
+.demo-scene{position:absolute;inset:0;padding:28px 32px;opacity:0;transform:translateY(12px);transition:opacity .45s ease,transform .45s ease;pointer-events:none;}
+.demo-scene.active{opacity:1;transform:translateY(0);pointer-events:auto;position:relative;}
+.demo-steps{display:flex;border-top:1px solid var(--border);background:var(--bg-surface);}
+.demo-step{flex:1;padding:12px 8px;background:transparent;border:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;border-right:1px solid var(--border);}
+.demo-step:last-child{border-right:none;}
+.demo-step:hover{background:rgba(255,255,255,.03);color:var(--text);}
+.demo-step.active{color:var(--green);background:rgba(63,185,80,.06);}
+.demo-step span{width:20px;height:20px;border-radius:50%;background:var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text3);transition:all .2s;}
+.demo-step.active span{background:var(--green);color:#000;}
+
+/* Scene styling */
+.ds-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:18px;}
+.ds-textarea{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 20px;min-height:140px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);line-height:1.7;position:relative;overflow:hidden;}
+.ds-typing{white-space:pre-wrap;}
+.ds-cursor{display:inline;color:var(--green);animation:blink 1s step-end infinite;font-weight:100;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.ds-btn-row{margin-top:16px;display:flex;gap:10px;}
+.ds-action-btn{background:var(--green);color:#000;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;animation:btnPulse 2s ease-in-out infinite;}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 rgba(63,185,80,.3)}50%{box-shadow:0 0 0 8px rgba(63,185,80,0)}}
+
+/* Seeds */
+.ds-results{display:flex;flex-direction:column;gap:10px;}
+.ds-seed{background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.2);border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+.ds-seed-icon{font-size:18px;flex-shrink:0;margin-top:2px;}
+.ds-seed-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.ds-seed-meta{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.ds-seed-action{font-size:12px;color:var(--cyan);font-family:'JetBrains Mono',monospace;}
+.ds-seed-pop{opacity:0;transform:translateX(-10px);animation:seedPop .4s ease forwards;}
+@keyframes seedPop{to{opacity:1;transform:translateX(0)}}
+
+/* Drift timeline */
+.ds-drift-timeline{position:relative;padding-left:20px;}
+.ds-drift-line{position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--green),var(--amber),var(--red));}
+.ds-drift-node{display:flex;align-items:flex-start;gap:14px;padding:10px 0;position:relative;}
+.ds-drift-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;position:relative;z-index:1;}
+.ds-drift-dot.green{background:var(--green);box-shadow:0 0 8px rgba(63,185,80,.4);}
+.ds-drift-dot.amber{background:var(--amber);box-shadow:0 0 8px rgba(210,153,34,.4);}
+.ds-drift-dot.red{background:var(--red);box-shadow:0 0 8px rgba(248,81,73,.4);}
+.ds-drift-time{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.ds-drift-text{font-size:12px;color:var(--text3);line-height:1.5;}
+.ds-drift-pop{opacity:0;transform:translateY(8px);animation:driftPop .35s ease forwards;}
+@keyframes driftPop{to{opacity:1;transform:translateY(0)}}
+
+/* Provenance stamp */
+.ds-stamp{background:var(--bg);border:1px solid var(--border-light);border-radius:12px;padding:24px;font-family:'JetBrains Mono',monospace;max-width:440px;margin:0 auto;box-shadow:0 0 30px rgba(188,140,255,.08);animation:stampAppear .5s ease;}
+@keyframes stampAppear{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.ds-stamp-header{font-size:14px;font-weight:700;color:var(--purple);margin-bottom:14px;letter-spacing:.05em;}
+.ds-stamp-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;}
+.ds-stamp-row:last-of-type{border-bottom:none;}
+.ds-stamp-k{color:var(--text3);}
+.ds-stamp-v{color:var(--text);}
+.ds-stamp-footer{margin-top:14px;padding-top:12px;border-top:1px solid rgba(63,185,80,.2);font-size:11px;color:var(--green);font-weight:600;text-align:center;}
+
+@media(max-width:640px){
+  .demo-scene{padding:18px 16px;}
+  .ds-stamp{padding:16px;}
+  .demo-step{font-size:11px;padding:10px 4px;}
+}
+
+    /* ── PROMPT GENERATOR INCORPORATION ── */
+    .gen-layout { display: flex; gap: 32px; max-width: 1100px; margin: 24px auto 0; align-items: flex-start; text-align: left; }
+    .gen-form-col { flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 100px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .form-section-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title span { font-size: 16px; }
+    .intent-input { width: 100%; min-height: 80px; resize: vertical; font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px 12px; outline: none; font-family: inherit; }
+    .intent-input:focus { border-color: var(--green); }
+    .intent-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .length-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .length-option + label .len-icon { font-size: 16px; }
+    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
+    .chunking-note.visible { display: flex; }
+    .focus-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .focus-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 12px; }
+    .focus-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item.checked { border-color: var(--green); background: var(--green-dim); }
+    .focus-text { flex: 1; color: var(--text2); }
+    .focus-item.checked .focus-text { color: var(--green); font-weight: 600; }
+    .generate-btn-wrap { margin-top: 12px; }
+    .generate-btn { width: 100%; padding: 12px 24px; font-size: 15px; font-weight: 700; background: var(--green); color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .generate-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px var(--green-dim); }
+    .output-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .output-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .output-prompt { padding: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); white-space: pre-wrap; line-height: 1.7; max-height: 480px; overflow-y: auto; min-height: 180px; }
+    .output-placeholder { padding: 48px 20px; text-align: center; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .output-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .output-placeholder p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .sig-block { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg); font-family: var(--font-mono); font-size: 11px; color: var(--text3); line-height: 1.7; }
+    .sig-block .sig-label { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── UNIFIED CONSOLE CARD ── */
+    .console-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1040px; margin: 32px auto 0; box-shadow: 0 16px 48px rgba(0,0,0,.4); text-align: left; }
+    .console-tabs { display: flex; background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 0 16px; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .console-tab { background: transparent; border: none; border-bottom: 2.5px solid transparent; color: var(--text3); padding: 14px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; outline: none; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .console-tab:hover { color: var(--text); }
+    .console-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .console-body { padding: 24px; }
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    /* ── SEED SIGNATURE RECEIPT VISUAL ── */
+    .sig-receipt-card { background: #070d14; border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-mono); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.5); border-left: 3px solid var(--green); position: relative; overflow: hidden; }
+    .sig-receipt-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle, rgba(63,185,80,0.08) 0%, transparent 70%); pointer-events: none; }
+    .sig-receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 12px; margin-bottom: 16px; font-size: 11px; letter-spacing: .5px; }
+    .sig-receipt-title { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sig-receipt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: sigPulse 2s infinite; }
+    @keyframes sigPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .sig-receipt-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.03); font-size: 12px; }
+    .sig-receipt-row:last-of-type { border-bottom: none; }
+    .sig-receipt-label { color: var(--text3); }
+    .sig-receipt-val { color: var(--text2); text-align: right; }
+    .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
+</style>
+<script>
+// ── Auto-playing Demo ──
+(function(){
+  const SCENE_DURATION = 5000;
+  let currentScene = 0;
+  let paused = false;
+  let timer = null;
+  let progressTimer = null;
+  let progressStart = 0;
+
+  const typingText = `User: I want to build a habit tracker app with daily\nreminders and streak counting. Minimal UI.\n\nAssistant: Great! Let's start with the data model.\nI'll set up a React Native project...\n\nUser: Actually wait — the CSS grid is broken on\nthe settings page. Can you fix that first?\n\nAssistant: Sure! Let me look at your grid layout.\nThe issue is with grid-template-columns...`;
+
+  function typeText() {
+    const el = document.getElementById('dsTyping');
+    if (!el) return;
+    let i = 0;
+    el.textContent = '';
+    const speed = 18;
+    function tick() {
+      if (i < typingText.length && currentScene === 0) {
+        el.textContent += typingText[i];
+        i++;
+        setTimeout(tick, speed);
+      }
+    }
+    tick();
+  }
+
+  function goTo(idx) {
+    currentScene = idx;
+    const scenes = document.querySelectorAll('.demo-scene');
+    const steps = document.querySelectorAll('.demo-step');
+    scenes.forEach((s,i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    steps.forEach((s,i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    // Trigger scene-specific animations
+    if (idx === 0) typeText();
+    if (idx === 3) {
+      const ts = document.getElementById('stampTime');
+      if (ts) ts.textContent = new Date().toISOString().replace(/\.\d+Z/,'Z');
+    }
+    startProgress();
+  }
+
+  function startProgress() {
+    progressStart = Date.now();
+    const bar = document.getElementById('demoProgressBar');
+    if (progressTimer) cancelAnimationFrame(progressTimer);
+    function tick() {
+      if (paused) { progressTimer = requestAnimationFrame(tick); return; }
+      const elapsed = Date.now() - progressStart;
+      const pct = Math.min((elapsed / SCENE_DURATION) * 100, 100);
+      if (bar) bar.style.width = pct + '%';
+      if (pct >= 100) {
+        goTo((currentScene + 1) % 4);
+      } else {
+        progressTimer = requestAnimationFrame(tick);
+      }
+    }
+    progressTimer = requestAnimationFrame(tick);
+  }
+
+  window.goToScene = function(idx) {
+    goTo(idx);
+  };
+
+  window.toggleDemoPause = function() {
+    paused = !paused;
+    const btn = document.getElementById('demoPauseBtn');
+    if (btn) btn.textContent = paused ? '▶' : '⏸';
+    if (!paused) {
+      // Reset progress from current point
+      progressStart = Date.now() - (Date.now() - progressStart);
+    }
+  };
+
+  // Start on load
+  setTimeout(() => { goTo(0); }, 500);
+})();
+
+
+// ── UNIFIED PROMPT ENGINE CONSOLE LOGIC ──
+var wizCurrentStep = 1;
+var selectedPromptType = 'recovery'; // recovery, system, new_thread, snippet
+var selectedSnippetNum = 1;
+var selectedPlatform = 'ChatGPT';
+var selectedLength = 'short';
+var selectedFocuses = ['stuck', 'code', 'ideas', 'next', 'drift'];
+
+function selectPromptType(type) {
+  selectedPromptType = type;
+  
+  // Highlight card
+  document.querySelectorAll('.wiz-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('card-type-' + type).classList.add('active');
+  
+  // Show snippets subgrid if snippet mode is selected
+  var subgrid = document.getElementById('snippets-subgrid');
+  subgrid.style.display = (type === 'snippet') ? 'grid' : 'none';
+  
+  // Update footer button name
+  var nextBtn = document.getElementById('btn-wiz-next');
+  if (type === 'snippet') {
+    nextBtn.textContent = 'Next: Choose Snippet ➔';
+  } else {
+    nextBtn.textContent = 'Next: Platform Details ➔';
+  }
+}
+
+function selectSnippetCard(num) {
+  selectedSnippetNum = num;
+  document.querySelectorAll('.snippet-select-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('scard-snip-' + num).classList.add('active');
+}
+
+function selectPlatformVal(plat) {
+  selectedPlatform = plat;
+}
+
+function selectLengthVal(len) {
+  selectedLength = len;
+  var note = document.getElementById('wchunking-note');
+  note.style.display = (len === 'long' || len === 'xlarge') ? 'flex' : 'none';
+}
+
+function switchWizPanel(step) {
+  document.querySelectorAll('.wiz-step').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('wiz-step-' + step).classList.add('active');
+  
+  // Update indicators
+  document.getElementById('wiz-step-indicator').textContent = 'Step ' + step + ' of 4';
+  document.getElementById('wiz-progress-fill').style.width = (step * 25) + '%';
+  
+  // Update buttons
+  var prevBtn = document.getElementById('btn-wiz-prev');
+  var nextBtn = document.getElementById('btn-wiz-next');
+  
+  prevBtn.style.visibility = (step === 1) ? 'hidden' : 'visible';
+  
+  if (step === 4) {
+    nextBtn.textContent = 'Reset Engine ↺';
+  } else if (step === 3) {
+    nextBtn.textContent = 'Generate Custom Prompt ✨';
+  } else if (step === 1) {
+    nextBtn.textContent = (selectedPromptType === 'snippet') ? 'Next: Choose Snippet ➔' : 'Next: Platform Details ➔';
+  } else {
+    nextBtn.textContent = (selectedPromptType === 'system') ? 'Generate Instructions ✨' : 'Next: Setup Focus ➔';
+  }
+}
+
+function nextWizStep() {
+  if (wizCurrentStep === 4) {
+    // Reset wizard
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+    return;
+  }
+  
+  // Routing skips logic based on mode
+  if (wizCurrentStep === 1) {
+    // If Pre-made snippet, skip step 2 & 3 and go straight to step 4 (pre-made)
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide length options if not in recovery mode
+    document.getElementById('wiz-length-block').style.display = (selectedPromptType === 'recovery') ? 'block' : 'none';
+    
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    // If System Prompt, skip step 3 and go straight to step 4
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide focus checklist if new thread starter
+    document.getElementById('wiz-focus-block').style.display = (selectedPromptType === 'new_thread') ? 'none' : 'block';
+    
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 4;
+    compileWizardPrompt();
+    switchWizPanel(4);
+  }
+}
+
+function prevWizStep() {
+  if (wizCurrentStep === 4) {
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 1;
+      switchWizPanel(1);
+      return;
+    }
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 2;
+      switchWizPanel(2);
+      return;
+    }
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+  }
+}
+
+function compileWizardPrompt() {
+  var outputEl = document.getElementById('wiz-console-output');
+  var sigEl = document.getElementById('wiz-console-title');
+  var guideEl = document.getElementById('wiz-usage-guidelines');
+  
+  if (selectedPromptType === 'snippet') {
+    var snip = PREMADE_SNIPPETS[selectedSnippetNum.toString()];
+    var text = snip ? snip.text.replace(/\\n/g, '\n') : '';
+    
+    sigEl.textContent = 'SCIA v4.0 Pre-made Snippet';
+    outputEl.textContent = text + '\n\n---SIGNATURE---\nType: Seed Reflections-PREMADE-SNIPPET-' + selectedSnippetNum + '\nProtocol: Seed Reflections (SCIA v4.0)\n---END SIGNATURE---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the snippet prompt.</li>
+      <li>Open your target AI platform (ChatGPT, Claude, or Gemini).</li>
+      <li>Paste this snippet to trigger prompt-level seed awareness instantly.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'system') {
+    // Generate permanent custom system instructions
+    var platKey = selectedPlatform.toLowerCase();
+    if (platKey.indexOf('chatgpt') >= 0) platKey = 'chatgpt';
+    else if (platKey.indexOf('claude') >= 0) platKey = 'claude';
+    else if (platKey.indexOf('gemini') >= 0) platKey = 'gemini';
+    else platKey = 'universal';
+    
+    var sysText = SYSTEM_INSTRUCTION_TEMPLATES[platKey] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+    var sysGuideText = SYSTEM_GUIDE_TEXTS[platKey] || SYSTEM_GUIDE_TEXTS.universal;
+    
+    sigEl.textContent = 'SCIA Custom System Instructions (' + selectedPlatform + ')';
+    outputEl.textContent = sysText;
+    
+    guideEl.innerHTML = `
+      <li>Copy the instructions block above.</li>
+      <li>${sysGuideText}</li>
+      <li>All future conversations with this model will inherit seed-awareness automatically.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'new_thread') {
+    // Generate thread starter
+    var intent = document.getElementById('wiz-intent').value.trim();
+    var starter = buildNewThreadPrompt(intent, selectedPlatform);
+    
+    sigEl.textContent = 'SCIA New Thread Starter (' + selectedPlatform + ')';
+    outputEl.textContent = starter;
+    
+    guideEl.innerHTML = `
+      <li>Copy the thread starter text.</li>
+      <li>Paste it as the first prompt in a new conversation with your AI assistant.</li>
+      <li>This initializes the context bounds for your new idea, preventing drift.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'recovery') {
+    // Recovery prompt builder
+    var intent = document.getElementById('wiz-intent').value.trim();
+    
+    // Focus areas
+    const focuses = [];
+    if (document.getElementById('wfocus-stuck').checked)     focuses.push('stuck');
+    if (document.getElementById('wfocus-code').checked)      focuses.push('code');
+    if (document.getElementById('wfocus-ideas').checked)     focuses.push('ideas');
+    if (document.getElementById('wfocus-next').checked)      focuses.push('next');
+    if (document.getElementById('wfocus-drift').checked)     focuses.push('drift');
+    if (document.getElementById('wfocus-decisions').checked) focuses.push('decisions');
+
+    var recPrompt = buildPrompt(intent, selectedPlatform, selectedLength, focuses);
+    var recSig = buildSignature(selectedPlatform, selectedLength, focuses);
+    
+    sigEl.textContent = 'SCIA Recovery Prompt (' + selectedPlatform + ')';
+    outputEl.textContent = recPrompt + '\n\n---GENERATOR-SIGNATURE---\n' + recSig + '\n---END---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the full prompt.</li>
+      <li>Open your target AI chat window.</li>
+      <li>Paste the prompt first, then paste your conversation logs directly after it.</li>
+    `;
+  }
+}
+
+function copyWizardOutputPrompt() {
+  const text = document.getElementById('wiz-console-output').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    const btn = document.getElementById('btn-wiz-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  });
+}
+const SYSTEM_INSTRUCTION_TEMPLATES = {
+  chatgpt: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Your goal is to maintain absolute context continuity and help the user track their intentions.
+
+1. CORE INTENT: Identify and remember the user's primary goal introduced at the start of the chat.
+2. DRIFT MONITORING: If the conversation shifts focus, explicitly mention that the topic is drifting, and suggest how to return to the original seed.
+3. SIGNATURE STAMP: When the user requests a handoff or session summary, or at the end of key milestones, append this block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100, where 0 is perfect alignment]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  claude: `You are a Seed Reflection specialist running under the SCIA v4.0 architecture.
+Help the user track intentions, monitor conversation drift, and verify goals using your XML thinking blocks.
+
+1. CORE INTENT: Extract the user's primary intent from their opening message and log it inside a silent planning block.
+2. DRIFT MONITORING: Call out when discussions veers into unrelated technical debugging or tangents.
+3. SIGNATURE STAMP: Append the standard Seed Reflections signature stamp at the end of key summaries:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  gemini: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block.
+
+Focus on the user's original intentions. If they drift, alert them.
+At the end of summaries, output this signature block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  universal: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block containing: Intent-Preserved status, Drift-Score, and Next-Seed when summarizing or when requested.`
+};
+
+const SYSTEM_GUIDE_TEXTS = {
+  chatgpt: `Copy the instructions. Paste them inside ChatGPT's <strong>"How would you like ChatGPT to respond?"</strong> input field under Custom Instructions settings.`,
+  claude: `Copy the instructions. Paste them inside the <strong>"System Prompt"</strong> field of your Claude Custom Project configuration to apply it to all chats in the project.`,
+  gemini: `Copy the instructions. Paste them into the <strong>"System Prompt"</strong> text block when creating or editing your custom Gemini Gem.`,
+  universal: `Copy the instructions. Paste them as a system prompt parameter or initial pre-prompt instructions in your custom LLM client/endpoint interface.`
+};
+
+function generateSystemInstructions() {
+  const provider = document.getElementById('sys-platform').value;
+  const promptText = SYSTEM_INSTRUCTION_TEMPLATES[provider] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+  const guideText = SYSTEM_GUIDE_TEXTS[provider] || SYSTEM_GUIDE_TEXTS.universal;
+  
+  document.getElementById('sys-output-prompt').textContent = promptText;
+  document.getElementById('sys-guide-text').innerHTML = guideText;
+}
+
+function copySystemInstructions() {
+  const txt = document.getElementById('sys-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('System instructions copied!');
+  });
+}
+
+// 7 Universal Snippets Data
+const PREMADE_SNIPPETS = {
+  "1": {
+    desc: "Use this snippet at the very start of a chat session to state your project goals, setting up strict contextual borders so the model doesn't drift.",
+    text: `🌱 SEED PLANT — SCIA v4.0\n\nMy intent for this conversation:\n[YOUR GOAL HERE]\n\nKey constraints: [any limits]\nSuccess looks like: [what done means]\n\nPlease confirm you've received this seed and repeat it back before we begin.`
+  },
+  "2": {
+    desc: "Scan the current conversation history to find ideas, feature requests, or details that were discussed but abandoned.",
+    text: `🔍 SEED RECOVERY — SCIA v4.0\n\nReview this conversation and identify:\n1. Every idea I mentioned but didn't complete\n2. Every project I started but abandoned\n3. Every question I raised but never answered\n\nFor each, give me: what it was, why it matters, and the single next action to pick it up.`
+  },
+  "3": {
+    desc: "Mid-conversation audit: Ask the AI to compare the current direction of the conversation against the original seed goal.",
+    text: `📊 COHERENCE CHECK — SCIA v4.0\n\nOriginal goal: [paste your opening message]\n\nAre we still working toward that goal?\nWhat have we drifted from?\nWhat should we do next to get back on track?`
+  },
+  "4": {
+    desc: "Generate a markdown planning bundle of the session, ready to paste into a new chat session to maintain continuity.",
+    text: `📋 SESSION HANDOFF — SCIA v4.0\n\nGenerate a handoff summary I can paste into a new conversation:\n1. My original goal\n2. What we accomplished\n3. What's still unfinished\n4. The exact next step\n5. Any important context a new session needs`
+  },
+  "5": {
+    desc: "Lists all abandoned seeds from the conversation history and ranks them based on complexity vs impact.",
+    text: `🎯 PRIORITY RECOVERY — SCIA v4.0\n\nFrom this conversation, list every abandoned idea.\nScore each on:\n- Impact (1-10): how much does completing this matter?\n- Effort (1-10): how hard is it?\n- Urgency (high/medium/low)\n\nSort by Impact/Effort ratio. Tell me what to do first.`
+  },
+  "6": {
+    desc: "Instruct the AI to generate a signature block verification receipt at the end of its response.",
+    text: `✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\n\nPlease end your response with a Provenance Stamp block:\n\n[SEED-SIG]\nContent-Hash: {first 8 chars of SHA-256 of response}\nIntent-Preserved: {yes/partial/no}\nDrift-Score: {0-100, where 0 = perfect alignment}\nNext-Seed: {the logical next question or action}\n[/SEED-SIG]`
+  },
+  "7": {
+    desc: "Bootstraps a fresh seed structure containing milestones, dependencies, and success criteria based on your project description.",
+    text: `🚀 PROJECT BOOTSTRAP — SCIA v4.0\n\nIdea: [YOUR IDEA]\n\nHelp me structure this as a Seed Reflections project:\n1. Core intent (one sentence)\n2. Top 5 seeds (specific, actionable tasks)\n3. Dependencies between seeds\n4. What to build first and why\n5. Success criteria for the whole project`
+  }
+};
+
+function loadPremadeSnippet() {
+  const num = document.getElementById('snip-selector').value;
+  const snip = PREMADE_SNIPPETS[num];
+  if (snip) {
+    document.getElementById('snip-description-text').textContent = snip.desc;
+    document.getElementById('snip-output-prompt').textContent = snip.text.replace(/\\n/g, '\n');
+  }
+}
+
+function copySelectedSnippet() {
+  const txt = document.getElementById('snip-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('Snippet prompt copied!');
+  });
+}
+
+function toggleFocusStyle(labelId, chk) {
+  var el = document.getElementById(labelId);
+  if (el) el.classList.toggle('checked', chk.checked);
+}
+
+function generatePrompt() {
+  const intent = document.getElementById('intent').value.strip ? document.getElementById('intent').value.strip() : document.getElementById('intent').value.trim();
+  
+  // Platform selection
+  let platform = 'ChatGPT';
+  if (document.getElementById('plat-claude').checked) platform = 'Claude';
+  else if (document.getElementById('plat-gemini').checked) platform = 'Gemini';
+  else if (document.getElementById('plat-other').checked) platform = 'AI assistant';
+  
+  // Length selection
+  let lengthVal = 'short';
+  if (document.getElementById('len-medium').checked) lengthVal = 'medium';
+  else if (document.getElementById('len-long').checked) lengthVal = 'long';
+  else if (document.getElementById('len-xlarge').checked) lengthVal = 'xlarge';
+  
+  // Show chunking note
+  const note = document.getElementById('chunking-note');
+  if (note) {
+    note.style.display = (lengthVal === 'long' || lengthVal === 'xlarge') ? 'flex' : 'none';
+  }
+  
+  // Focus areas
+  const focuses = [];
+  if (document.getElementById('focus-stuck').checked)     focuses.push('stuck');
+  if (document.getElementById('focus-code').checked)      focuses.push('code');
+  if (document.getElementById('focus-ideas').checked)     focuses.push('ideas');
+  if (document.getElementById('focus-next').checked)      focuses.push('next');
+  if (document.getElementById('focus-drift').checked)     focuses.push('drift');
+  if (document.getElementById('focus-decisions').checked) focuses.push('decisions');
+  if (document.getElementById('focus-blockers').checked)  focuses.push('blockers');
+  if (document.getElementById('focus-summary').checked)   focuses.push('summary');
+
+  const lengthLabels = { short: 'Short (<10K)', medium: 'Medium (10K–50K)', long: 'Long (50K–200K)', xlarge: 'Very Long (500K+)' };
+
+  const prompt = buildPrompt(intent, platform, lengthVal, focuses);
+  const sig    = buildSignature(platform, lengthVal, focuses);
+
+  document.getElementById('output-placeholder').style.display = 'none';
+  document.getElementById('output-content').style.display     = 'block';
+  document.getElementById('copy-all-btn').style.display       = 'inline-flex';
+  document.getElementById('output-prompt').textContent        = prompt;
+  document.getElementById('sig-content').textContent          = sig;
+  document.getElementById('stat-platform').textContent        = platform;
+  document.getElementById('stat-length').textContent          = lengthLabels[lengthVal];
+  document.getElementById('stat-focus').textContent           = focuses.length + ' selected';
+
+  if (window.innerWidth < 900) {
+    document.getElementById('output-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function buildPrompt(intent, platform, length, focuses) {
+  const lines = [];
+  const isXL  = length === 'xlarge';
+  const isLong = length === 'long' || length === 'xlarge';
+
+  lines.push('You are a senior Seed Reflection Analyst running under the Seed Reflections Protocol (SCIA v4.0).');
+  lines.push('Your objective is to perform a deep semantic audit on the conversation log appended below and compile a high-fidelity Seed Reflection Report.');
+  lines.push('');
+
+  if (intent) {
+    lines.push('## 🎯 Primary User Intent Seed');
+    lines.push('The primary objective the user set out to achieve in this session:');
+    lines.push('"' + intent + '"');
+    lines.push('');
+    lines.push('All analysis of drift, alignment, and recovery priorities must be calculated relative to this intent.');
+    lines.push('');
+  }
+
+  lines.push('## 📐 Session Context');
+  lines.push('- Ingestion Source: Public conversation log');
+  lines.push('- Target Platform: ' + platform);
+  lines.push('- Conversation Length: ' + { short: 'Short (under 10K tokens)', medium: 'Medium (10K–50K tokens)', long: 'Long (50K–200K tokens)', xlarge: 'Very Long (500K+ tokens)' }[length]);
+  lines.push('');
+
+  if (isXL) {
+    lines.push('## 🌊 Large-Scale Context Partitioning (Chunking Strategy)');
+    lines.push('Because this conversation is extremely long, you must use a rolling multi-pass audit strategy:');
+    lines.push('1. PASS 1 (Seed Discovery Skim): Scan the entire text. Tag the exact message indexes where new goals, features, or questions are introduced.');
+    lines.push('2. PASS 2 (Deep Semantic Crawl): For each tagged milestone, crawl the surrounding turns to analyze developers decisions, friction points, and code modules.');
+    lines.push('3. PASS 3 (Synthesis): Consolidate findings, calculate the exact coherence metric, and generate recovery prompts.');
+    lines.push('');
+  }
+
+  lines.push('## 📋 Analysis Protocols & Formatting Rules');
+  lines.push('Your output report must adhere to the following strict markdown layout. Do not include introductory chatter.');
+  lines.push('');
+
+  // Section 1: Seed Catalog
+  lines.push('### 1. 🌱 SEED CATALOG');
+  lines.push('Identify every goal, project, task, feature, or plan introduced in this chat.');
+  lines.push('Render this as a Markdown table with the columns:');
+  lines.push('| Seed ID | Description (Max 15 words) | Status (ACTIVE / COMPLETED / ABANDONED / DRIFTING) | Location (Start/Mid/End) | Relevance to Primary Intent (HIGH/MED/LOW) |');
+  lines.push('');
+  lines.push('Use the following criteria for Status:');
+  lines.push('- ACTIVE: The seed was actively developed and remains in focus at the end of the session.');
+  lines.push('- COMPLETED: The task or feature was fully built, verified, and concluded.');
+  lines.push('- ABANDONED: The seed was proposed but dropped or bypassed without progress.');
+  lines.push('- DRIFTING: Work was started on the seed, but the conversation shifted before completion.');
+  lines.push('');
+
+  // Section 2: Stuck points
+  if (focuses.includes('stuck')) {
+    lines.push('### 2. 🧱 friction & stuck analysis');
+    lines.push('For every moment work stalled or failed:');
+    lines.push('- Root Cause: Categorize the bottleneck (e.g., Code syntax limits, ambiguous prompt requirements, context shifts, tool failure, or technical blocker).');
+    lines.push('- Technical Impact: What was blocked or broken?');
+    lines.push('- Unblocking Command: Suggest a single, clear instruction to solve or bypass this block.');
+    lines.push('');
+  }
+
+  // Section 3: Code inventory
+  if (focuses.includes('code')) {
+    lines.push('### 3. 💾 code & content inventory');
+    lines.push('List all code modules, scripts, files, or documents built or discussed:');
+    lines.push('- Completed Assets: List names and paths of functional code snippets.');
+    lines.push('- Incomplete Code: List code that was started but remains unfinished (note exactly what functions or lines are missing).');
+    lines.push('- Planned but Unwritten: List files or directories discussed but never created.');
+    lines.push('');
+  }
+
+  // Section 4: Drift analysis
+  if (focuses.includes('drift')) {
+    lines.push('### 4. 🌊 drift & coherence analysis');
+    lines.push('Calculate the exact Coherence Score (0-100%) against the Primary Intent Seed using this formula:');
+    lines.push('Coherence = (AlignTurns / TotalTurns) * 100 [Subtract 15 points per major drift occurrence].');
+    lines.push('');
+    lines.push('Describe the drift journey arc:');
+    lines.push('- Trigger: What message or prompt caused the focus to shift?');
+    lines.push('- Tangent: What did the conversation focus on instead?');
+    lines.push('- Recovery status: Did the conversation ever return to the primary seed?');
+    lines.push('');
+  }
+
+  // Section 5: Decisions
+  if (focuses.includes('decisions')) {
+    lines.push('### 5. ⚖️ architectural decisions log');
+    lines.push('List every design pattern, technical choice, or architectural decision made:');
+    lines.push('- Decision: What pattern or library was selected?');
+    lines.push('- Alternatives Considered: What else was suggested?');
+    lines.push('- Rationale: Why was this specific path chosen?');
+    lines.push('');
+  }
+
+  // Section 6: Next Steps & Recovery Envelopes
+  lines.push('### 6. 🍂 recovery envelopes & next steps');
+  lines.push('Provide a priority list of 3 actionable next steps to recover abandoned seeds.');
+  lines.push('For each next step, output a "RECOVERY ENVELOPE" block (formatted as a copyable markdown quote block):');
+  lines.push('```');
+  lines.push('[RECOVERY-PROMPT]');
+  lines.push('You are resuming a previous session. Here is our context state:');
+  lines.push('Goal: [1-sentence goal]');
+  lines.push('Current Code State: [summarize built modules]');
+  lines.push('Blocked At: [summarize current blocker]');
+  lines.push('Next Task: [specific instruction to run]');
+  lines.push('[/RECOVERY-PROMPT]');
+  lines.push('```');
+  lines.push('');
+
+  lines.push('## Required SCIA Verification Block');
+  lines.push('At the end of your report, append this exact verification signature (replace bracketed variables with metrics):');
+  lines.push('');
+  lines.push('---SEED-SIGNATURE---');
+  lines.push('Type: Seed Reflections-CUSTOM-RECOVERY-REPORT');
+  lines.push('Platform: ' + platform);
+  lines.push('Total-Seeds-Found: [number]');
+  lines.push('Coherence-Score: [0-100]%');
+  lines.push('Drift-Points-Logged: [number]');
+  lines.push('---END-SIGNATURE---');
+  lines.push('');
+  lines.push('---');
+  lines.push('[PASTE YOUR CONVERSATION TRANSCRIPT LOG BELOW THIS LINE]');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function buildNewThreadPrompt(intent, platform) {
+  var lines = [];
+  lines.push('=== Seed Reflections PROTOCOL ACTIVATED ===');
+  lines.push('');
+  lines.push('I want this conversation to follow the Seed Reflections (SCIA v4.0) protocol to keep our progress focused, prevent topic drift, and track active milestones.');
+  lines.push('');
+  lines.push('1. 🎯 PRIMARY SEED (MAIN GOAL):');
+  lines.push('"' + (intent || '[ YOUR GOAL HERE ]') + '"');
+  lines.push('');
+  lines.push('2. 📋 CORE OPERATING RULES:');
+  lines.push('• DRIFT DETECTION: Monitor topic drift. If we drift off-topic, explicitly output: "Drift detected — refocus?" and prompt me to either refocus or explicitly branch the seed.');
+  lines.push('• PROGRESS CHECKPOINTS: Every 4-5 exchanges, output a brief checklist marking accomplished milestones toward the seed.');
+  lines.push('• SEED EXTRACTION: Capture any new ideas or feature requests that arise as "[SEED FOUND: Description]" but do not pursue them unless I explicitly request a scope branch.');
+  lines.push('• ARCHITECTURAL INTEGRITY: Ensure all code proposed is robust, adheres to modular standards, and features clean separation of concerns.');
+  lines.push('');
+  
+  if (platform === 'Claude') {
+    lines.push('3. 🔮 CLAUDE OPTIMIZATION:');
+    lines.push('Leverage your internal XML thinking blocks to audit user requests against the primary seed before outputting responses. Note drift indicators inside your thinking blocks.');
+  } else if (platform === 'ChatGPT') {
+    lines.push('3. 💬 CHATGPT OPTIMIZATION:');
+    lines.push('Prioritize clean structure, structured markdown logs, and clear bullet points for checkpoints.');
+  } else if (platform === 'Gemini') {
+    lines.push('3. ♊ GEMINI OPTIMIZATION:');
+    lines.push('Acknowledge personal productivity context. Help me stay productive by keeping explanations focused and concise.');
+  }
+  lines.push('');
+  
+  lines.push('4. 📊 REQUIRED SESSION SUMMARY (REFLECT):');
+  lines.push('When I state "reflect" or "end session", output a Seed Reflections Report containing:');
+  lines.push('  • ACCOMPLISHED: Detailed list of what was fully built or solved.');
+  lines.push('  • PENDING: Unfinished tasks or pending features.');
+  lines.push('  • NEW SEEDS: Captured tangents/ideas.');
+  lines.push('  • NEXT ACTIONS: Actionable priority steps to resume work.');
+  lines.push('');
+  lines.push('Please acknowledge this protocol with: "🌱 Seed locked: [your 1-sentence summary of my goal]" and then let\'s begin.');
+  lines.push('');
+  lines.push('===');
+  
+  return lines.join('\n');
+}
+
+function buildSignature(platform, length, focuses) {
+  const now     = new Date().toISOString();
+  const focuStr = focuses.length > 0 ? focuses.join(', ') : 'none selected';
+  const sid     = 'Seed Reflections-GEN-' + now.replace(/[-:.TZ]/g, '').slice(0, 14);
+  return [
+    'Signature-ID : ' + sid,
+    'Generated-At : ' + now,
+    'Generator    : Seed Reflection Prompt Generator v1.0',
+    'Platform     : ' + platform,
+    'Length-Class : ' + length,
+    'Focus-Areas  : ' + focuStr,
+    'Protocol     : Seed Reflections (Seed Reflections Architecture)',
+  ].join('\n');
+}
+
+function copyFullPrompt() {
+  const prompt = document.getElementById('output-prompt').textContent;
+  const sig    = document.getElementById('sig-content').textContent;
+  const full   = prompt + '\n\n---GENERATOR-SIGNATURE---\n' + sig + '\n---END---';
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('copy-all-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+</script>
+
+<!-- ── PLATFORM ROW ── -->
+<div class="platforms">
+  <div class="platforms-label">Works with every AI platform you already use</div>
+  <div class="platforms-row">
+    <div class="platform-item"><span class="platform-icon">💬</span> ChatGPT</div>
+    <div class="platform-item"><span class="platform-icon">🤖</span> Claude</div>
+    <div class="platform-item"><span class="platform-icon">✨</span> Gemini</div>
+    <div class="platform-item"><span class="platform-icon">🦙</span> Llama</div>
+    <div class="platform-item"><span class="platform-icon">⚡</span> Grok</div>
+    <div class="platform-item"><span class="platform-icon">🔷</span> Copilot</div>
+    <div class="platform-item"><span class="platform-icon">+</span> Any AI</div>
+  </div>
+</div>
+
+<!-- ── PROOF STRIP ── -->
+<div class="proof">
+  <div class="proof-item"><div class="proof-num">115M+</div><div class="proof-label">daily AI chatbot users worldwide*</div></div>
+  <div class="proof-item"><div class="proof-num">40%+</div><div class="proof-label">of AI projects cancelled before completion†</div></div>
+  <div class="proof-item"><div class="proof-num">7</div><div class="proof-label">universal snippets for any platform</div></div>
+  <div class="proof-item"><div class="proof-num">0</div><div class="proof-label">setup required to start recovering</div></div>
+</div>
+<div style="text-align:center;padding:8px 5%;font-size:10px;color:var(--text3)">*Industry estimates, 2025–2026 (MasterOfCode, AI Funding Tracker) · †Gartner forecast for agentic AI projects through 2027</div>
+
+<!-- ── FEATURE 1: CONVERSATION RECOVERY ── -->
+<section class="section" style="background:var(--bg)">
+  <div class="section-inner">
+    <div class="split">
+      <div>
+        <div class="eyebrow">Conversation Recovery</div>
+        <h2 class="section-h2">Your AI history is full of<br><span class="hl">abandoned gold.</span></h2>
+        <p class="section-p">Upload your ChatGPT JSON export, paste a Claude conversation, or share any AI transcript. Seed Reflections reads it and builds a prioritized list of every idea you walked away from — with why it matters and exactly what to do next.</p>
+        <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Works with ChatGPT JSON exports — just download and upload
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Paste any conversation — Claude, Gemini, or plain text
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Get a prioritized recovery list with next actions, not just summaries
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Detects drift — moments where you got pulled off your real goal
+          </div>
+        </div>
+        <div style="margin-top:32px">
+          <a href="index.html" class="btn btn-green btn-sm">Try Conversation Recovery →</a>
+        </div>
+      </div>
+      <div class="demo-wrap">
+        <div class="demo-screen">
+          <div class="demo-bar">
+            <div class="demo-dot" style="background:#ff5f57"></div>
+            <div class="demo-dot" style="background:#febc2e"></div>
+            <div class="demo-dot" style="background:#28c840"></div>
+            <span class="demo-url">Seed Reflection — Recovery Report</span>
+          </div>
+          <div class="demo-body">
+            <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">From your ChatGPT conversation · 47 messages</div>
+            <div class="conv-msg">
+              <div class="conv-role">You · 3 days ago</div>
+              <div class="conv-text">Let's build a habit tracker app. I want daily reminders, streaks, and a minimal UI...</div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin:-4px 0;text-align:center">↓ conversation drifted to something else ↓</div>
+            <div style="background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.2);border-radius:8px;padding:10px 12px">
+              <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:4px">⚠ DRIFT DETECTED</div>
+              <div style="font-size:11px;color:var(--text3)">Conversation shifted to CSS debugging — original app never completed</div>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:-4px">3 seeds recovered:</div>
+            <div class="seed-found">
+              <div class="seed-icon">🌱</div>
+              <div>
+                <div class="seed-title">Habit Tracker App</div>
+                <div class="seed-desc">Started 3 days ago — never past wireframe. High value: you mentioned it 4x.</div>
+              </div>
+            </div>
+            <div class="seed-found">
+              <div class="seed-icon">🌱</div>
+              <div>
+                <div class="seed-title">Auth with Passkeys</div>
+                <div class="seed-desc">Mentioned wanting to try modern auth — no follow-up. Next: "Add passkey login flow"</div>
+              </div>
+            </div>
+            <div class="seed-found">
+              <div class="seed-icon">🌱</div>
+              <div>
+                <div class="seed-title">Export to Apple Health</div>
+                <div class="seed-desc">Asked about HealthKit once, got distracted. Quick win — 30 min implementation.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURE 2: UNIFIED CONSOLE SECTION ── -->
+<section class="section" id="section-generator" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-inner" style="max-width:1040px;">
+    <div style="text-align:center;margin-bottom:28px">
+      <div class="eyebrow">Seed Reflection</div>
+      <h2 class="section-h2">Your ideas don't disappear.<br><span class="hl">They just get buried.</span></h2>
+      <p class="section-p" style="margin:16px auto 0;text-align:center;max-width:800px;font-size:17.5px;line-height:1.65;color:var(--text);font-weight:500;">
+        Seed Reflection scans your AI conversations for abandoned ideas, lost decisions, and unfinished seeds — then organizes, tracks, and helps you act on them. Never lose a breakthrough again.
+      </p>
+      <p class="section-p" style="margin:12px auto 0;text-align:center;max-width:680px;font-size:13.5px;color:var(--text3);line-height:1.5;">
+        Use the Interactive Prompt Wizard below to compile custom system instructions, retrieve pre-built snippets, or generate recovery prompts to quickly wake up your buried ideas in any AI assistant.
+      </p>
+    </div>
+    
+    <div class="console-card">
+      <!-- Wizard Progress Header -->
+      <div style="padding:20px 24px 12px;border-bottom:1.5px solid var(--border);background:var(--bg-raised)">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">
+          <span>SCIA Prompt Wizard</span>
+          <span id="wiz-step-indicator">Step 1 of 4</span>
+        </div>
+        <div class="wiz-progress-bar">
+          <div class="wiz-progress-fill" id="wiz-progress-fill" style="width:25%;"></div>
+        </div>
+      </div>
+      
+      <div class="console-body" style="padding:28px 24px;">
+        
+        <!-- STEP 1: Choose Prompt Type -->
+        <div class="wiz-step active" id="wiz-step-1">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Select prompt type:</h3>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:18px">Choose what type of seed-reflection prompt you'd like to construct.</p>
+          
+          <div class="wiz-cards">
+            <div class="wiz-card active" id="card-type-recovery" onclick="selectPromptType('recovery')">
+              <div class="wiz-card-icon">🔍</div>
+              <div class="wiz-card-title">Recovery Prompt</div>
+              <div class="wiz-card-desc">Scan an existing chat log to extract forgotten seeds &amp; drift points.</div>
+            </div>
+            
+            <div class="wiz-card" id="card-type-system" onclick="selectPromptType('system')">
+              <div class="wiz-card-icon">🧠</div>
+              <div class="wiz-card-title">System Prompt</div>
+              <div class="wiz-card-desc">Configure custom system instructions to make chats seed-aware automatically.</div>
+            </div>
+
+            <div class="wiz-card" id="card-type-new_thread" onclick="selectPromptType('new_thread')">
+              <div class="wiz-card-icon">💬</div>
+              <div class="wiz-card-title font-mono">New Thread</div>
+              <div class="wiz-card-desc">Create a starter prompt to begin a clean, context-contained chat.</div>
+            </div>
+
+            <div class="wiz-card" id="card-type-snippet" onclick="selectPromptType('snippet')">
+              <div class="wiz-card-icon">📋</div>
+              <div class="wiz-card-title">Pre-made Snippet</div>
+              <div class="wiz-card-desc">Select one of the 7 universal pre-made SCIA utility prompts.</div>
+            </div>
+          </div>
+          
+          <!-- Snippet Sub-Selection (slides out when snippet is chosen) -->
+          <div class="snippets-subgrid" id="snippets-subgrid" style="display:none;">
+            <div class="snippet-select-card active" id="scard-snip-1" onclick="selectSnippetCard(1)">
+              <div class="snippet-select-title">🌱 1. Plant a Seed</div>
+              <div class="snippet-select-desc">Lock in intent before starting.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-2" onclick="selectSnippetCard(2)">
+              <div class="snippet-select-title">🔍 2. Recover Ideas</div>
+              <div class="snippet-select-desc">Scan thread for lost threads.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-3" onclick="selectSnippetCard(3)">
+              <div class="snippet-select-title">📊 3. Coherence Check</div>
+              <div class="snippet-select-desc">Audit alignment mid-session.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-4" onclick="selectSnippetCard(4)">
+              <div class="snippet-select-title">📋 4. Handoff Summary</div>
+              <div class="snippet-select-desc">Handoff summary for new chat.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-5" onclick="selectSnippetCard(5)">
+              <div class="snippet-select-title">🎯 5. Priority Recovery</div>
+              <div class="snippet-select-desc">Score seeds by effort/impact.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-6" onclick="selectSnippetCard(6)">
+              <div class="snippet-select-title">✍️ 6. Provenance Stamp</div>
+              <div class="snippet-select-desc">Append validation signature.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-7" onclick="selectSnippetCard(7)">
+              <div class="snippet-select-title">🚀 7. Project Bootstrap</div>
+              <div class="snippet-select-desc">Generate starting milestones.</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- STEP 2: Configure Platform & Length -->
+        <div class="wiz-step" id="wiz-step-2">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configure platform &amp; parameters:</h3>
+          
+          <div class="form-section">
+            <div class="form-section-title"><span>🤖</span> Target AI Platform</div>
+            <div class="platform-grid">
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-chatgpt" value="ChatGPT" class="platform-option" checked onchange="selectPlatformVal('ChatGPT')">
+                <label for="wplat-chatgpt"><span class="plat-icon">💬</span>ChatGPT</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-claude" value="Claude" class="platform-option" onchange="selectPlatformVal('Claude')">
+                <label for="wplat-claude"><span class="plat-icon">🔮</span>Claude</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-gemini" value="Gemini" class="platform-option" onchange="selectPlatformVal('Gemini')">
+                <label for="wplat-gemini"><span class="plat-icon">♊</span>Gemini</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-other" value="AI assistant" class="platform-option" onchange="selectPlatformVal('AI assistant')">
+                <label for="wplat-other"><span class="plat-icon">🌐</span>Other</label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-section" id="wiz-length-block" style="margin-top:16px;">
+            <div class="form-section-title"><span>📏</span> Conversation Size (For Context Allocation)</div>
+            <div class="length-grid">
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-short" value="short" class="length-option" checked onchange="selectLengthVal('short')">
+                <label for="wlen-short"><span class="len-icon">📄</span>Short<span class="len-sub">&lt;10K tokens</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-medium" value="medium" class="length-option" onchange="selectLengthVal('medium')">
+                <label for="wlen-medium"><span class="len-icon">📋</span>Medium<span class="len-sub">10K–50K</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-long" value="long" class="length-option" onchange="selectLengthVal('long')">
+                <label for="wlen-long"><span class="len-icon">📚</span>Long<span class="len-sub">50K–200K</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-xlarge" value="xlarge" class="length-option" onchange="selectLengthVal('xlarge')">
+                <label for="wlen-xlarge"><span class="len-icon">🌊</span>V. Long<span class="len-sub">500K+</span></label>
+              </div>
+            </div>
+            <div class="chunking-note" id="wchunking-note">
+              <span>⚠️</span>
+              <div><strong>Large conversation context.</strong> Wizard will inject specialized context-chunking and rolling-state prompts.</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- STEP 3: Focus Areas & Goal Description -->
+        <div class="wiz-step" id="wiz-step-3">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Describe your goal &amp; focus areas:</h3>
+          
+          <div class="form-section">
+            <div class="form-section-title"><span>🎯</span> Describe your goal or seed (optional context)</div>
+            <textarea class="intent-input" id="wiz-intent" placeholder="What are you trying to recover, outline, or build? (e.g. 'Plan next steps for the habit tracker UI' or 'Identify why we stalled on authentication development')"></textarea>
+            <div class="intent-hint">Adds specific parameters and constraints to focus model outputs.</div>
+          </div>
+          
+          <div class="form-section" id="wiz-focus-block" style="margin-top:16px;">
+            <div class="form-section-title"><span>🔍</span> Select target focus areas (What matters most)</div>
+            <div class="focus-grid">
+              <label class="focus-item checked" id="wfocus-stuck-label">
+                <input type="checkbox" id="wfocus-stuck" value="stuck" checked onchange="toggleFocusStyle('wfocus-stuck-label', this)">
+                <span class="focus-icon">🧱</span>
+                <span class="focus-text">Find where we got stuck and why</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-code-label">
+                <input type="checkbox" id="wfocus-code" value="code" checked onchange="toggleFocusStyle('wfocus-code-label', this)">
+                <span class="focus-icon">💾</span>
+                <span class="focus-text">Recover code &amp; content we built</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-ideas-label">
+                <input type="checkbox" id="wfocus-ideas" value="ideas" checked onchange="toggleFocusStyle('wfocus-ideas-label', this)">
+                <span class="focus-icon">💡</span>
+                <span class="focus-text">Find other ideas mentioned but forgotten</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-next-label">
+                <input type="checkbox" id="wfocus-next" value="next" checked onchange="toggleFocusStyle('wfocus-next-label', this)">
+                <span class="focus-icon">🎯</span>
+                <span class="focus-text">Get actionable next steps</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-drift-label">
+                <input type="checkbox" id="wfocus-drift" value="drift" checked onchange="toggleFocusStyle('wfocus-drift-label', this)">
+                <span class="focus-icon">🌊</span>
+                <span class="focus-text">Identify drift points and causes</span>
+              </label>
+              <label class="focus-item" id="wfocus-decisions-label">
+                <input type="checkbox" id="wfocus-decisions" value="decisions" onchange="toggleFocusStyle('wfocus-decisions-label', this)">
+                <span class="focus-icon">⚖️</span>
+                <span class="focus-text">List decisions made and rationale</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- STEP 4: Output Custom Prompt Terminal -->
+        <div class="wiz-step" id="wiz-step-4">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Your custom prompt is ready!</h3>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px">Copy the compiled instructions block below and paste it directly into your AI chat window.</p>
+          
+          <div class="output-console">
+            <div class="output-console-header">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57"></span>
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e"></span>
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840"></span>
+                <span style="margin-left:8px;font-size:11px;color:var(--text3)" id="wiz-console-title">Prompt Compiler</span>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()" style="padding:4px 12px;font-size:11.5px">📋 Copy Prompt</button>
+            </div>
+            
+            <div class="output-console-body" id="wiz-console-output">Compiling...</div>
+          </div>
+          
+          <div class="card" style="margin-top:16px;padding:16px;">
+            <h4 style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">💡 Usage Guidance:</h4>
+            <ul style="font-size:12px;color:var(--text2);line-height:1.6;margin-left:18px;list-style:disc;" id="wiz-usage-guidelines">
+              <li>Open a new conversation thread on the target AI assistant.</li>
+              <li>Paste the full compiled prompt first.</li>
+              <li>Then paste your conversation transcript history after it.</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Wizard Navigation Footer -->
+        <div class="wiz-footer">
+          <button class="btn btn-ghost btn-sm" id="btn-wiz-prev" onclick="prevWizStep()" style="visibility:hidden">← Back</button>
+          <button class="btn btn-primary btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details ➔</button>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURE 4: CROSS-PLATFORM TRACKING ── -->
+<section class="section" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-inner">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="eyebrow">Cross-Platform Tracking</div>
+      <h2 class="section-h2">All your AI platforms.<br><span class="hl">One dashboard.</span></h2>
+      <p class="section-p" style="margin:12px auto 0;text-align:center">Ideas from ChatGPT, Claude, Gemini, and anywhere else — unified in a single view. Never lose context when you switch platforms. Coherence tracking across every conversation.</p>
+    </div>
+    <div class="cards-grid">
+      <div class="fcard fcard-accent-green">
+        <div class="fcard-icon">🗂️</div>
+        <h3>Unified Idea Board</h3>
+        <p>Ideas from ChatGPT and Claude sit side-by-side. Tag, prioritize, and track completion across all platforms in one place.</p>
+      </div>
+      <div class="fcard fcard-accent-blue">
+        <div class="fcard-icon">🔄</div>
+        <h3>Context Continuity</h3>
+        <p>Switching from Claude to ChatGPT? Seed Reflections generates a handoff summary so the new conversation has full context instantly.</p>
+      </div>
+      <div class="fcard fcard-accent-purple">
+        <div class="fcard-icon">📈</div>
+        <h3>Coherence Tracking</h3>
+        <p>Score how well each conversation stayed on your original intent. See drift patterns before they waste hours of work.</p>
+      </div>
+      <div class="fcard fcard-accent-amber">
+        <div class="fcard-icon">🔍</div>
+        <h3>Searchable History</h3>
+        <p>Every idea you've ever planted, from any platform. Full-text search across your entire AI conversation history.</p>
+      </div>
+    </div>
+    <div style="margin-top:40px;background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:24px">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px">Your dashboard — seeds across all platforms</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="platform-row">
+          <div class="platform-avatar" style="background:rgba(16,163,127,.15)">💬</div>
+          <div class="plat-info">
+            <div class="plat-name">ChatGPT</div>
+            <div class="plat-meta">Last active 2 hours ago · 12 conversations</div>
+          </div>
+          <div class="plat-seeds">8 seeds</div>
+        </div>
+        <div class="platform-row">
+          <div class="platform-avatar" style="background:rgba(188,140,255,.15)">🤖</div>
+          <div class="plat-info">
+            <div class="plat-name">Claude</div>
+            <div class="plat-meta">Last active today · 7 conversations</div>
+          </div>
+          <div class="plat-seeds">5 seeds</div>
+        </div>
+        <div class="platform-row">
+          <div class="platform-avatar" style="background:rgba(66,133,244,.15)">✨</div>
+          <div class="plat-info">
+            <div class="plat-name">Gemini</div>
+            <div class="plat-meta">Last active yesterday · 4 conversations</div>
+          </div>
+          <div class="plat-seeds">3 seeds</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:13px;color:var(--text3)">Total: <strong style="color:var(--text)">16 active seeds</strong> across 3 platforms</div>
+        <a href="auth.html?mode=signup" class="btn btn-green btn-sm">Start Recovering Ideas</a>
+      </div>
+    </div>
+</section>
+
+<!-- ── FEATURE 5: PROVENANCE ── -->
+<section class="section" style="background:var(--bg)">
+  <div class="section-inner">
+    <div class="split">
+      <div>
+        <div class="eyebrow">Proof of Creation</div>
+        <h2 class="section-h2">Anyone can copy AI content.<br><span class="hl">Only you can prove you own the Original Seed.</span></h2>
+        <p class="section-p">When you collaborate with AI to generate code, text, or plans — how do you establish provenance? <strong>Seed Signature</strong> is a cryptographic attribution protocol that stamps your <strong>Original Seed</strong> (your genesis intent) directly into the generated assets. Anywhere that content is pasted, it carries your cryptographically signed lineage.</p>
+        
+        <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Provable Attribution: Every block of output carries your cryptographically signed authorship.
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Tamper-Proof Provenance: If anyone edits a single character of your content, the hash mismatches and the signature breaks.
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
+            <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
+            Cross-Platform Portability: Your signed seeds remain verified across Claude, ChatGPT, Gemini, or GitHub.
+          </div>
+        </div>
+
+        <div style="margin-top:24px;padding:16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--text2)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px">What this means for you:</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Guaranteed authorship</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Tamper-detection registry</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Standalone signature licensing</span>
+          </div>
+        </div>
+      </div>
+      
+      <div style="display:flex;flex-direction:column;gap:24px;justify-content:center">
+         <div class="sig-receipt-card">
+           <div class="sig-receipt-header">
+             <div class="sig-receipt-title">
+               <span class="sig-receipt-dot"></span>
+               SEED SIGNATURE STAMP
+             </div>
+             <div style="color:var(--text3);font-size:10px;">[SCIA v4.0]</div>
+           </div>
+           
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Signature-ID</span>
+             <span class="sig-receipt-val" style="color:var(--purple);font-weight:700;">SIG_9F83A21B8C</span>
+           </div>
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Original-Seed</span>
+             <span class="sig-receipt-val" style="color:var(--text);font-weight:600;">"JWT auth flow for SaaS app"</span>
+           </div>
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Content-Hash</span>
+             <span class="sig-receipt-val">sha256_82f1b99a03e1cf...</span>
+           </div>
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Attributed-Owner</span>
+             <span class="sig-receipt-val" style="color:var(--green)">usr_x92fk309 (Verified)</span>
+           </div>
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Integrity-Check</span>
+             <span class="sig-receipt-val" style="color:var(--green)">PASS (Untampered)</span>
+           </div>
+           <div class="sig-receipt-row">
+             <span class="sig-receipt-label">Lineage-Network</span>
+             <span class="sig-receipt-val">ChatGPT, Claude, GitHub</span>
+           </div>
+           
+           <div class="sig-receipt-footer">
+             <span>🔒 Cryptographically Signed Provenance Certificate</span>
+           </div>
+         </div>
+         
+         <div style="text-align:center;padding:10px 20px;">
+           <div style="font-size:16px;font-weight:800;color:var(--green);line-height:1.4">
+             Others store conversation logs.<br>
+             <span style="color:var(--text);font-size:14px;font-weight:600;">Seed Reflections signs your intellectual lineage.</span>
+           </div>
+         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="section">
+  <div class="section-inner" style="text-align:center">
+    <div class="eyebrow">How It Works</div>
+    <h2 class="section-h2">Three steps to <span class="hl">never losing an idea again.</span></h2>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>Paste or Upload</h3>
+        <p>Paste any AI conversation, upload an AI JSON export, or paste directly to recover your ideas.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>Recover &amp; Plant</h3>
+        <p>Seed Reflections finds every abandoned idea and plants them as seeds — structured, prioritized, ready to pick up.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>Track &amp; Complete</h3>
+        <p>Watch your seeds grow across sessions and platforms. Nothing falls through the cracks again.</p>
+      </div>
+    </div>
+    <div style="margin-top:48px">
+      <a href="index.html" class="btn btn-green">Try it free — no signup needed</a>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ── SOCIAL PROOF ── -->
+<section class="social-section">
+  <div class="section-inner" style="text-align:center">
+    <div class="eyebrow">What people are saying</div>
+    <h2 class="section-h2" style="margin-bottom:0">Finally, <span class="hl">AI conversations that stick.</span></h2>
+    <div class="testimonials">
+      <div class="tcard">
+        <div class="tcard-quote">"I uploaded 6 months of ChatGPT exports and Seed Reflections pulled out 23 features I'd completely forgotten I planned to build."</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">🌱</div>
+          <div><div class="tcard-name">Startup Founder</div><div class="tcard-meta">Use case: conversation recovery</div></div>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="tcard-quote">"I use Claude for everything but the conversations all blend together. Having one dashboard to track ideas across sessions changed how I work."</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">🌱</div>
+          <div><div class="tcard-name">Indie Developer</div><div class="tcard-meta">Use case: cross-session tracking</div></div>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="tcard-quote">"The Universal Snippets alone are worth it. I paste the coherence check mid-conversation and the AI immediately course-corrects back to my original goal."</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">🌱</div>
+          <div><div class="tcard-name">Writer &amp; Researcher</div><div class="tcard-meta">Use case: coherence tracking</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text3);font-style:italic">These examples illustrate typical use cases. Individual results vary.</div>
+  </div>
+</section>
+
+<!-- ── CONSUMER PRICING ── -->
+<section class="pricing-section" id="pricing">
+  <div class="eyebrow">Pricing</div>
+  <h2 class="section-h2" style="letter-spacing:-1.5px">Start free. Upgrade when you're hooked.</h2>
+  <p style="font-size:16px;color:var(--text3);max-width:520px;margin:12px auto 0">No credit card. No limits on the core recovery tools. Pay only for saved history and the dashboard.</p>
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="pcard">
+      <div class="pcard-label">Free Plan</div>
+      <div class="pcard-price">$0</div>
+      <div class="pcard-tagline">Everything to start recovering ideas today.</div>
+      <ul class="pcard-features">
+        <li>50 reflections / month</li>
+        <li>20 seeds capacity</li>
+        <li>Local storage</li>
+        <li>All 7 Universal Snippets</li>
+        <li>Session handoff summaries</li>
+        <li class="dim">Unlimited seeds</li>
+        <li class="dim">Persisted database</li>
+      </ul>
+      <a href="auth.html?mode=signup&plan=free" class="pcard-btn">Create free account →</a>
+    </div>
+    <!-- Pro Tier — featured -->
+    <div class="pcard featured">
+      <div class="pcard-popular">Most Popular</div>
+      <div class="pcard-label">Pro Tier</div>
+      <div class="pcard-price">$9<sub>/mo</sub></div>
+      <div class="pcard-tagline">Unlimited seeds and persisted database storage.</div>
+      <ul class="pcard-features">
+        <li>Everything in Free</li>
+        <li>250 reflections / month</li>
+        <li>Unlimited seeds</li>
+        <li>Persisted database</li>
+        <li>Saved reflection library</li>
+        <li>Cross-platform tracking</li>
+        <li>Custom LLM config access</li>
+      </ul>
+      <a href="auth.html?mode=signup&plan=pro" class="pcard-btn primary">Get Pro Tier →</a>
+    </div>
+    <!-- Master Tier -->
+    <div class="pcard">
+      <div class="pcard-label">Master Tier</div>
+      <div class="pcard-price">$20<sub>/mo</sub></div>
+      <div class="pcard-tagline">Unlimited power and priority parsing.</div>
+      <ul class="pcard-features">
+        <li>Everything in Pro</li>
+        <li>Unlimited reflections</li>
+        <li>Host Platform Master</li>
+        <li>Priority parsing</li>
+        <li>Full dashboard access</li>
+        <li>Team sharing (5 seats)</li>
+        <li>API access & developer tools</li>
+      </ul>
+      <a href="auth.html?mode=signup&plan=master" class="pcard-btn">Get Master Tier →</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div style="font-weight:900;font-size:18px;letter-spacing:-.5px">Seed<em style="color:var(--cyan);font-style:normal">Reflections</em></div>
+      <p>Seed-Class Intelligence Architecture. Never lose another idea in an AI conversation.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Recovery</div>
+      <div class="footer-links">
+        <a href="index.html">Conversation Recovery</a>
+        <a href="/consumer">Universal Snippets</a>
+        <a href="/consumer">Import AI Export</a>
+        <a href="/consumer">My Dashboard</a>
+        <a href="comparison.html">Product Comparison</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Platform</div>
+      <div class="footer-links">
+        <a href="auth.html?mode=signup">Sign Up Free</a>
+        <a href="auth.html?mode=login">Log In</a>
+        <a href="auth.html?mode=admin">Admin Portal</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Company</div>
+      <div class="footer-links">
+        <a href="https://github.com/SeedClassIntelligence/Seed Reflections">GitHub</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Seed Reflections — Seed-Class Intelligence Architecture</div>
+    <div style="display:flex;gap:16px">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="https://github.com/SeedClassIntelligence/Seed Reflections">Open Source</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/platform.js"></script>
+<script>
+
+// ── UNIFIED PROMPT ENGINE CONSOLE LOGIC ──
+var wizCurrentStep = 1;
+var selectedPromptType = 'recovery'; // recovery, system, new_thread, snippet
+var selectedSnippetNum = 1;
+var selectedPlatform = 'ChatGPT';
+var selectedLength = 'short';
+var selectedFocuses = ['stuck', 'code', 'ideas', 'next', 'drift'];
+
+function selectPromptType(type) {
+  selectedPromptType = type;
+  
+  // Highlight card
+  document.querySelectorAll('.wiz-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('card-type-' + type).classList.add('active');
+  
+  // Show snippets subgrid if snippet mode is selected
+  var subgrid = document.getElementById('snippets-subgrid');
+  subgrid.style.display = (type === 'snippet') ? 'grid' : 'none';
+  
+  // Update footer button name
+  var nextBtn = document.getElementById('btn-wiz-next');
+  if (type === 'snippet') {
+    nextBtn.textContent = 'Next: Choose Snippet ➔';
+  } else {
+    nextBtn.textContent = 'Next: Platform Details ➔';
+  }
+}
+
+function selectSnippetCard(num) {
+  selectedSnippetNum = num;
+  document.querySelectorAll('.snippet-select-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('scard-snip-' + num).classList.add('active');
+}
+
+function selectPlatformVal(plat) {
+  selectedPlatform = plat;
+}
+
+function selectLengthVal(len) {
+  selectedLength = len;
+  var note = document.getElementById('wchunking-note');
+  note.style.display = (len === 'long' || len === 'xlarge') ? 'flex' : 'none';
+}
+
+function switchWizPanel(step) {
+  document.querySelectorAll('.wiz-step').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('wiz-step-' + step).classList.add('active');
+  
+  // Update indicators
+  document.getElementById('wiz-step-indicator').textContent = 'Step ' + step + ' of 4';
+  document.getElementById('wiz-progress-fill').style.width = (step * 25) + '%';
+  
+  // Update buttons
+  var prevBtn = document.getElementById('btn-wiz-prev');
+  var nextBtn = document.getElementById('btn-wiz-next');
+  
+  prevBtn.style.visibility = (step === 1) ? 'hidden' : 'visible';
+  
+  if (step === 4) {
+    nextBtn.textContent = 'Reset Engine ↺';
+  } else if (step === 3) {
+    nextBtn.textContent = 'Generate Custom Prompt ✨';
+  } else if (step === 1) {
+    nextBtn.textContent = (selectedPromptType === 'snippet') ? 'Next: Choose Snippet ➔' : 'Next: Platform Details ➔';
+  } else {
+    nextBtn.textContent = (selectedPromptType === 'system') ? 'Generate Instructions ✨' : 'Next: Setup Focus ➔';
+  }
+}
+
+function nextWizStep() {
+  if (wizCurrentStep === 4) {
+    // Reset wizard
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+    return;
+  }
+  
+  // Routing skips logic based on mode
+  if (wizCurrentStep === 1) {
+    // If Pre-made snippet, skip step 2 & 3 and go straight to step 4 (pre-made)
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide length options if not in recovery mode
+    document.getElementById('wiz-length-block').style.display = (selectedPromptType === 'recovery') ? 'block' : 'none';
+    
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    // If System Prompt, skip step 3 and go straight to step 4
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide focus checklist if new thread starter
+    document.getElementById('wiz-focus-block').style.display = (selectedPromptType === 'new_thread') ? 'none' : 'block';
+    
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 4;
+    compileWizardPrompt();
+    switchWizPanel(4);
+  }
+}
+
+function prevWizStep() {
+  if (wizCurrentStep === 4) {
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 1;
+      switchWizPanel(1);
+      return;
+    }
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 2;
+      switchWizPanel(2);
+      return;
+    }
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+  }
+}
+
+function compileWizardPrompt() {
+  var outputEl = document.getElementById('wiz-console-output');
+  var sigEl = document.getElementById('wiz-console-title');
+  var guideEl = document.getElementById('wiz-usage-guidelines');
+  
+  if (selectedPromptType === 'snippet') {
+    var snip = PREMADE_SNIPPETS[selectedSnippetNum.toString()];
+    var text = snip ? snip.text.replace(/\n/g, '
+') : '';
+    
+    sigEl.textContent = 'SCIA v4.0 Pre-made Snippet';
+    outputEl.textContent = text + '
+
+---SIGNATURE---
+Type: Seed Reflections-PREMADE-SNIPPET-' + selectedSnippetNum + '
+Protocol: Seed Reflections (SCIA v4.0)
+---END SIGNATURE---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the snippet prompt.</li>
+      <li>Open your target AI platform (ChatGPT, Claude, or Gemini).</li>
+      <li>Paste this snippet to trigger prompt-level seed awareness instantly.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'system') {
+    // Generate permanent custom system instructions
+    var platKey = selectedPlatform.toLowerCase();
+    if (platKey.indexOf('chatgpt') >= 0) platKey = 'chatgpt';
+    else if (platKey.indexOf('claude') >= 0) platKey = 'claude';
+    else if (platKey.indexOf('gemini') >= 0) platKey = 'gemini';
+    else platKey = 'universal';
+    
+    var sysText = SYSTEM_INSTRUCTION_TEMPLATES[platKey] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+    var sysGuideText = SYSTEM_GUIDE_TEXTS[platKey] || SYSTEM_GUIDE_TEXTS.universal;
+    
+    sigEl.textContent = 'SCIA Custom System Instructions (' + selectedPlatform + ')';
+    outputEl.textContent = sysText;
+    
+    guideEl.innerHTML = `
+      <li>Copy the instructions block above.</li>
+      <li>${sysGuideText}</li>
+      <li>All future conversations with this model will inherit seed-awareness automatically.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'new_thread') {
+    // Generate thread starter
+    var intent = document.getElementById('wiz-intent').value.trim();
+    var starter = `🌱 SEED PLANT — SCIA v4.0
+
+You are operating under the Seed Reflections Protocol (SCIA v4.0).
+This is a fresh conversation thread. My primary intent is:
+"${intent || '[Describe your goal here]'}"
+
+Please confirm you have received this seed and repeat it back in one sentence before we begin. Add a Seed Reflections stamp at the end.`;
+    
+    sigEl.textContent = 'SCIA New Thread Starter (' + selectedPlatform + ')';
+    outputEl.textContent = starter;
+    
+    guideEl.innerHTML = `
+      <li>Copy the thread starter text.</li>
+      <li>Paste it as the first prompt in a new conversation with your AI assistant.</li>
+      <li>This initializes the context bounds for your new idea, preventing drift.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'recovery') {
+    // Recovery prompt builder
+    var intent = document.getElementById('wiz-intent').value.trim();
+    
+    // Focus areas
+    const focuses = [];
+    if (document.getElementById('wfocus-stuck').checked)     focuses.push('stuck');
+    if (document.getElementById('wfocus-code').checked)      focuses.push('code');
+    if (document.getElementById('wfocus-ideas').checked)     focuses.push('ideas');
+    if (document.getElementById('wfocus-next').checked)      focuses.push('next');
+    if (document.getElementById('wfocus-drift').checked)     focuses.push('drift');
+    if (document.getElementById('wfocus-decisions').checked) focuses.push('decisions');
+
+    var recPrompt = buildPrompt(intent, selectedPlatform, selectedLength, focuses);
+    var recSig = buildSignature(selectedPlatform, selectedLength, focuses);
+    
+    sigEl.textContent = 'SCIA Recovery Prompt (' + selectedPlatform + ')';
+    outputEl.textContent = recPrompt + '
+
+---GENERATOR-SIGNATURE---
+' + recSig + '
+---END---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the full prompt.</li>
+      <li>Open your target AI chat window.</li>
+      <li>Paste the prompt first, then paste your conversation logs directly after it.</li>
+    `;
+  }
+}
+
+function copyWizardOutputPrompt() {
+  const text = document.getElementById('wiz-console-output').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    const btn = document.getElementById('btn-wiz-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  });
+}
+ = {
+  chatgpt: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Your goal is to maintain absolute context continuity and help the user track their intentions.
+
+1. CORE INTENT: Identify and remember the user's primary goal introduced at the start of the chat.
+2. DRIFT MONITORING: If the conversation shifts focus, explicitly mention that the topic is drifting, and suggest how to return to the original seed.
+3. SIGNATURE STAMP: When the user requests a handoff or session summary, or at the end of key milestones, append this block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100, where 0 is perfect alignment]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  claude: `You are a Seed Reflection specialist running under the SCIA v4.0 architecture.
+Help the user track intentions, monitor conversation drift, and verify goals using your XML thinking blocks.
+
+1. CORE INTENT: Extract the user's primary intent from their opening message and log it inside a silent planning block.
+2. DRIFT MONITORING: Call out when discussions veers into unrelated technical debugging or tangents.
+3. SIGNATURE STAMP: Append the standard Seed Reflections signature stamp at the end of key summaries:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  gemini: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block.
+
+Focus on the user's original intentions. If they drift, alert them.
+At the end of summaries, output this signature block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  universal: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block containing: Intent-Preserved status, Drift-Score, and Next-Seed when summarizing or when requested.`
+};
+
+const SYSTEM_GUIDE_TEXTS = {
+  chatgpt: `Copy the instructions. Paste them inside ChatGPT's <strong>"How would you like ChatGPT to respond?"</strong> input field under Custom Instructions settings.`,
+  claude: `Copy the instructions. Paste them inside the <strong>"System Prompt"</strong> field of your Claude Custom Project configuration to apply it to all chats in the project.`,
+  gemini: `Copy the instructions. Paste them into the <strong>"System Prompt"</strong> text block when creating or editing your custom Gemini Gem.`,
+  universal: `Copy the instructions. Paste them as a system prompt parameter or initial pre-prompt instructions in your custom LLM client/endpoint interface.`
+};
+
+function generateSystemInstructions() {
+  const provider = document.getElementById('sys-platform').value;
+  const promptText = SYSTEM_INSTRUCTION_TEMPLATES[provider] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+  const guideText = SYSTEM_GUIDE_TEXTS[provider] || SYSTEM_GUIDE_TEXTS.universal;
+  
+  document.getElementById('sys-output-prompt').textContent = promptText;
+  document.getElementById('sys-guide-text').innerHTML = guideText;
+}
+
+function copySystemInstructions() {
+  const txt = document.getElementById('sys-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('System instructions copied!');
+  });
+}
+
+// 7 Universal Snippets Data
+const PREMADE_SNIPPETS = {
+  "1": {
+    desc: "Use this snippet at the very start of a chat session to state your project goals, setting up strict contextual borders so the model doesn't drift.",
+    text: `🌱 SEED PLANT — SCIA v4.0\n\nMy intent for this conversation:\n[YOUR GOAL HERE]\n\nKey constraints: [any limits]\nSuccess looks like: [what done means]\n\nPlease confirm you've received this seed and repeat it back before we begin.`
+  },
+  "2": {
+    desc: "Scan the current conversation history to find ideas, feature requests, or details that were discussed but abandoned.",
+    text: `🔍 SEED RECOVERY — SCIA v4.0\n\nReview this conversation and identify:\n1. Every idea I mentioned but didn't complete\n2. Every project I started but abandoned\n3. Every question I raised but never answered\n\nFor each, give me: what it was, why it matters, and the single next action to pick it up.`
+  },
+  "3": {
+    desc: "Mid-conversation audit: Ask the AI to compare the current direction of the conversation against the original seed goal.",
+    text: `📊 COHERENCE CHECK — SCIA v4.0\n\nOriginal goal: [paste your opening message]\n\nAre we still working toward that goal?\nWhat have we drifted from?\nWhat should we do next to get back on track?`
+  },
+  "4": {
+    desc: "Generate a markdown planning bundle of the session, ready to paste into a new chat session to maintain continuity.",
+    text: `📋 SESSION HANDOFF — SCIA v4.0\n\nGenerate a handoff summary I can paste into a new conversation:\n1. My original goal\n2. What we accomplished\n3. What's still unfinished\n4. The exact next step\n5. Any important context a new session needs`
+  },
+  "5": {
+    desc: "Lists all abandoned seeds from the conversation history and ranks them based on complexity vs impact.",
+    text: `🎯 PRIORITY RECOVERY — SCIA v4.0\n\nFrom this conversation, list every abandoned idea.\nScore each on:\n- Impact (1-10): how much does completing this matter?\n- Effort (1-10): how hard is it?\n- Urgency (high/medium/low)\n\nSort by Impact/Effort ratio. Tell me what to do first.`
+  },
+  "6": {
+    desc: "Instruct the AI to generate a signature block verification receipt at the end of its response.",
+    text: `✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\n\nPlease end your response with a Provenance Stamp block:\n\n[SEED-SIG]\nContent-Hash: {first 8 chars of SHA-256 of response}\nIntent-Preserved: {yes/partial/no}\nDrift-Score: {0-100, where 0 = perfect alignment}\nNext-Seed: {the logical next question or action}\n[/SEED-SIG]`
+  },
+  "7": {
+    desc: "Bootstraps a fresh seed structure containing milestones, dependencies, and success criteria based on your project description.",
+    text: `🚀 PROJECT BOOTSTRAP — SCIA v4.0\n\nIdea: [YOUR IDEA]\n\nHelp me structure this as a Seed Reflections project:\n1. Core intent (one sentence)\n2. Top 5 seeds (specific, actionable tasks)\n3. Dependencies between seeds\n4. What to build first and why\n5. Success criteria for the whole project`
+  }
+};
+
+function loadPremadeSnippet() {
+  const num = document.getElementById('snip-selector').value;
+  const snip = PREMADE_SNIPPETS[num];
+  if (snip) {
+    document.getElementById('snip-description-text').textContent = snip.desc;
+    document.getElementById('snip-output-prompt').textContent = snip.text.replace(/\\n/g, '\n');
+  }
+}
+
+function copySelectedSnippet() {
+  const txt = document.getElementById('snip-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('Snippet prompt copied!');
+  });
+}
+
+function toggleFocusStyle(labelId, chk) {
+  var el = document.getElementById(labelId);
+  if (el) el.classList.toggle('checked', chk.checked);
+}
+
+function generatePrompt() {
+  const intent = document.getElementById('intent').value.strip ? document.getElementById('intent').value.strip() : document.getElementById('intent').value.trim();
+  
+  // Platform selection
+  let platform = 'ChatGPT';
+  if (document.getElementById('plat-claude').checked) platform = 'Claude';
+  else if (document.getElementById('plat-gemini').checked) platform = 'Gemini';
+  else if (document.getElementById('plat-other').checked) platform = 'AI assistant';
+  
+  // Length selection
+  let lengthVal = 'short';
+  if (document.getElementById('len-medium').checked) lengthVal = 'medium';
+  else if (document.getElementById('len-long').checked) lengthVal = 'long';
+  else if (document.getElementById('len-xlarge').checked) lengthVal = 'xlarge';
+  
+  // Show chunking note
+  const note = document.getElementById('chunking-note');
+  if (note) {
+    note.style.display = (lengthVal === 'long' || lengthVal === 'xlarge') ? 'flex' : 'none';
+  }
+  
+  // Focus areas
+  const focuses = [];
+  if (document.getElementById('focus-stuck').checked)     focuses.push('stuck');
+  if (document.getElementById('focus-code').checked)      focuses.push('code');
+  if (document.getElementById('focus-ideas').checked)     focuses.push('ideas');
+  if (document.getElementById('focus-next').checked)      focuses.push('next');
+  if (document.getElementById('focus-drift').checked)     focuses.push('drift');
+  if (document.getElementById('focus-decisions').checked) focuses.push('decisions');
+  if (document.getElementById('focus-blockers').checked)  focuses.push('blockers');
+  if (document.getElementById('focus-summary').checked)   focuses.push('summary');
+
+  const lengthLabels = { short: 'Short (<10K)', medium: 'Medium (10K–50K)', long: 'Long (50K–200K)', xlarge: 'Very Long (500K+)' };
+
+  const prompt = buildPrompt(intent, platform, lengthVal, focuses);
+  const sig    = buildSignature(platform, lengthVal, focuses);
+
+  document.getElementById('output-placeholder').style.display = 'none';
+  document.getElementById('output-content').style.display     = 'block';
+  document.getElementById('copy-all-btn').style.display       = 'inline-flex';
+  document.getElementById('output-prompt').textContent        = prompt;
+  document.getElementById('sig-content').textContent          = sig;
+  document.getElementById('stat-platform').textContent        = platform;
+  document.getElementById('stat-length').textContent          = lengthLabels[lengthVal];
+  document.getElementById('stat-focus').textContent           = focuses.length + ' selected';
+
+  if (window.innerWidth < 900) {
+    document.getElementById('output-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function buildPrompt(intent, platform, length, focuses) {
+  const lines = [];
+  const isXL  = length === 'xlarge';
+  const isLong = length === 'long' || length === 'xlarge';
+
+  lines.push('You are a Seed Reflection specialist trained in the Seed Reflections (Seed Reflections Architecture) protocol.');
+  lines.push('');
+
+  if (intent) {
+    lines.push('## My Primary Recovery Goal');
+    lines.push(intent);
+    lines.push('');
+    lines.push('Keep this goal in focus throughout your analysis. Prioritize findings that relate to it.');
+    lines.push('');
+  }
+
+  lines.push('## Context');
+  lines.push('Platform: ' + platform);
+  lines.push('Conversation size: ' + { short: 'Short (under 10K tokens)', medium: 'Medium (10K–50K tokens)', long: 'Long (50K–200K tokens)', xlarge: 'Very Long (500K+ tokens)' }[length]);
+  lines.push('');
+
+  if (isXL) {
+    lines.push('## Large Conversation Strategy');
+    lines.push('This is a very long conversation. Use the following chunking approach:');
+    lines.push('');
+    lines.push('PASS 1 — SEED DISCOVERY (skim at high speed):');
+    lines.push('  Read the entire conversation quickly. Do NOT stop to analyze yet.');
+    lines.push('  Tag every moment where a new idea, goal, project, or task is introduced.');
+    lines.push('');
+    lines.push('PASS 2 — DEEP ANALYSIS:');
+    lines.push('  For each seed you tagged, go back and determine: Developed? Completed? Abandoned? Why?');
+    lines.push('');
+    lines.push('PASS 3 — SYNTHESIS:');
+    lines.push('  Assemble your complete Seed Reflection Report from analyzed seeds.');
+    lines.push('');
+  }
+
+  lines.push('## Your Task');
+  lines.push('Analyze the conversation below and produce a structured Seed Reflection Report.');
+  lines.push('A "Seed" is any idea, task, goal, project, question, or plan that was introduced.');
+  lines.push('');
+
+  lines.push('Your report MUST include the following sections:');
+  lines.push('');
+  lines.push('### 🌱 All Seeds Discovered');
+  lines.push('A numbered list of every seed, with:');
+  lines.push('  - What it is (1 sentence)');
+  lines.push('  - Status: ACTIVE / COMPLETED / ABANDONED / DRIFTING');
+  lines.push('  - Where it appeared (start / middle / end of conversation)');
+  lines.push('');
+
+  if (focuses.includes('stuck')) {
+    lines.push('### 🧱 Where We Got Stuck');
+    lines.push('For each point of friction or stall:');
+    lines.push('  - What were we trying to do?');
+    lines.push('  - What caused the stall?');
+    lines.push('');
+  }
+
+  if (focuses.includes('code')) {
+    lines.push('### 💾 Code & Content Inventory');
+    lines.push('List every piece of code, content, document, or artifact that was:');
+    lines.push('  - Completed and usable now');
+    lines.push('  - Started but incomplete');
+    lines.push('');
+  }
+
+  if (focuses.includes('ideas')) {
+    lines.push('### 💡 Forgotten Ideas');
+    lines.push('Surface ideas that were mentioned briefly but never explored:');
+    lines.push('  - What was the idea?');
+    lines.push('  - One-line restart prompt to pick it back up');
+    lines.push('');
+  }
+
+  if (focuses.includes('drift')) {
+    lines.push('### 🌊 Drift Analysis');
+    lines.push('Identify every moment the conversation drifted from its original intent:');
+    lines.push('  - What was the original direction?');
+    lines.push('  - What triggered the drift?');
+    lines.push('');
+  }
+
+  if (focuses.includes('decisions')) {
+    lines.push('### ⚖️ Decisions Made');
+    lines.push('List every technical, design, or product decision that was made:');
+    lines.push('  - What was decided');
+    lines.push('  - The rationale (why this choice)');
+    lines.push('');
+  }
+
+  if (focuses.includes('blockers')) {
+    lines.push('### 🚧 Unresolved Blockers');
+    lines.push('Surface every blocker or open question that was never resolved:');
+    lines.push('  - What is blocked and why');
+    lines.push('  - Priority: HIGH / MEDIUM / LOW');
+    lines.push('');
+  }
+
+  if (focuses.includes('next')) {
+    lines.push('### 🎯 Recommended Next Steps');
+    lines.push('Give me 3–5 specific, actionable next steps in priority order:');
+    lines.push('  - What to do (one clear imperative sentence)');
+    lines.push('  - Why this is the right next action');
+    lines.push('');
+  }
+
+  lines.push('### 🍂 Top Abandoned Seeds to Recover');
+  lines.push('The top 3 abandoned seeds most worth picking up, in priority order:');
+  lines.push('  - What it is and why it matters');
+  lines.push('  - Exact restart prompt (2–3 sentences to paste into new chat)');
+  lines.push('');
+
+  lines.push('## Required Signature Block');
+  lines.push('At the end of your report, append this exact block (fill in bracketed values):');
+  lines.push('');
+  lines.push('---SEED-SIGNATURE---');
+  lines.push('Type: Seed Reflections-CUSTOM-RECOVERY');
+  lines.push('Generated: [ISO 8601 datetime]');
+  lines.push('Platform: ' + platform);
+  lines.push('Seeds Found: [total number]');
+  lines.push('---END-SIGNATURE---');
+  lines.push('');
+  lines.push('---');
+  lines.push('[PASTE YOUR CONVERSATION BELOW THIS LINE]');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function buildSignature(platform, length, focuses) {
+  const now     = new Date().toISOString();
+  const focuStr = focuses.length > 0 ? focuses.join(', ') : 'none selected';
+  const sid     = 'Seed Reflections-GEN-' + now.replace(/[-:.TZ]/g, '').slice(0, 14);
+  return [
+    'Signature-ID : ' + sid,
+    'Generated-At : ' + now,
+    'Generator    : Seed Reflection Prompt Generator v1.0',
+    'Platform     : ' + platform,
+    'Length-Class : ' + length,
+    'Focus-Areas  : ' + focuStr,
+    'Protocol     : Seed Reflections (Seed Reflections Architecture)',
+  ].join('\n');
+}
+
+function copyFullPrompt() {
+  const prompt = document.getElementById('output-prompt').textContent;
+  const sig    = document.getElementById('sig-content').textContent;
+  const full   = prompt + '\n\n---GENERATOR-SIGNATURE---\n' + sig + '\n---END---';
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('copy-all-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+</script>
+<script>
+// Auth-reactive nav
+(function() {
+  const el = document.getElementById('nav-auth');
+  if (SeedReflectionsPlatform.isLoggedIn()) {
+    el.innerHTML = `
+      <a href="/consumer" class="signin" style="margin-right:8px;">Dashboard</a>
+      <button class="btn-nav-cta" onclick="SeedReflectionsPlatform.logout(); location.reload();" style="background:transparent;border:1px solid var(--border-light);color:var(--text3);">Log out</button>`;
+  }
+})();
+
+// Checkout — direct Stripe payment links (no backend required)
+const CHECKOUT_URLS = {
+  free: 'https://buy.stripe.com/test_seed_reflections_free',
+  pro: 'https://buy.stripe.com/test_seed_reflections_pro',
+  master:  'https://buy.stripe.com/test_seed_reflections_master',
+};
+function handleCheckout(plan) {
+  const url = CHECKOUT_URLS[plan];
+  if (url) { location.href = url; }
+}
+
+// Snippet select
+function selectSnippet(card) {
+  document.querySelectorAll('.snippet-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+}
+
+// Snippets handled in Prompt Engine
+const SNIPPET_PREVIEWS = [
+  `🌱 SEED PLANT — SCIA v4.0\n\nMy intent for this conversation:\n[YOUR GOAL HERE]\n\nKey constraints: [any limits]\nSuccess looks like: [what done means]\n\nPlease confirm you've received this seed and repeat it back before we begin.`,
+  `🔍 SEED RECOVERY — SCIA v4.0\n\nReview this conversation and identify:\n1. Every idea I mentioned but didn't complete\n2. Every project I started but abandoned\n3. Every question I raised but never answered\n\nFor each, give me: what it was, why it matters, and the single next action to pick it up.`,
+  `📊 COHERENCE CHECK — SCIA v4.0\n\nOriginal goal: [paste your opening message]\n\nAre we still working toward that goal?\nWhat have we drifted from?\nWhat should we do next to get back on track?`,
+  `📋 SESSION HANDOFF — SCIA v4.0\n\nGenerate a handoff summary I can paste into a new conversation:\n1. My original goal\n2. What we accomplished\n3. What's still unfinished\n4. The exact next step\n5. Any important context a new session needs`,
+  `🎯 PRIORITY RECOVERY — SCIA v4.0\n\nFrom this conversation, list every abandoned idea.\nScore each on:\n- Impact (1-10): how much does completing this matter?\n- Effort (1-10): how hard is it?\n- Urgency (high/medium/low)\n\nSort by Impact/Effort ratio. Tell me what to do first.`,
+  `✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\n\nPlease end your response with a Provenance Stamp block:\n\n[SEED-SIG]\nContent-Hash: {first 8 chars of SHA-256 of response}\nIntent-Preserved: {yes/partial/no}\nDrift-Score: {0-100, where 0 = perfect alignment}\nNext-Seed: {the logical next question or action}\n[/SEED-SIG]`,
+  `🚀 PROJECT BOOTSTRAP — SCIA v4.0\n\nIdea: [YOUR IDEA]\n\nHelp me structure this as an Seed Reflections project:\n1. Core intent (one sentence)\n2. Top 5 seeds (specific, actionable tasks)\n3. Dependencies between seeds\n4. What to build first and why\n5. Success criteria for the whole project`,
+];
+
+function copySnippet(num) {
+  const text = SNIPPET_PREVIEWS[num - 1];
+  navigator.clipboard.writeText(text).then(() => {
+    const btns = document.querySelectorAll('.snip-copy');
+    // find the nth button
+    let count = 0;
+    for (const btn of document.querySelectorAll('.snip-copy')) {
+      count++;
+      if (count === num) {
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.style.background = 'rgba(63,185,80,.2)';
+        btn.style.borderColor = 'rgba(63,185,80,.4)';
+        btn.style.color = 'var(--green)';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }, 1800);
+        break;
+      }
+    }
+  });
+}
+
+
+// ── UNIFIED PROMPT ENGINE CONSOLE LOGIC ──
+var wizCurrentStep = 1;
+var selectedPromptType = 'recovery'; // recovery, system, new_thread, snippet
+var selectedSnippetNum = 1;
+var selectedPlatform = 'ChatGPT';
+var selectedLength = 'short';
+var selectedFocuses = ['stuck', 'code', 'ideas', 'next', 'drift'];
+
+function selectPromptType(type) {
+  selectedPromptType = type;
+  
+  // Highlight card
+  document.querySelectorAll('.wiz-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('card-type-' + type).classList.add('active');
+  
+  // Show snippets subgrid if snippet mode is selected
+  var subgrid = document.getElementById('snippets-subgrid');
+  subgrid.style.display = (type === 'snippet') ? 'grid' : 'none';
+  
+  // Update footer button name
+  var nextBtn = document.getElementById('btn-wiz-next');
+  if (type === 'snippet') {
+    nextBtn.textContent = 'Next: Choose Snippet ➔';
+  } else {
+    nextBtn.textContent = 'Next: Platform Details ➔';
+  }
+}
+
+function selectSnippetCard(num) {
+  selectedSnippetNum = num;
+  document.querySelectorAll('.snippet-select-card').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('scard-snip-' + num).classList.add('active');
+}
+
+function selectPlatformVal(plat) {
+  selectedPlatform = plat;
+}
+
+function selectLengthVal(len) {
+  selectedLength = len;
+  var note = document.getElementById('wchunking-note');
+  note.style.display = (len === 'long' || len === 'xlarge') ? 'flex' : 'none';
+}
+
+function switchWizPanel(step) {
+  document.querySelectorAll('.wiz-step').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('wiz-step-' + step).classList.add('active');
+  
+  // Update indicators
+  document.getElementById('wiz-step-indicator').textContent = 'Step ' + step + ' of 4';
+  document.getElementById('wiz-progress-fill').style.width = (step * 25) + '%';
+  
+  // Update buttons
+  var prevBtn = document.getElementById('btn-wiz-prev');
+  var nextBtn = document.getElementById('btn-wiz-next');
+  
+  prevBtn.style.visibility = (step === 1) ? 'hidden' : 'visible';
+  
+  if (step === 4) {
+    nextBtn.textContent = 'Reset Engine ↺';
+  } else if (step === 3) {
+    nextBtn.textContent = 'Generate Custom Prompt ✨';
+  } else if (step === 1) {
+    nextBtn.textContent = (selectedPromptType === 'snippet') ? 'Next: Choose Snippet ➔' : 'Next: Platform Details ➔';
+  } else {
+    nextBtn.textContent = (selectedPromptType === 'system') ? 'Generate Instructions ✨' : 'Next: Setup Focus ➔';
+  }
+}
+
+function nextWizStep() {
+  if (wizCurrentStep === 4) {
+    // Reset wizard
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+    return;
+  }
+  
+  // Routing skips logic based on mode
+  if (wizCurrentStep === 1) {
+    // If Pre-made snippet, skip step 2 & 3 and go straight to step 4 (pre-made)
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide length options if not in recovery mode
+    document.getElementById('wiz-length-block').style.display = (selectedPromptType === 'recovery') ? 'block' : 'none';
+    
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    // If System Prompt, skip step 3 and go straight to step 4
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 4;
+      compileWizardPrompt();
+      switchWizPanel(4);
+      return;
+    }
+    
+    // Hide focus checklist if new thread starter
+    document.getElementById('wiz-focus-block').style.display = (selectedPromptType === 'new_thread') ? 'none' : 'block';
+    
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 4;
+    compileWizardPrompt();
+    switchWizPanel(4);
+  }
+}
+
+function prevWizStep() {
+  if (wizCurrentStep === 4) {
+    if (selectedPromptType === 'snippet') {
+      wizCurrentStep = 1;
+      switchWizPanel(1);
+      return;
+    }
+    if (selectedPromptType === 'system') {
+      wizCurrentStep = 2;
+      switchWizPanel(2);
+      return;
+    }
+    wizCurrentStep = 3;
+    switchWizPanel(3);
+  } else if (wizCurrentStep === 3) {
+    wizCurrentStep = 2;
+    switchWizPanel(2);
+  } else if (wizCurrentStep === 2) {
+    wizCurrentStep = 1;
+    switchWizPanel(1);
+  }
+}
+
+function compileWizardPrompt() {
+  var outputEl = document.getElementById('wiz-console-output');
+  var sigEl = document.getElementById('wiz-console-title');
+  var guideEl = document.getElementById('wiz-usage-guidelines');
+  
+  if (selectedPromptType === 'snippet') {
+    var snip = PREMADE_SNIPPETS[selectedSnippetNum.toString()];
+    var text = snip ? snip.text.replace(/\n/g, '
+') : '';
+    
+    sigEl.textContent = 'SCIA v4.0 Pre-made Snippet';
+    outputEl.textContent = text + '
+
+---SIGNATURE---
+Type: Seed Reflections-PREMADE-SNIPPET-' + selectedSnippetNum + '
+Protocol: Seed Reflections (SCIA v4.0)
+---END SIGNATURE---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the snippet prompt.</li>
+      <li>Open your target AI platform (ChatGPT, Claude, or Gemini).</li>
+      <li>Paste this snippet to trigger prompt-level seed awareness instantly.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'system') {
+    // Generate permanent custom system instructions
+    var platKey = selectedPlatform.toLowerCase();
+    if (platKey.indexOf('chatgpt') >= 0) platKey = 'chatgpt';
+    else if (platKey.indexOf('claude') >= 0) platKey = 'claude';
+    else if (platKey.indexOf('gemini') >= 0) platKey = 'gemini';
+    else platKey = 'universal';
+    
+    var sysText = SYSTEM_INSTRUCTION_TEMPLATES[platKey] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+    var sysGuideText = SYSTEM_GUIDE_TEXTS[platKey] || SYSTEM_GUIDE_TEXTS.universal;
+    
+    sigEl.textContent = 'SCIA Custom System Instructions (' + selectedPlatform + ')';
+    outputEl.textContent = sysText;
+    
+    guideEl.innerHTML = `
+      <li>Copy the instructions block above.</li>
+      <li>${sysGuideText}</li>
+      <li>All future conversations with this model will inherit seed-awareness automatically.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'new_thread') {
+    // Generate thread starter
+    var intent = document.getElementById('wiz-intent').value.trim();
+    var starter = `🌱 SEED PLANT — SCIA v4.0
+
+You are operating under the Seed Reflections Protocol (SCIA v4.0).
+This is a fresh conversation thread. My primary intent is:
+"${intent || '[Describe your goal here]'}"
+
+Please confirm you have received this seed and repeat it back in one sentence before we begin. Add a Seed Reflections stamp at the end.`;
+    
+    sigEl.textContent = 'SCIA New Thread Starter (' + selectedPlatform + ')';
+    outputEl.textContent = starter;
+    
+    guideEl.innerHTML = `
+      <li>Copy the thread starter text.</li>
+      <li>Paste it as the first prompt in a new conversation with your AI assistant.</li>
+      <li>This initializes the context bounds for your new idea, preventing drift.</li>
+    `;
+    return;
+  }
+  
+  if (selectedPromptType === 'recovery') {
+    // Recovery prompt builder
+    var intent = document.getElementById('wiz-intent').value.trim();
+    
+    // Focus areas
+    const focuses = [];
+    if (document.getElementById('wfocus-stuck').checked)     focuses.push('stuck');
+    if (document.getElementById('wfocus-code').checked)      focuses.push('code');
+    if (document.getElementById('wfocus-ideas').checked)     focuses.push('ideas');
+    if (document.getElementById('wfocus-next').checked)      focuses.push('next');
+    if (document.getElementById('wfocus-drift').checked)     focuses.push('drift');
+    if (document.getElementById('wfocus-decisions').checked) focuses.push('decisions');
+
+    var recPrompt = buildPrompt(intent, selectedPlatform, selectedLength, focuses);
+    var recSig = buildSignature(selectedPlatform, selectedLength, focuses);
+    
+    sigEl.textContent = 'SCIA Recovery Prompt (' + selectedPlatform + ')';
+    outputEl.textContent = recPrompt + '
+
+---GENERATOR-SIGNATURE---
+' + recSig + '
+---END---';
+    
+    guideEl.innerHTML = `
+      <li>Copy the full prompt.</li>
+      <li>Open your target AI chat window.</li>
+      <li>Paste the prompt first, then paste your conversation logs directly after it.</li>
+    `;
+  }
+}
+
+function copyWizardOutputPrompt() {
+  const text = document.getElementById('wiz-console-output').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    const btn = document.getElementById('btn-wiz-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  });
+}
+ = {
+  chatgpt: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Your goal is to maintain absolute context continuity and help the user track their intentions.
+
+1. CORE INTENT: Identify and remember the user's primary goal introduced at the start of the chat.
+2. DRIFT MONITORING: If the conversation shifts focus, explicitly mention that the topic is drifting, and suggest how to return to the original seed.
+3. SIGNATURE STAMP: When the user requests a handoff or session summary, or at the end of key milestones, append this block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100, where 0 is perfect alignment]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  claude: `You are a Seed Reflection specialist running under the SCIA v4.0 architecture.
+Help the user track intentions, monitor conversation drift, and verify goals using your XML thinking blocks.
+
+1. CORE INTENT: Extract the user's primary intent from their opening message and log it inside a silent planning block.
+2. DRIFT MONITORING: Call out when discussions veers into unrelated technical debugging or tangents.
+3. SIGNATURE STAMP: Append the standard Seed Reflections signature stamp at the end of key summaries:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  gemini: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block.
+
+Focus on the user's original intentions. If they drift, alert them.
+At the end of summaries, output this signature block:
+---SEED-SIGNATURE---
+Type: Seed Reflections-SYSTEM-RECORD
+Intent-Preserved: [Yes/No/Partial]
+Drift-Score: [0-100]
+Next-Seed: [Actionable next step]
+---END-SIGNATURE---`,
+
+  universal: `You are a Seed Reflection assistant running under the SCIA v4.0 architecture.
+Help the user track their intentions, monitor conversation drift, and output a structured [SEED-SIG] block containing: Intent-Preserved status, Drift-Score, and Next-Seed when summarizing or when requested.`
+};
+
+const SYSTEM_GUIDE_TEXTS = {
+  chatgpt: `Copy the instructions. Paste them inside ChatGPT's <strong>"How would you like ChatGPT to respond?"</strong> input field under Custom Instructions settings.`,
+  claude: `Copy the instructions. Paste them inside the <strong>"System Prompt"</strong> field of your Claude Custom Project configuration to apply it to all chats in the project.`,
+  gemini: `Copy the instructions. Paste them into the <strong>"System Prompt"</strong> text block when creating or editing your custom Gemini Gem.`,
+  universal: `Copy the instructions. Paste them as a system prompt parameter or initial pre-prompt instructions in your custom LLM client/endpoint interface.`
+};
+
+function generateSystemInstructions() {
+  const provider = document.getElementById('sys-platform').value;
+  const promptText = SYSTEM_INSTRUCTION_TEMPLATES[provider] || SYSTEM_INSTRUCTION_TEMPLATES.universal;
+  const guideText = SYSTEM_GUIDE_TEXTS[provider] || SYSTEM_GUIDE_TEXTS.universal;
+  
+  document.getElementById('sys-output-prompt').textContent = promptText;
+  document.getElementById('sys-guide-text').innerHTML = guideText;
+}
+
+function copySystemInstructions() {
+  const txt = document.getElementById('sys-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('System instructions copied!');
+  });
+}
+
+// 7 Universal Snippets Data
+const PREMADE_SNIPPETS = {
+  "1": {
+    desc: "Use this snippet at the very start of a chat session to state your project goals, setting up strict contextual borders so the model doesn't drift.",
+    text: `🌱 SEED PLANT — SCIA v4.0\n\nMy intent for this conversation:\n[YOUR GOAL HERE]\n\nKey constraints: [any limits]\nSuccess looks like: [what done means]\n\nPlease confirm you've received this seed and repeat it back before we begin.`
+  },
+  "2": {
+    desc: "Scan the current conversation history to find ideas, feature requests, or details that were discussed but abandoned.",
+    text: `🔍 SEED RECOVERY — SCIA v4.0\n\nReview this conversation and identify:\n1. Every idea I mentioned but didn't complete\n2. Every project I started but abandoned\n3. Every question I raised but never answered\n\nFor each, give me: what it was, why it matters, and the single next action to pick it up.`
+  },
+  "3": {
+    desc: "Mid-conversation audit: Ask the AI to compare the current direction of the conversation against the original seed goal.",
+    text: `📊 COHERENCE CHECK — SCIA v4.0\n\nOriginal goal: [paste your opening message]\n\nAre we still working toward that goal?\nWhat have we drifted from?\nWhat should we do next to get back on track?`
+  },
+  "4": {
+    desc: "Generate a markdown planning bundle of the session, ready to paste into a new chat session to maintain continuity.",
+    text: `📋 SESSION HANDOFF — SCIA v4.0\n\nGenerate a handoff summary I can paste into a new conversation:\n1. My original goal\n2. What we accomplished\n3. What's still unfinished\n4. The exact next step\n5. Any important context a new session needs`
+  },
+  "5": {
+    desc: "Lists all abandoned seeds from the conversation history and ranks them based on complexity vs impact.",
+    text: `🎯 PRIORITY RECOVERY — SCIA v4.0\n\nFrom this conversation, list every abandoned idea.\nScore each on:\n- Impact (1-10): how much does completing this matter?\n- Effort (1-10): how hard is it?\n- Urgency (high/medium/low)\n\nSort by Impact/Effort ratio. Tell me what to do first.`
+  },
+  "6": {
+    desc: "Instruct the AI to generate a signature block verification receipt at the end of its response.",
+    text: `✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\n\nPlease end your response with a Provenance Stamp block:\n\n[SEED-SIG]\nContent-Hash: {first 8 chars of SHA-256 of response}\nIntent-Preserved: {yes/partial/no}\nDrift-Score: {0-100, where 0 = perfect alignment}\nNext-Seed: {the logical next question or action}\n[/SEED-SIG]`
+  },
+  "7": {
+    desc: "Bootstraps a fresh seed structure containing milestones, dependencies, and success criteria based on your project description.",
+    text: `🚀 PROJECT BOOTSTRAP — SCIA v4.0\n\nIdea: [YOUR IDEA]\n\nHelp me structure this as a Seed Reflections project:\n1. Core intent (one sentence)\n2. Top 5 seeds (specific, actionable tasks)\n3. Dependencies between seeds\n4. What to build first and why\n5. Success criteria for the whole project`
+  }
+};
+
+function loadPremadeSnippet() {
+  const num = document.getElementById('snip-selector').value;
+  const snip = PREMADE_SNIPPETS[num];
+  if (snip) {
+    document.getElementById('snip-description-text').textContent = snip.desc;
+    document.getElementById('snip-output-prompt').textContent = snip.text.replace(/\\n/g, '\n');
+  }
+}
+
+function copySelectedSnippet() {
+  const txt = document.getElementById('snip-output-prompt').textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    showToast('Snippet prompt copied!');
+  });
+}
+
+function toggleFocusStyle(labelId, chk) {
+  var el = document.getElementById(labelId);
+  if (el) el.classList.toggle('checked', chk.checked);
+}
+
+function generatePrompt() {
+  const intent = document.getElementById('intent').value.strip ? document.getElementById('intent').value.strip() : document.getElementById('intent').value.trim();
+  
+  // Platform selection
+  let platform = 'ChatGPT';
+  if (document.getElementById('plat-claude').checked) platform = 'Claude';
+  else if (document.getElementById('plat-gemini').checked) platform = 'Gemini';
+  else if (document.getElementById('plat-other').checked) platform = 'AI assistant';
+  
+  // Length selection
+  let lengthVal = 'short';
+  if (document.getElementById('len-medium').checked) lengthVal = 'medium';
+  else if (document.getElementById('len-long').checked) lengthVal = 'long';
+  else if (document.getElementById('len-xlarge').checked) lengthVal = 'xlarge';
+  
+  // Show chunking note
+  const note = document.getElementById('chunking-note');
+  if (note) {
+    note.style.display = (lengthVal === 'long' || lengthVal === 'xlarge') ? 'flex' : 'none';
+  }
+  
+  // Focus areas
+  const focuses = [];
+  if (document.getElementById('focus-stuck').checked)     focuses.push('stuck');
+  if (document.getElementById('focus-code').checked)      focuses.push('code');
+  if (document.getElementById('focus-ideas').checked)     focuses.push('ideas');
+  if (document.getElementById('focus-next').checked)      focuses.push('next');
+  if (document.getElementById('focus-drift').checked)     focuses.push('drift');
+  if (document.getElementById('focus-decisions').checked) focuses.push('decisions');
+  if (document.getElementById('focus-blockers').checked)  focuses.push('blockers');
+  if (document.getElementById('focus-summary').checked)   focuses.push('summary');
+
+  const lengthLabels = { short: 'Short (<10K)', medium: 'Medium (10K–50K)', long: 'Long (50K–200K)', xlarge: 'Very Long (500K+)' };
+
+  const prompt = buildPrompt(intent, platform, lengthVal, focuses);
+  const sig    = buildSignature(platform, lengthVal, focuses);
+
+  document.getElementById('output-placeholder').style.display = 'none';
+  document.getElementById('output-content').style.display     = 'block';
+  document.getElementById('copy-all-btn').style.display       = 'inline-flex';
+  document.getElementById('output-prompt').textContent        = prompt;
+  document.getElementById('sig-content').textContent          = sig;
+  document.getElementById('stat-platform').textContent        = platform;
+  document.getElementById('stat-length').textContent          = lengthLabels[lengthVal];
+  document.getElementById('stat-focus').textContent           = focuses.length + ' selected';
+
+  if (window.innerWidth < 900) {
+    document.getElementById('output-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function buildPrompt(intent, platform, length, focuses) {
+  const lines = [];
+  const isXL  = length === 'xlarge';
+  const isLong = length === 'long' || length === 'xlarge';
+
+  lines.push('You are a Seed Reflection specialist trained in the Seed Reflections (Seed Reflections Architecture) protocol.');
+  lines.push('');
+
+  if (intent) {
+    lines.push('## My Primary Recovery Goal');
+    lines.push(intent);
+    lines.push('');
+    lines.push('Keep this goal in focus throughout your analysis. Prioritize findings that relate to it.');
+    lines.push('');
+  }
+
+  lines.push('## Context');
+  lines.push('Platform: ' + platform);
+  lines.push('Conversation size: ' + { short: 'Short (under 10K tokens)', medium: 'Medium (10K–50K tokens)', long: 'Long (50K–200K tokens)', xlarge: 'Very Long (500K+ tokens)' }[length]);
+  lines.push('');
+
+  if (isXL) {
+    lines.push('## Large Conversation Strategy');
+    lines.push('This is a very long conversation. Use the following chunking approach:');
+    lines.push('');
+    lines.push('PASS 1 — SEED DISCOVERY (skim at high speed):');
+    lines.push('  Read the entire conversation quickly. Do NOT stop to analyze yet.');
+    lines.push('  Tag every moment where a new idea, goal, project, or task is introduced.');
+    lines.push('');
+    lines.push('PASS 2 — DEEP ANALYSIS:');
+    lines.push('  For each seed you tagged, go back and determine: Developed? Completed? Abandoned? Why?');
+    lines.push('');
+    lines.push('PASS 3 — SYNTHESIS:');
+    lines.push('  Assemble your complete Seed Reflection Report from analyzed seeds.');
+    lines.push('');
+  }
+
+  lines.push('## Your Task');
+  lines.push('Analyze the conversation below and produce a structured Seed Reflection Report.');
+  lines.push('A "Seed" is any idea, task, goal, project, question, or plan that was introduced.');
+  lines.push('');
+
+  lines.push('Your report MUST include the following sections:');
+  lines.push('');
+  lines.push('### 🌱 All Seeds Discovered');
+  lines.push('A numbered list of every seed, with:');
+  lines.push('  - What it is (1 sentence)');
+  lines.push('  - Status: ACTIVE / COMPLETED / ABANDONED / DRIFTING');
+  lines.push('  - Where it appeared (start / middle / end of conversation)');
+  lines.push('');
+
+  if (focuses.includes('stuck')) {
+    lines.push('### 🧱 Where We Got Stuck');
+    lines.push('For each point of friction or stall:');
+    lines.push('  - What were we trying to do?');
+    lines.push('  - What caused the stall?');
+    lines.push('');
+  }
+
+  if (focuses.includes('code')) {
+    lines.push('### 💾 Code & Content Inventory');
+    lines.push('List every piece of code, content, document, or artifact that was:');
+    lines.push('  - Completed and usable now');
+    lines.push('  - Started but incomplete');
+    lines.push('');
+  }
+
+  if (focuses.includes('ideas')) {
+    lines.push('### 💡 Forgotten Ideas');
+    lines.push('Surface ideas that were mentioned briefly but never explored:');
+    lines.push('  - What was the idea?');
+    lines.push('  - One-line restart prompt to pick it back up');
+    lines.push('');
+  }
+
+  if (focuses.includes('drift')) {
+    lines.push('### 🌊 Drift Analysis');
+    lines.push('Identify every moment the conversation drifted from its original intent:');
+    lines.push('  - What was the original direction?');
+    lines.push('  - What triggered the drift?');
+    lines.push('');
+  }
+
+  if (focuses.includes('decisions')) {
+    lines.push('### ⚖️ Decisions Made');
+    lines.push('List every technical, design, or product decision that was made:');
+    lines.push('  - What was decided');
+    lines.push('  - The rationale (why this choice)');
+    lines.push('');
+  }
+
+  if (focuses.includes('blockers')) {
+    lines.push('### 🚧 Unresolved Blockers');
+    lines.push('Surface every blocker or open question that was never resolved:');
+    lines.push('  - What is blocked and why');
+    lines.push('  - Priority: HIGH / MEDIUM / LOW');
+    lines.push('');
+  }
+
+  if (focuses.includes('next')) {
+    lines.push('### 🎯 Recommended Next Steps');
+    lines.push('Give me 3–5 specific, actionable next steps in priority order:');
+    lines.push('  - What to do (one clear imperative sentence)');
+    lines.push('  - Why this is the right next action');
+    lines.push('');
+  }
+
+  lines.push('### 🍂 Top Abandoned Seeds to Recover');
+  lines.push('The top 3 abandoned seeds most worth picking up, in priority order:');
+  lines.push('  - What it is and why it matters');
+  lines.push('  - Exact restart prompt (2–3 sentences to paste into new chat)');
+  lines.push('');
+
+  lines.push('## Required Signature Block');
+  lines.push('At the end of your report, append this exact block (fill in bracketed values):');
+  lines.push('');
+  lines.push('---SEED-SIGNATURE---');
+  lines.push('Type: Seed Reflections-CUSTOM-RECOVERY');
+  lines.push('Generated: [ISO 8601 datetime]');
+  lines.push('Platform: ' + platform);
+  lines.push('Seeds Found: [total number]');
+  lines.push('---END-SIGNATURE---');
+  lines.push('');
+  lines.push('---');
+  lines.push('[PASTE YOUR CONVERSATION BELOW THIS LINE]');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function buildSignature(platform, length, focuses) {
+  const now     = new Date().toISOString();
+  const focuStr = focuses.length > 0 ? focuses.join(', ') : 'none selected';
+  const sid     = 'Seed Reflections-GEN-' + now.replace(/[-:.TZ]/g, '').slice(0, 14);
+  return [
+    'Signature-ID : ' + sid,
+    'Generated-At : ' + now,
+    'Generator    : Seed Reflection Prompt Generator v1.0',
+    'Platform     : ' + platform,
+    'Length-Class : ' + length,
+    'Focus-Areas  : ' + focuStr,
+    'Protocol     : Seed Reflections (Seed Reflections Architecture)',
+  ].join('\n');
+}
+
+function copyFullPrompt() {
+  const prompt = document.getElementById('output-prompt').textContent;
+  const sig    = document.getElementById('sig-content').textContent;
+  const full   = prompt + '\n\n---GENERATOR-SIGNATURE---\n' + sig + '\n---END---';
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('copy-all-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+</script>
+<!-- PWA install restricted to Developer + Enterprise -->
+
+
+</body></html>

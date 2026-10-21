@@ -1,0 +1,10 @@
+# Route rewrites for clean URLs on Netlify
+/consumer   /consumer-dashboard.html   200
+/admin      /admin-dashboard.html      200
+/dashboard  /dashboard.html            200
+
+# Domain-specific root routing
+https://seeds.srt1.io/ /index.html 200
+
+# Fallback index
+/ /index.html 200
