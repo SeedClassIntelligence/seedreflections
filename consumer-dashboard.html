@@ -103,6 +103,9 @@ a{color:var(--accent);text-decoration:none}
 .card-body{padding:20px}
 
 /* ── Unified Workspace Chat ─────────────────────────────────────────── */
+.workspace-source-overlay{position:fixed !important;inset:72px 24px 24px 84px;z-index:1200;overflow:auto;border:1px solid var(--border-bright);border-radius:16px;background:var(--bg-deep);box-shadow:0 24px 80px rgba(0,0,0,.65)}
+.workspace-source-overlay .journey-shell{max-width:none;padding:26px}
+@media(max-width:760px){.workspace-source-overlay{inset:64px 10px 10px 10px}}
 .chat-wrap{display:flex;flex-direction:column;min-height:500px;background:var(--bg-card)}
 .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-height:550px}
 .chat-bubble{max-width:80%;padding:12px 16px;border-radius:12px;font-size:13.5px;line-height:1.65;position:relative}
@@ -1117,9 +1120,9 @@ a{color:var(--accent);text-decoration:none}
 
 <!-- ── Product navigation: one library, one workspace, one overview ── -->
 <div class="app-primary-nav" aria-label="Primary navigation">
+  <button class="app-primary-tab active" data-primary="workspace" onclick="switchDashTab('workspace')">Workspace</button>
+  <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')">Library</button>
   <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')">Overview</button>
-  <button class="app-primary-tab active" data-primary="library" onclick="switchDashTab('map')">Library</button>
-  <button class="app-primary-tab" data-primary="workspace" onclick="switchDashTab('workspace')">Workspace</button>
 </div>
 <div class="library-subnav" id="library-subnav" aria-label="Library views">
   <button class="library-view-tab" data-library="map" onclick="switchDashTab('map')">Conversations</button>
@@ -1130,6 +1133,7 @@ a{color:var(--accent);text-decoration:none}
 <!-- ── Intake: the clear beginning of the product lifecycle ─────── -->
 <div class="section" id="section-intake">
   <div class="journey-shell">
+    <button class="btn btn-ghost workspace-source-close" style="display:none;float:right" onclick="closeWorkspaceSources()">Close</button>
     <div class="journey-kicker">Sources</div>
     <h1 class="journey-title">Bring your history home.</h1>
     <p class="journey-copy">Import your conversation archive or paste material directly. Seed Reflections keeps the original source, maps the ideas inside it, and gives you a place to continue—not another pile of disconnected chats.</p>
@@ -1142,7 +1146,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="source-methods" role="tablist" aria-label="Add source method">
       <button class="source-method active" data-source-method="upload" onclick="showSourceMethod('upload')">Upload export</button>
       <button class="source-method" data-source-method="paste" onclick="showSourceMethod('paste')">Paste conversation</button>
-      <button class="source-method" data-source-method="folder" onclick="showSourceMethod('folder')">Connect folder</button>
+      <button class="source-method" data-source-method="folder" onclick="showSourceMethod('folder')">SeedBridge</button>
       <button class="source-method" data-source-method="api" onclick="showSourceMethod('api')">Connect API</button>
     </div>
     <div class="intake-grid">
@@ -1166,13 +1170,13 @@ a{color:var(--accent);text-decoration:none}
       </div>
       <div class="intake-card source-method-panel" data-source-panel="folder">
         <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
-          <div><h3>Connect another AI app or work folder</h3><p>Bring in locally available conversations and documents from Claude Code, Claude Cowork, Cursor, or any user-authorized folder. SeedReflections previews what it found, imports only what you authorize, and keeps the archive synchronized without altering the source.</p></div>
-          <span class="seed-badge" style="background:var(--green-glow);color:var(--green)">Local · read only</span>
+          <div><h3>SeedBridge · connect local AI work</h3><p>Bring in locally available conversations and documents from Codex, Claude Code, Claude Cowork, Cursor, or any user-authorized folder. SeedBridge previews what it found, imports only what you authorize, and incrementally synchronizes changes without altering the source.</p></div>
+          <span class="seed-badge" style="background:var(--green-glow);color:var(--green)">Local · consented · read only</span>
         </div>
         <div id="connector-discovery" style="font-size:11px;color:var(--text-muted);margin:10px 0">Checking this computer for supported AI work…</div>
         <div style="display:grid;grid-template-columns:minmax(150px,.35fr) minmax(260px,1fr) auto;gap:8px;align-items:center">
           <select id="connector-provider" class="filter-select" aria-label="AI application">
-            <option value="claude_code">Claude Code</option><option value="claude_cowork">Claude Cowork</option><option value="cursor">Cursor</option><option value="folder">Other AI or work folder</option>
+            <option value="codex">Codex</option><option value="claude_code">Claude Code</option><option value="claude_cowork">Claude Cowork</option><option value="cursor">Cursor</option><option value="folder">Other AI or work folder</option>
           </select>
           <input id="connector-root-path" class="chat-input" style="width:100%;box-sizing:border-box" placeholder="Paste the specific local conversation folder path">
           <button class="btn btn-primary" onclick="connectConversationSource()">Preview source</button>
@@ -1236,6 +1240,7 @@ a{color:var(--accent);text-decoration:none}
   <div class="section-head" style="display:flex; justify-content:space-between; align-items:center;">
     <div class="section-title">Workspace</div>
     <div style="display:flex; align-items:center; gap:8px;">
+      <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add or connect</button>
       <span style="font-size:12px; color:var(--text-muted);">Active Scope:</span>
       <span class="seed-badge" style="background:var(--accent-glow); color:var(--accent);" id="cockpit-scope-badge">All Ideas</span>
     </div>
@@ -5337,6 +5342,18 @@ function showSourceMethod(method) {
   document.querySelectorAll('.source-method-panel').forEach(function(panel){ panel.classList.toggle('active',panel.dataset.sourcePanel===method); });
 }
 
+function openWorkspaceSources(method) {
+  showSourceMethod(method || 'upload');
+  var intake=document.getElementById('section-intake');
+  intake.classList.add('workspace-source-overlay'); intake.style.display='block';
+  var close=intake.querySelector('.workspace-source-close'); if (close) close.style.display='inline-flex';
+}
+function closeWorkspaceSources() {
+  var intake=document.getElementById('section-intake');
+  intake.classList.remove('workspace-source-overlay'); intake.style.display='none';
+  var close=intake.querySelector('.workspace-source-close'); if (close) close.style.display='none';
+}
+
 /* ── Dashboard Tab Switching ────────────────────────────────────────── */
 function switchDashTab(tabId) {
   if (tabId === 'library') tabId='map';
@@ -5385,8 +5402,8 @@ document.addEventListener('DOMContentLoaded', function() {
   loadAccountSettings();
   setupPrivacyListeners();
   var journeyVersion = localStorage.getItem('seed_reflections_journey_version');
-  var savedTab = journeyVersion === '3' ? (localStorage.getItem('active_dash_tab') || 'intake') : 'intake';
-  localStorage.setItem('seed_reflections_journey_version', '3');
+  var savedTab = journeyVersion === '4' ? (localStorage.getItem('active_dash_tab') || 'workspace') : 'workspace';
+  localStorage.setItem('seed_reflections_journey_version', '4');
   switchDashTab(savedTab);
 });
 </script>

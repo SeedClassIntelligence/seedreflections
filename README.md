@@ -61,6 +61,12 @@ New containers set `SEED_REFLECTIONS_MIGRATE_LEGACY=0` and therefore start with 
 
 The **Bring In History → Direct API connections** panel creates a scoped connection token for an AI platform, agent, automation, or integration service. The token is shown once and stored only as a SHA-256 digest. Deliveries enter the same normalized Archive Map used by uploads and synchronized folders.
 
+### SeedBridge
+
+SeedBridge is the read-only desktop connection layer behind **Workspace → Add or connect**. It discovers supported local AI-work sources (currently Codex, Claude Code, Claude Cowork, Cursor, and explicit user-selected folders), previews eligible content before authorization, records the consumer's selected scope, and incrementally synchronizes changed files through the same normalized ingestion pipeline used by uploads. Content hashes prevent unchanged files from being re-imported. SeedBridge never modifies the source and does not claim access to cloud-only chat history.
+
+Inspect the running bridge with `GET /api/v2/seedbridge`. Hosted workspaces return `desktop_bridge_required` until the local bridge is installed and paired.
+
 Send JSON to `POST /api/v2/integrations/import` with `Authorization: Bearer <connection-token>`. Accepted payloads are:
 
 ```json

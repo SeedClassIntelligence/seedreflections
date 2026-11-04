@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib, json, os, sqlite3, uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -12,18 +13,45 @@ ARCHIVE_SUFFIXES={".json",".jsonl"}
 DOCUMENT_SUFFIXES={".pdf",".docx",".xlsx",".xlsm",".html",".htm",".rtf",".txt",".md",".csv",".tsv",".log",".xml",".zip"}
 SUPPORTED_SUFFIXES=ARCHIVE_SUFFIXES | DOCUMENT_SUFFIXES
 ADAPTER_OPERATIONS=("discover","authorize","enumerate","preview","import","sync","reconcile","disconnect","health")
+BRIDGE_NAME="SeedBridge"
+BRIDGE_VERSION="1.0"
 PROVIDERS={
+    "codex":{"name":"Codex","paths":[Path(os.environ.get("CODEX_HOME",str(Path.home()/".codex")))/"sessions"]},
     "claude_code":{"name":"Claude Code","paths":[Path.home()/".claude"/"projects"]},
     "claude_cowork":{"name":"Claude Cowork","paths":[Path(os.environ.get("APPDATA",""))/"Claude",Path(os.environ.get("LOCALAPPDATA",""))/"AnthropicClaude"]},
     "cursor":{"name":"Cursor","paths":[Path(os.environ.get("APPDATA",""))/"Cursor"/"User"/"workspaceStorage"]},
     "folder":{"name":"AI or work folder","paths":[]},
 }
 
+def bridge_manifest(workspace_id="local"):
+    """Describe the installed bridge without implying unsupported cloud access."""
+    connected=list_connectors(workspace_id)
+    discovered=discover()
+    return {
+        "name":BRIDGE_NAME,"version":BRIDGE_VERSION,"mode":"local_desktop",
+        "status":"ready","read_only":True,"consent_required":True,
+        "operations":list(ADAPTER_OPERATIONS),"adapters":adapter_catalog(),
+        "discovered":discovered,"connectors":connected,
+        "capabilities":{
+            "local_discovery":True,"preview_before_import":True,
+            "incremental_sync":True,"content_hash_deduplication":True,
+            "source_mutation":False,"cloud_history_bypass":False,
+        },
+    }
+
 def _now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
+@contextmanager
 def _connect():
-    DB_PATH.parent.mkdir(parents=True,exist_ok=True); db=sqlite3.connect(DB_PATH,timeout=30); db.row_factory=sqlite3.Row
-    db.execute("PRAGMA journal_mode=WAL"); return db
+    DB_PATH.parent.mkdir(parents=True,exist_ok=True)
+    db=sqlite3.connect(DB_PATH,timeout=30)
+    db.row_factory=sqlite3.Row
+    db.execute("PRAGMA journal_mode=WAL")
+    try:
+        yield db
+        db.commit()
+    finally:
+        db.close()
 
 def initialize():
     with _connect() as db:

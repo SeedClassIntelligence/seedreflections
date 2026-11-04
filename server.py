@@ -57,7 +57,8 @@ from connector_store import (discover as discover_connectors, list_connectors as
     add_connector as add_source_connector, remove_connector as remove_source_connector,
     sync_connector as sync_source_connector, sync_automatic as sync_automatic_connectors,
     adapter_catalog as source_adapter_catalog, preview_source as preview_connector_source,
-    connect_preview as connect_connector_preview, connector_health as source_connector_health)
+    connect_preview as connect_connector_preview, connector_health as source_connector_health,
+    bridge_manifest as seed_bridge_manifest)
 from integration_store import (create_integration as create_api_integration, list_integrations as list_api_integrations,
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
@@ -937,6 +938,13 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     "message":"Local AI application sync requires the SeedReflections desktop connector on the user's computer."}); return
             self._send_json({"connectors":list_source_connectors("local"),"discovered":discover_connectors(),"adapters":source_adapter_catalog(),"desktop_bridge_required":False})
             return
+        if path == "/api/v2/seedbridge":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user["workspace_id"]!="local":
+                self._send_json({"name":"SeedBridge","status":"desktop_bridge_required","read_only":True,
+                    "message":"Install or activate SeedBridge on this computer to discover and synchronize local AI work."},409); return
+            self._send_json(seed_bridge_manifest("local")); return
         if path == "/api/v2/integrations":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
