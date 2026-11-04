@@ -192,35 +192,27 @@ a{color:var(--accent);text-decoration:none}
 }
 
 .cockpit-inspector {
-  width: 350px;
-  min-width: 350px;
-  max-width: 350px;
-  transition: width 0.25s ease, min-width 0.25s ease, max-width 0.25s ease;
+  position:fixed;
+  top:76px;
+  right:20px;
+  bottom:20px;
+  width:min(420px,calc(100vw - 40px));
+  min-width:0;
+  max-width:420px;
+  z-index:1100;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);
+  transform:translateX(calc(100% + 32px));
+  opacity:0;
+  pointer-events:none;
+  transition:transform .24s ease,opacity .2s ease;
 }
-.cockpit-inspector.collapsed {
-  width: 48px;
-  min-width: 48px;
-  max-width: 48px;
-}
-.cockpit-inspector.collapsed .cockpit-panel-title span,
-.cockpit-inspector.collapsed #canvas-container,
-.cockpit-inspector.collapsed #provenance-detail-body,
-.cockpit-inspector.collapsed .cockpit-drift-mini-row,
-.cockpit-inspector.collapsed .inspector-action-btn {
-  display: none !important;
-}
-.cockpit-inspector.collapsed .cockpit-panel-head {
-  padding: 12px 8px;
-  flex-direction: column;
-  gap: 12px;
-  justify-content: center;
-}
+.cockpit-inspector.open{transform:translateX(0);opacity:1;pointer-events:auto}
 
 @media(max-width: 1024px) {
   .cockpit-layout {
     flex-direction: column;
   }
-  .cockpit-shelf, .cockpit-inspector {
+  .cockpit-shelf {
     width: 100%;
     min-width: 100%;
     max-width: 100%;
@@ -1241,6 +1233,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="section-title">Workspace</div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add or connect</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEvidenceDrawer()">Evidence & lineage</button>
       <span style="font-size:12px; color:var(--text-muted);">Active Scope:</span>
       <span class="seed-badge" style="background:var(--accent-glow); color:var(--accent);" id="cockpit-scope-badge">All Ideas</span>
     </div>
@@ -1344,16 +1337,16 @@ a{color:var(--accent);text-decoration:none}
       </div>
     </div>
 
-    <!-- Right Pane: Live Lineage & Provenance Inspector -->
+    <!-- Contextual drawer: evidence is available on demand without consuming workspace width -->
     <div class="cockpit-panel cockpit-inspector" id="cockpit-inspector-panel">
       <div class="cockpit-panel-head">
-        <button class="rail-toggle-btn" id="inspector-toggle-btn" title="Toggle Inspector" onclick="toggleCockpitRail('inspector')">▶</button>
+        <button class="rail-toggle-btn" id="inspector-toggle-btn" title="Close evidence drawer" onclick="closeEvidenceDrawer()">×</button>
         <span class="cockpit-panel-title">
           <span>Evidence & lineage</span>
         </span>
         <button class="btn btn-ghost btn-sm inspector-action-btn" style="font-size:10.5px; padding:2px 6px;" onclick="openAddRelationshipModal()">＋ Link</button>
       </div>
-      <div class="cockpit-collapsed-indicator" onclick="toggleCockpitRail('inspector')">Evidence & lineage</div>
+      <div class="cockpit-collapsed-indicator">Evidence & lineage</div>
       
       <!-- Live Drift & Health Telemetry Mini Row -->
       <div class="cockpit-drift-mini-row">
@@ -2573,37 +2566,45 @@ function setRingOffset(id, circumference, pct) {
 
 function renderPlatforms() {
   var grid = document.getElementById('platform-grid');
-  var platforms = ['chatgpt', 'claude', 'gemini'];
-  var labels = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini' };
-  var icons = { chatgpt: '🤖', claude: '🍁', gemini: '♊' };
-  var colors = { chatgpt: 'var(--chatgpt)', claude: 'var(--claude-color)', gemini: 'var(--gemini)' };
-  var glows = { chatgpt: 'var(--chatgpt-glow)', claude: 'var(--claude-glow)', gemini: 'var(--gemini-glow)' };
+  if (!grid) return;
+  var platforms = Array.from(new Set(
+    uploadedConversations.map(function(item){ return String(item.platform || 'unknown').toLowerCase(); })
+      .concat(ALL_SEEDS.map(function(item){ return String(item.platform || 'unknown').toLowerCase(); }))
+  )).filter(Boolean).sort(function(a,b){
+    var ac=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===a;}).length;
+    var bc=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===b;}).length;
+    return bc-ac || a.localeCompare(b);
+  });
+  if (!platforms.length) platforms=['unknown'];
 
   var html = '';
-  var total = ALL_SEEDS.length || 1;
+  var totalConversations = uploadedConversations.length || 1;
 
   platforms.forEach(function(p) {
     var list = ALL_SEEDS.filter(function(s){ return s.platform === p; });
-    var pct = Math.round((list.length / total) * 100);
+    var conversations=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===p;});
+    var messageCount=conversations.reduce(function(sum,item){return sum+Number(item.depth || item.message_count || 0);},0);
+    var pct = Math.round((conversations.length / totalConversations) * 100);
     var act = list.filter(function(s){ return s.status === 'active'; }).length;
     var done = list.filter(function(s){ return s.status === 'completed'; }).length;
     var ab = list.filter(function(s){ return s.status === 'abandoned'; }).length;
+    var color=platformColor(p), glow=platformGlow(p);
 
-    html += '<div class="platform-card" style="border-top:3px solid ' + colors[p] + '">';
+    html += '<div class="platform-card" style="border-top:3px solid ' + color + '">';
     html += '<div class="platform-header">';
-    html += '<div class="platform-icon" style="background:' + glows[p] + ';color:' + colors[p] + '">' + icons[p] + '</div>';
-    html += '<div class="platform-name">' + labels[p] + '</div>';
-    html += '<span class="platform-badge" style="background:' + (list.length > 0 ? 'var(--green-glow);color:var(--green)' : 'var(--border);color:var(--text-muted)') + '">' + (list.length > 0 ? 'Active' : 'Idle') + '</span>';
+    html += '<div class="platform-icon" style="background:' + glow + ';color:' + color + '">' + platformEmoji(p) + '</div>';
+    html += '<div class="platform-name">' + escHtml(platformLabel(p)) + '</div>';
+    html += '<span class="platform-badge" style="background:var(--green-glow);color:var(--green)">Imported</span>';
     html += '</div>';
     html += '<div class="platform-stats">';
-    html += '<div class="ps"><div class="ps-val">' + list.length + '</div><div class="ps-label">Seeds</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + act + '</div><div class="ps-label">Active</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + done + '</div><div class="ps-label">Done</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + ab + '</div><div class="ps-label">Left</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + conversations.length + '</div><div class="ps-label">Conversations</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + messageCount + '</div><div class="ps-label">Messages</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + list.length + '</div><div class="ps-label">Ideas</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + (act+done+ab) + '</div><div class="ps-label">Classified</div></div>';
     html += '</div>';
     html += '<div class="platform-bar">';
-    html += '<div class="platform-bar-label"><span>Share of ideas</span><span>' + pct + '%</span></div>';
-    html += '<div class="platform-bar-track"><div class="platform-bar-fill" style="background:' + colors[p] + ';width:' + pct + '%"></div></div>';
+    html += '<div class="platform-bar-label"><span>Share of conversations</span><span>' + pct + '%</span></div>';
+    html += '<div class="platform-bar-track"><div class="platform-bar-fill" style="background:' + color + ';width:' + pct + '%"></div></div>';
     html += '</div></div>';
   });
 
@@ -3344,6 +3345,7 @@ function renderShelfSeeds(seeds) {
 }
 
 function toggleCockpitRail(rail) {
+  if (rail === 'inspector') { openEvidenceDrawer(); return; }
   var panelId = (rail === 'shelf') ? 'cockpit-shelf-panel' : 'cockpit-inspector-panel';
   var btnId = (rail === 'shelf') ? 'shelf-toggle-btn' : 'inspector-toggle-btn';
   var panel = document.getElementById(panelId);
@@ -3365,6 +3367,20 @@ function toggleCockpitRail(rail) {
   setTimeout(function(){ renderLineageGraphSVG(); }, 260);
 }
 
+function openEvidenceDrawer() {
+  var panel=document.getElementById('cockpit-inspector-panel');
+  if (!panel) return;
+  panel.classList.remove('collapsed'); panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+  setTimeout(function(){ renderLineageGraphSVG(); },260);
+}
+
+function closeEvidenceDrawer() {
+  var panel=document.getElementById('cockpit-inspector-panel');
+  if (!panel) return;
+  panel.classList.remove('open'); panel.setAttribute('aria-hidden','true');
+}
+
 function restoreRailStates() {
   if (localStorage.getItem('rail_shelf_collapsed') === '1') {
     var p1 = document.getElementById('cockpit-shelf-panel');
@@ -3372,12 +3388,8 @@ function restoreRailStates() {
     if (p1) p1.classList.add('collapsed');
     if (b1) { b1.textContent = '▶'; b1.title = 'Expand Shelf'; }
   }
-  if (localStorage.getItem('rail_inspector_collapsed') === '1') {
-    var p2 = document.getElementById('cockpit-inspector-panel');
-    var b2 = document.getElementById('inspector-toggle-btn');
-    if (p2) p2.classList.add('collapsed');
-    if (b2) { b2.textContent = '◀'; b2.title = 'Expand Inspector'; }
-  }
+  var evidence=document.getElementById('cockpit-inspector-panel');
+  if (evidence) { evidence.classList.remove('open','collapsed'); evidence.setAttribute('aria-hidden','true'); }
 }
 
 function selectSeedForCockpit(seedId) {
@@ -4842,6 +4854,11 @@ function platformEmoji(p) {
   if (p === 'chatgpt') return '🤖';
   if (p === 'claude') return '🍁';
   if (p === 'gemini') return '♊';
+  if (p === 'codex') return '⌘';
+  if (p === 'deepseek') return '◈';
+  if (p === 'cursor') return '↗';
+  if (p === 'claude_code') return '⌁';
+  if (p === 'claude_cowork') return '◉';
   return '📁';
 }
 
@@ -4849,7 +4866,13 @@ function platformLabel(p) {
   if (p === 'chatgpt') return 'ChatGPT';
   if (p === 'claude') return 'Claude';
   if (p === 'gemini') return 'Gemini';
-  return 'Other';
+  if (p === 'codex') return 'Codex';
+  if (p === 'deepseek') return 'DeepSeek';
+  if (p === 'cursor') return 'Cursor';
+  if (p === 'claude_code') return 'Claude Code';
+  if (p === 'claude_cowork') return 'Claude Cowork';
+  if (p === 'unknown') return 'Unknown source';
+  return String(p || 'Other').replace(/[_-]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
 }
 
 function platformColor(p) {

@@ -17,7 +17,7 @@ class HostedDashboardBrowserTests(unittest.TestCase):
             with sync_playwright() as playwright:
                 browser=playwright.chromium.launch(headless=True); page=browser.new_page()
                 page.goto(f"http://127.0.0.1:{runtime.port}/consumer",wait_until="networkidle")
-                page.locator(".library-view-tab[data-library='intake']").click()
+                page.get_by_role("button",name="＋ Add or connect").click()
                 page.locator(".source-method[data-source-method='api']").click()
                 page.fill("#api-integration-name","Research automation")
                 page.select_option("#api-integration-provider","automation")
@@ -38,12 +38,14 @@ class HostedDashboardBrowserTests(unittest.TestCase):
                 browser=playwright.chromium.launch(headless=True); page=browser.new_page(); failures=[]
                 page.on("response",lambda response: failures.append((response.status,response.url)) if response.status >= 400 else None)
                 page.goto(f"http://127.0.0.1:{runtime.port}/consumer",wait_until="networkidle")
+                page.get_by_role("button",name="＋ Add or connect").click()
                 page.locator(".source-method[data-source-method='folder']").click()
                 page.select_option("#connector-provider","claude_code"); page.fill("#connector-root-path",str(source)); page.check("#connector-consent")
                 page.get_by_role("button",name="Preview source").click()
                 page.wait_for_selector("#connector-preview .connector-preview-item")
                 page.get_by_role("button",name="Import selected history & connect").click()
                 page.wait_for_function("() => document.querySelector('#connector-list').innerText.includes('Claude Code')")
+                page.get_by_role("button",name="Close").click(); page.locator(".app-primary-tab[data-primary='library']").click()
                 page.locator(".library-view-tab[data-library='map']").click(); page.wait_for_selector(".archive-map-card")
                 self.assertIn("connected conversation",page.locator(".archive-map-card").first.inner_text().lower())
                 self.assertEqual([item for item in failures if not item[1].endswith('/favicon.ico')],[])

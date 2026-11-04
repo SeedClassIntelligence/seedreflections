@@ -113,10 +113,15 @@ class TestBrowserAutomation(unittest.TestCase):
             url = f"http://localhost:{self.port}/consumer"
             page.goto(url)
 
-            # Verify the consolidated product shell and library views.
+            # Workspace is the entrance; sources open contextually without leaving it.
+            page.wait_for_selector("#section-workspace", state="visible")
+            self.assertTrue(page.locator("#chat-input").is_visible())
+            page.get_by_role("button",name="＋ Add or connect").click()
             page.wait_for_selector("text=Bring your history home.")
             self.assertTrue(page.locator("#section-intake").is_visible())
+            page.get_by_role("button",name="Close").click()
 
+            page.click(".app-primary-tab[data-primary='library']")
             page.click(".library-view-tab[data-library='map']")
             page.wait_for_selector("#section-map", state="visible")
             self.assertTrue(page.locator("#archive-map-grid").is_visible())
