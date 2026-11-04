@@ -114,6 +114,29 @@ def auth_request_allowed(key):
     return consume_auth_attempt(key,AUTH_RATE_LIMIT,AUTH_RATE_WINDOW)
 
 
+def production_readiness():
+    checks=[]
+    def check(name,passed,detail): checks.append({"name":name,"passed":bool(passed),"detail":detail})
+    parsed=urllib.parse.urlparse(PUBLIC_ORIGIN)
+    check("public_origin",DEPLOYMENT_MODE=="local" or (parsed.scheme=="https" and bool(parsed.netloc)),
+        "local runtime" if DEPLOYMENT_MODE=="local" else "explicit HTTPS origin required")
+    try:
+        status=storage_status("local")
+        check("persistence",bool(status.get("database")),"SQLite workspace storage reachable")
+    except Exception as exc: check("persistence",False,"Workspace storage unavailable: "+str(exc))
+    billing=stripe_billing_enabled(); cfg=load_config()
+    billing_values=[stripe_setting(cfg,"STRIPE_SECRET_KEY","stripe_secret_key"),stripe_setting(cfg,"STRIPE_WEBHOOK_SECRET","stripe_webhook_secret"),
+        stripe_setting(cfg,"STRIPE_PRICE_PRO","stripe_price_pro"),stripe_setting(cfg,"STRIPE_PRICE_MASTER","stripe_price_master")]
+    check("billing",not billing or all(billing_values),"disabled" if not billing else "server secret, webhook secret, and both price IDs configured")
+    teams=os.environ.get("SEED_REFLECTIONS_TEAM_ENABLED","0")=="1"
+    if teams:
+        try: auth_list_members("local"); check("teams",True,"membership schema reachable")
+        except Exception as exc: check("teams",False,"membership storage unavailable: "+str(exc))
+    else: check("teams",True,"disabled")
+    check("upload_boundary",MAX_UPLOAD_BYTES>0 and HOSTED_STORAGE_BYTES>0,"positive upload and storage limits")
+    return {"ready":all(item["passed"] for item in checks),"mode":DEPLOYMENT_MODE,"checks":checks,"time":datetime.now().isoformat()}
+
+
 def stream_multipart_upload(stream, content_length, content_type):
     """Stage a single multipart file without retaining the request body in memory."""
     boundary_match = re.search(r"boundary=(?:\"([^\"]+)\"|([^;]+))", content_type)
@@ -1012,6 +1035,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"status":"healthy","mode":DEPLOYMENT_MODE,"database":"sqlite_normalized",
                 "runtime":"unified","time":datetime.now().isoformat()})
             return
+        if path == "/api/v2/readiness":
+            result=production_readiness(); self._send_json(result,200 if result["ready"] else 503); return
         if path == "/api/v2/team":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
