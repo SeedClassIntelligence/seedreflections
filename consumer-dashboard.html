@@ -1233,6 +1233,7 @@ a{color:var(--accent);text-decoration:none}
     <div class="section-title">Workspace</div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add or connect</button>
+      <button class="btn btn-ghost btn-sm" onclick="openArtifactStudio()">Work artifacts</button>
       <button class="btn btn-ghost btn-sm" onclick="openEvidenceDrawer()">Evidence & lineage</button>
       <span style="font-size:12px; color:var(--text-muted);">Active Scope:</span>
       <span class="seed-badge" style="background:var(--accent-glow); color:var(--accent);" id="cockpit-scope-badge">All Ideas</span>
@@ -1391,6 +1392,25 @@ a{color:var(--accent);text-decoration:none}
         <p style="text-align:center; padding:16px 8px; color:var(--text-dim);">
           Select or discuss any seed to inspect cryptographic trust, parent-child edges, and evolution versions.
         </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="artifact-studio-modal" onclick="closeModalOnOverlay(event,'artifact-studio-modal')">
+  <div class="modal" style="max-width:920px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div><h2>Work artifacts</h2><p style="font-size:12px;color:var(--text-muted)">Turn workspace thinking into persistent plans, briefs, reports, task sets, and notes.</p></div><button class="btn btn-ghost" onclick="closeModal('artifact-studio-modal')">×</button></div>
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:14px;margin-top:16px;min-height:430px">
+      <div style="border-right:1px solid var(--border);padding-right:12px"><button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:10px" onclick="newArtifactDraft()">＋ New artifact</button><div id="artifact-list"></div></div>
+      <div>
+        <input type="hidden" id="artifact-id">
+        <div style="display:grid;grid-template-columns:150px 1fr 140px;gap:8px">
+          <select id="artifact-type"><option value="plan">Plan</option><option value="brief">Brief</option><option value="report">Report</option><option value="task_set">Task set</option><option value="note">Note</option></select>
+          <input id="artifact-title" placeholder="Artifact title">
+          <select id="artifact-status"><option value="draft">Draft</option><option value="active">Active</option><option value="complete">Complete</option><option value="archived">Archived</option></select>
+        </div>
+        <textarea id="artifact-content" rows="17" style="width:100%;box-sizing:border-box;margin-top:10px;font-family:inherit" placeholder="Write the durable work product here…"></textarea>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="exportCurrentArtifact()">Export Markdown</button><button class="btn btn-primary btn-sm" onclick="saveCurrentArtifact()">Save artifact</button></div>
       </div>
     </div>
   </div>
@@ -2044,6 +2064,7 @@ var currentShelfMode = 'ideas';
 var activeWorkingThreadId = null;
 var selectedShelfThreadIds = new Set();
 var activeWorkingThreadDetail = null;
+var WORK_ARTIFACTS = [];
 
 function productFetch(path, options) {
   var token=localStorage.getItem('seedreflections_access_token');
@@ -4938,6 +4959,19 @@ function closeModal(id) {
 function closeModalOnOverlay(e, id) {
   if (e.target.classList.contains('modal-overlay')) closeModal(id);
 }
+
+async function openArtifactStudio(){openModal('artifact-studio-modal');await loadArtifacts();if(!document.getElementById('artifact-id').value)newArtifactDraft();}
+async function loadArtifacts(){
+  var response=await productFetch('/artifacts'),data=await response.json();WORK_ARTIFACTS=data.artifacts||[];
+  var list=document.getElementById('artifact-list');list.innerHTML=WORK_ARTIFACTS.map(function(a){return '<button class="btn btn-ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" onclick="editArtifact(\''+a.artifact_id+'\')"><strong>'+escapeHtml(a.title)+'</strong><div style="font-size:10px;color:var(--text-muted)">'+escapeHtml(a.type.replace('_',' '))+' · '+escapeHtml(a.status)+'</div></button>';}).join('')||'<div style="font-size:11px;color:var(--text-muted)">No artifacts yet.</div>';
+}
+function newArtifactDraft(){document.getElementById('artifact-id').value='';document.getElementById('artifact-type').value='plan';document.getElementById('artifact-title').value='';document.getElementById('artifact-status').value='draft';document.getElementById('artifact-content').value='';document.getElementById('artifact-type').disabled=false;}
+function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;}
+async function saveCurrentArtifact(){
+  var id=document.getElementById('artifact-id').value,payload={type:document.getElementById('artifact-type').value,title:document.getElementById('artifact-title').value.trim(),status:document.getElementById('artifact-status').value,content:document.getElementById('artifact-content').value.trim(),conversation_ids:activeWorkingThreadId?[activeWorkingThreadId]:[],seed_ids:activeFocusSeedId?[activeFocusSeedId]:[]};
+  try{var response=await productFetch(id?'/artifacts/'+encodeURIComponent(id):'/artifacts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);document.getElementById('artifact-id').value=result.artifact.artifact_id;showToast('Work artifact saved.');await loadArtifacts();editArtifact(result.artifact.artifact_id);}catch(e){showToast(e.message||'Artifact could not be saved');}
+}
+async function exportCurrentArtifact(){var id=document.getElementById('artifact-id').value;if(!id){showToast('Save the artifact before exporting.');return;}var response=await productFetch('/artifacts/'+encodeURIComponent(id)+'/export'),data=await response.json();if(!response.ok){showToast(data.error);return;}var blob=new Blob([data.markdown],{type:'text/markdown'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.artifact.title||'artifact').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.md';a.click();URL.revokeObjectURL(a.href);}
 
 /* ── Account Settings & Key management ────────────────────────────── */
 async function loadAccountSettings() {

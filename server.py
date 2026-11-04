@@ -1083,6 +1083,23 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not user: self._send_json({"error":"Authentication required"},401); return
             self._send_json(load_workspace(workspace_id=user["workspace_id"]))
             return
+        if path == "/api/v2/artifacts":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            workspace=load_workspace(workspace_id=user["workspace_id"])
+            query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); artifact_type=(query.get("type") or [""])[0]
+            artifacts=workspace.get("artifacts",[])
+            if artifact_type: artifacts=[item for item in artifacts if item.get("type")==artifact_type]
+            self._send_json({"artifacts":artifacts,"total":len(artifacts)}); return
+        artifact_export_match=re.fullmatch(r"/api/v2/artifacts/([^/]+)/export",path)
+        if artifact_export_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            artifact_id=urllib.parse.unquote(artifact_export_match.group(1)); workspace=load_workspace(workspace_id=user["workspace_id"])
+            artifact=next((item for item in workspace.get("artifacts",[]) if item.get("artifact_id")==artifact_id),None)
+            if not artifact: self._send_json({"error":"Artifact not found"},404); return
+            markdown=f"# {artifact.get('title','Untitled artifact')}\n\nType: {artifact.get('type','note')}  \nStatus: {artifact.get('status','draft')}\n\n{artifact.get('content','')}\n"
+            self._send_json({"artifact":artifact,"markdown":markdown}); return
         if path == "/api/v2/settings":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -2745,6 +2762,36 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             try: self._send_json(auth_create_invitation(user["workspace_id"],body.get("email"),body.get("role"),user["id"]),201)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/artifacts":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            artifact_type=str(body.get("type") or "note").strip().lower(); title=str(body.get("title") or "").strip(); content=str(body.get("content") or "").strip()
+            if artifact_type not in {"plan","brief","report","task_set","note"}: self._send_json({"error":"Unsupported artifact type"},400); return
+            if not title or not content: self._send_json({"error":"Artifact title and content are required"},400); return
+            status=str(body.get("status") or "draft").strip().lower()
+            if status not in {"draft","active","complete","archived"}: self._send_json({"error":"Invalid artifact status"},400); return
+            now=datetime.now().isoformat(); artifact={"artifact_id":uuid.uuid4().hex,"type":artifact_type,"title":title,"content":content,
+                "status":status,"project_id":body.get("project_id"),"conversation_ids":list(body.get("conversation_ids") or []),
+                "seed_ids":list(body.get("seed_ids") or []),"created_by":user["id"],"created_at":now,"updated_at":now,"versions":[]}
+            workspace=load_workspace(workspace_id=user["workspace_id"]); workspace.setdefault("artifacts",[]).append(artifact)
+            save_workspace(workspace,user["workspace_id"],"artifact_created"); self._send_json({"artifact":artifact},201); return
+        artifact_update_match=re.fullmatch(r"/api/v2/artifacts/([^/]+)",path)
+        if artifact_update_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            artifact_id=urllib.parse.unquote(artifact_update_match.group(1)); workspace=load_workspace(workspace_id=user["workspace_id"])
+            artifact=next((item for item in workspace.get("artifacts",[]) if item.get("artifact_id")==artifact_id),None)
+            if not artifact: self._send_json({"error":"Artifact not found"},404); return
+            if body.get("action")=="delete":
+                workspace["artifacts"]=[item for item in workspace.get("artifacts",[]) if item.get("artifact_id")!=artifact_id]
+                save_workspace(workspace,user["workspace_id"],"artifact_deleted"); self._send_json({"deleted":True}); return
+            if body.get("status") and body["status"] not in {"draft","active","complete","archived"}: self._send_json({"error":"Invalid artifact status"},400); return
+            artifact.setdefault("versions",[]).append({"title":artifact.get("title"),"content":artifact.get("content"),"status":artifact.get("status"),"saved_at":datetime.now().isoformat(),"saved_by":user["id"]})
+            artifact["versions"]=artifact["versions"][-25:]
+            for key in ("title","content","status","project_id","conversation_ids","seed_ids"):
+                if key in body: artifact[key]=body[key]
+            artifact["updated_at"]=datetime.now().isoformat(); artifact["updated_by"]=user["id"]
+            save_workspace(workspace,user["workspace_id"],"artifact_updated"); self._send_json({"artifact":artifact}); return
         if path == "/api/v2/team/invitations/accept":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return

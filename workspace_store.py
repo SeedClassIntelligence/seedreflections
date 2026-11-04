@@ -90,13 +90,18 @@ def initialize():
           workspace_id TEXT NOT NULL, entity_id TEXT NOT NULL, row_order INTEGER NOT NULL,
           event_type TEXT, payload_json TEXT NOT NULL, PRIMARY KEY(workspace_id,entity_id)
         );
+        CREATE TABLE IF NOT EXISTS workspace_artifacts(
+          workspace_id TEXT NOT NULL, entity_id TEXT NOT NULL, row_order INTEGER NOT NULL,
+          project_id TEXT, artifact_type TEXT, status TEXT, title TEXT, payload_json TEXT NOT NULL,
+          PRIMARY KEY(workspace_id,entity_id)
+        );
         """)
 
 
 _ENTITY_TABLES = {
     "projects":"workspace_projects", "seeds":"workspace_seeds", "decisions":"workspace_decisions",
     "relationships":"workspace_relationships", "conflicts":"workspace_conflicts", "sources":"workspace_sources",
-    "accounts":"workspace_accounts", "telemetry":"workspace_telemetry",
+    "accounts":"workspace_accounts", "telemetry":"workspace_telemetry", "artifacts":"workspace_artifacts",
 }
 
 
@@ -105,6 +110,7 @@ def _entity_id(kind, item, index):
         "projects":("project_id","id"), "seeds":("seed_id","id"), "decisions":("decision_id","id"),
         "relationships":("relationship_id","id"), "conflicts":("conflict_id","id"),
         "sources":("source_id","id"), "accounts":("id","email"), "telemetry":("id","event_id"),
+        "artifacts":("artifact_id","id"),
     }[kind]
     value = next((item.get(key) for key in keys if item.get(key)), None)
     if value: return str(value)
@@ -120,6 +126,7 @@ def _entity_columns(kind, item):
     if kind == "conflicts": return (item.get("project_id"), item.get("status"))
     if kind == "sources": return (item.get("type") or item.get("platform"),)
     if kind == "accounts": return (item.get("email"), item.get("role"), item.get("plan"), item.get("status"))
+    if kind == "artifacts": return (item.get("project_id"), item.get("type"), item.get("status"), item.get("title"))
     return (item.get("event_type") or item.get("type"),)
 
 
