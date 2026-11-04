@@ -5,6 +5,7 @@ import hashlib
 import secrets
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 from archive_store import DB_PATH
@@ -14,12 +15,17 @@ def _now():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+@contextmanager
 def _connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(DB_PATH, timeout=30)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA journal_mode=WAL")
-    return db
+    try:
+        yield db
+        db.commit()
+    finally:
+        db.close()
 
 
 def initialize():

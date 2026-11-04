@@ -2632,6 +2632,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             except (ValueError,TypeError) as exc:
                 record_api_delivery(integration["id"],exc); self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/integrations/ping":
+            integration=authenticate_api_integration(self._bearer_token())
+            if not integration: self._send_json({"error":"Invalid or revoked connection token"},401); return
+            self._send_json({"status":"connected","integration_id":integration["id"],
+                "provider":integration["provider"],"name":integration["name"]}); return
         if path == "/api/v2/auth/signup":
             if not auth_request_allowed(f"{self.client_address[0]}:signup"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return

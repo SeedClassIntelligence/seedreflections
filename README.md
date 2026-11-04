@@ -67,6 +67,19 @@ SeedBridge is the read-only desktop connection layer behind **Workspace → Add 
 
 Inspect the running bridge with `GET /api/v2/seedbridge`. Hosted workspaces return `desktop_bridge_required` until the local bridge is installed and paired.
 
+The installable companion is `seedbridge_client.py` (`seedbridge.bat` on Windows). A consumer creates a scoped connection in **Workspace → Add or connect → Direct connection**, copies the one-time token, and then runs:
+
+```powershell
+seedbridge pair --server https://your-seed-reflections.example --token sr_live_...
+seedbridge discover
+seedbridge preview --provider codex --path "C:\path\to\sessions"
+seedbridge connect --provider codex --path "C:\path\to\sessions" --authorize
+seedbridge sync
+seedbridge status
+```
+
+Remote pairing requires HTTPS. Pairing validates the scoped token before saving configuration. On Windows, the companion protects the token with the current user's DPAPI account boundary; if OS-backed protection is unavailable, it stores no token and requires `SEEDBRIDGE_TOKEN` in the process environment. Connecting a source is always a separate, explicit authorization step, and synchronization is limited to eligible JSON/JSONL conversation files under that selected root.
+
 Send JSON to `POST /api/v2/integrations/import` with `Authorization: Bearer <connection-token>`. Accepted payloads are:
 
 ```json
