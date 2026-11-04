@@ -19,3 +19,9 @@ The production Compose overlay keeps the Python service on a private container n
 Back up the `seed-reflections-data` volume and the Caddy data volume through the hosting provider. Do not expose port `8476` publicly in hosted mode.
 
 The application database uses WAL mode and persistent SQLite authentication throttling. A single shared data volume is required. Do not scale the application container across hosts while using SQLite; moving to a network database is a separate architecture decision.
+
+## Billing activation
+
+Billing remains dormant unless `SEED_REFLECTIONS_BILLING_ENABLED=1`. Before enabling it, provision `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, and `STRIPE_PRICE_MASTER` in the deployment secret manager. Register `/api/v1/stripe/webhook` as the Stripe webhook destination and subscribe at minimum to `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+
+Checkout and customer-portal sessions are created server-side. Hosted billing endpoints require an authenticated runtime user, remote Stripe calls use idempotency keys, webhook signatures use a five-minute replay tolerance, and processed Stripe event IDs are retained durably for duplicate suppression. The admin overview reports only whether secrets and prices are configured; it never returns their values. Do not place Stripe secrets in the repository, browser code, container image, or `docker-compose` file.

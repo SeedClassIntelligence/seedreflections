@@ -239,6 +239,18 @@ class TestStripeWebhook(unittest.TestCase):
         stripe_billing = body.get("stripe_billing", {})
         self.assertIn("webhook_events", stripe_billing)
         self.assertGreater(len(stripe_billing["webhook_events"]), 0)
+        self.assertNotIn("secret_key", stripe_billing)
+        self.assertNotIn("webhook_secret", stripe_billing)
+        self.assertTrue(stripe_billing["webhook_configured"])
+
+    def test_duplicate_event_is_acknowledged_without_applying_it_twice(self):
+        event = {"id": "evt_duplicate", "type": "checkout.session.completed", "data": {"object": {
+            "customer_email": "tester@example.com", "metadata": {"plan": "pro"}, "customer": "cus_once"}}}
+        self.assertEqual(self.make_request("/api/v1/stripe/webhook", data=event)[0], 200)
+        status, body = self.make_request("/api/v1/stripe/webhook", data=event)
+        self.assertEqual(status, 200); self.assertEqual(body["status"], "duplicate")
+        persisted = server.load_db()["stripe_events"]
+        self.assertEqual(sum(item["event_id"] == "evt_duplicate" for item in persisted), 1)
 
 if __name__ == "__main__":
     unittest.main()

@@ -85,6 +85,7 @@ TRANSCRIPTS_DIR = "transcripts"
 
 import hashlib
 import hmac
+import base64
 
 
 def validate_runtime_config():
@@ -295,6 +296,26 @@ def resolve_account_for_request(handler, db):
         "billing_cycle_month": datetime.now().strftime("%Y-%m")
     }
 
+
+def resolve_billing_account(handler, db):
+    """Resolve a billable identity; hosted mode never uses the demo fallback."""
+    if DEPLOYMENT_MODE == "local":
+        return resolve_account_for_request(handler, db)
+    runtime_user = handler._runtime_user()
+    if not runtime_user:
+        return None
+    account = next((item for item in db.get("accounts", []) if
+        item.get("id") == runtime_user.get("id") or
+        (runtime_user.get("email") and item.get("email", "").lower() == runtime_user["email"].lower())), None)
+    if account:
+        return account
+    account = {"id": runtime_user["id"], "email": runtime_user.get("email", ""),
+        "name": runtime_user.get("name", "Workspace Owner"), "role": "consumer", "plan": "free",
+        "status": "active", "created_at": datetime.now().isoformat(), "last_active": "Just now"}
+    db.setdefault("accounts", []).append(account)
+    save_db(db)
+    return account
+
 def sync_account_cycle(account):
     """Ensure monthly billing cycle resets accurately on calendar month rollover."""
     current_month = datetime.now().strftime("%Y-%m")
@@ -305,10 +326,60 @@ def sync_account_cycle(account):
 
 STRIPE_WEBHOOK_LOG = []
 
+
+def stripe_billing_enabled():
+    return os.environ.get("SEED_REFLECTIONS_BILLING_ENABLED", "0") == "1"
+
+
+def stripe_setting(cfg, env_name, config_name):
+    return (os.environ.get(env_name) or cfg.get(config_name) or "").strip()
+
+
+def stripe_api_request(path, parameters, secret_key, idempotency_key=None):
+    """Call Stripe server-side without exposing the secret to the browser."""
+    request = urllib.request.Request(
+        "https://api.stripe.com" + path,
+        data=urllib.parse.urlencode(parameters, doseq=True).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": "Basic " + base64.b64encode((secret_key + ":").encode("utf-8")).decode("ascii"),
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "SeedReflections/1.0",
+            **({"Idempotency-Key": idempotency_key} if idempotency_key else {})
+        }
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read().decode("utf-8")).get("error", {})
+            message = detail.get("message") or str(exc)
+        except Exception:
+            message = str(exc)
+        raise RuntimeError("Stripe request failed: " + message) from exc
+
+
+def claim_stripe_event(event_id, event_type):
+    """Atomically claim a webhook event; stale interrupted claims may be retried."""
+    with DB_LOCK:
+        db = load_db()
+        events = db.get("stripe_events", [])
+        existing = next((item for item in events if item.get("event_id") == event_id), None)
+        if existing and (existing.get("status") == "complete" or time.time() - existing.get("claimed_at_epoch", 0) < 300):
+            return False
+        events = [item for item in events if item.get("event_id") != event_id]
+        events.append({"event_id": event_id, "event_type": event_type, "status": "processing",
+            "timestamp": datetime.now().isoformat(), "claimed_at_epoch": time.time()})
+        db["stripe_events"] = events[-1000:]
+        save_db(db)
+        return True
+
 def record_stripe_event(event_type, event_id, customer_email, plan, details=""):
     """Track Stripe billing and subscription webhook events."""
     event = {
         "timestamp": datetime.now().isoformat(),
+        "status": "complete",
         "event_type": event_type,
         "event_id": event_id,
         "customer_email": customer_email,
@@ -318,6 +389,12 @@ def record_stripe_event(event_type, event_id, customer_email, plan, details=""):
     STRIPE_WEBHOOK_LOG.append(event)
     if len(STRIPE_WEBHOOK_LOG) > 50:
         STRIPE_WEBHOOK_LOG.pop(0)
+    with DB_LOCK:
+        db = load_db()
+        events = [item for item in db.get("stripe_events", []) if item.get("event_id") != event_id]
+        events.append(event)
+        db["stripe_events"] = events[-1000:]
+        save_db(db)
     TELEMETRY_LOG.append({
         "timestamp": event["timestamp"],
         "provider": "stripe",
@@ -733,8 +810,8 @@ def load_db():
                 print(f"Error saving migrated database: {e}")
 
         if not isinstance(data, dict):
-            data = {"seeds": [], "projects": [], "sources": [], "decisions": [], "conflicts": [], "relationships": [], "accounts": [], "telemetry": []}
-        for k in ("seeds", "projects", "sources", "decisions", "conflicts", "relationships", "accounts", "telemetry"):
+            data = {"seeds": [], "projects": [], "sources": [], "decisions": [], "conflicts": [], "relationships": [], "accounts": [], "telemetry": [], "stripe_events": []}
+        for k in ("seeds", "projects", "sources", "decisions", "conflicts", "relationships", "accounts", "telemetry", "stripe_events"):
             if k not in data or not isinstance(data[k], list):
                 data[k] = []
 
@@ -2220,19 +2297,21 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 })
 
             # Stripe Configuration from config or env
-            stripe_mode = cfg.get("stripe_mode", "test")
+            stripe_secret = stripe_setting(cfg, "STRIPE_SECRET_KEY", "stripe_secret_key")
+            stripe_webhook = stripe_setting(cfg, "STRIPE_WEBHOOK_SECRET", "stripe_webhook_secret")
+            stripe_mode = "live" if stripe_secret.startswith("sk_live_") else cfg.get("stripe_mode", "test")
             calc_mrr = sum(20 if a.get("plan") == "master" else (9 if a.get("plan") == "pro" else 0) for a in accounts_data if a.get("status", "").lower() != "suspended")
             stripe_keys = {
                 "mode": stripe_mode,
-                "secret_key": cfg.get("stripe_secret_key", "sk_test_mock_seedreflections_12345"),
-                "webhook_secret": cfg.get("stripe_webhook_secret", "whsec_mock_seedreflections_12345"),
-                "checkout_urls": {
-                    "free": cfg.get("stripe_checkout_free", "https://buy.stripe.com/test_seed_reflections_free"),
-                    "pro": cfg.get("stripe_checkout_pro", "https://buy.stripe.com/test_seed_reflections_pro"),
-                    "master": cfg.get("stripe_checkout_master", "https://buy.stripe.com/test_seed_reflections_master")
+                "enabled": stripe_billing_enabled(),
+                "secret_configured": bool(stripe_secret),
+                "webhook_configured": bool(stripe_webhook),
+                "prices_configured": {
+                    "pro": bool(stripe_setting(cfg, "STRIPE_PRICE_PRO", "stripe_price_pro")),
+                    "master": bool(stripe_setting(cfg, "STRIPE_PRICE_MASTER", "stripe_price_master"))
                 },
                 "monthly_revenue_mrr": f"${calc_mrr:.2f} USD",
-                "webhook_events": STRIPE_WEBHOOK_LOG[-10:]
+                "webhook_events": db.get("stripe_events", [])[-10:]
             }
 
             self._send_json({
@@ -3301,17 +3380,61 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/v1/subscriptions/checkout" or path == "/subscriptions/checkout":
             plan = body.get("plan", "").lower()
-            checkout_urls = {
-                "free": "https://buy.stripe.com/test_seed_reflections_free",
-                "pro": "https://buy.stripe.com/test_seed_reflections_pro",
-                "master": "https://buy.stripe.com/test_seed_reflections_master"
+            if plan not in {"pro", "master"}:
+                self._send_json({"error": "Choose the pro or master subscription plan"}, 400); return
+            if not stripe_billing_enabled():
+                self._send_json({"error": "Billing is not enabled for this deployment", "code": "billing_disabled"}, 503); return
+            cfg = load_config()
+            secret_key = stripe_setting(cfg, "STRIPE_SECRET_KEY", "stripe_secret_key")
+            price_id = stripe_setting(cfg, f"STRIPE_PRICE_{plan.upper()}", f"stripe_price_{plan}")
+            if not secret_key or not price_id:
+                self._send_json({"error": f"Stripe secret and {plan} price ID must be configured", "code": "billing_not_configured"}, 503); return
+            with DB_LOCK:
+                db = load_db(); account = resolve_billing_account(self, db)
+            if not account:
+                self._send_json({"error": "Authentication is required for billing", "code": "authentication_required"}, 401); return
+            origin = PUBLIC_ORIGIN if PUBLIC_ORIGIN != "*" else f"http://127.0.0.1:{PORT}"
+            parameters = {
+                "mode": "subscription", "line_items[0][price]": price_id, "line_items[0][quantity]": "1",
+                "success_url": origin + "/consumer?billing=success&session_id={CHECKOUT_SESSION_ID}",
+                "cancel_url": origin + "/consumer?billing=cancelled", "client_reference_id": account["id"],
+                "metadata[plan]": plan, "metadata[user_id]": account["id"],
+                "subscription_data[metadata][plan]": plan, "subscription_data[metadata][user_id]": account["id"]
             }
-            url = checkout_urls.get(plan, "https://buy.stripe.com/test_seed_reflections_pro")
-            self._send_json({"checkout_url": url}, 200)
+            if account.get("stripe_customer_id"): parameters["customer"] = account["stripe_customer_id"]
+            elif account.get("email"): parameters["customer_email"] = account["email"]
+            try:
+                session = stripe_api_request("/v1/checkout/sessions", parameters, secret_key,
+                    "checkout:" + account["id"] + ":" + plan + ":" + str(body.get("request_id") or uuid.uuid4()))
+            except RuntimeError as exc:
+                self._send_json({"error": str(exc), "code": "stripe_unavailable"}, 502); return
+            if not session.get("url"):
+                self._send_json({"error": "Stripe did not return a checkout URL", "code": "stripe_invalid_response"}, 502); return
+            self._send_json({"checkout_url": session["url"], "session_id": session.get("id"), "plan": plan}, 200)
             return
 
         elif path == "/api/v1/subscriptions/portal" or path == "/subscriptions/portal":
-            self._send_json({"portal_url": "https://billing.stripe.com/p/login/test_mock_portal"}, 200)
+            if not stripe_billing_enabled():
+                self._send_json({"error": "Billing is not enabled for this deployment", "code": "billing_disabled"}, 503); return
+            cfg = load_config(); secret_key = stripe_setting(cfg, "STRIPE_SECRET_KEY", "stripe_secret_key")
+            with DB_LOCK:
+                db = load_db(); account = resolve_billing_account(self, db)
+            if not account:
+                self._send_json({"error": "Authentication is required for billing", "code": "authentication_required"}, 401); return
+            if not secret_key:
+                self._send_json({"error": "Stripe secret must be configured", "code": "billing_not_configured"}, 503); return
+            if not account.get("stripe_customer_id"):
+                self._send_json({"error": "This account does not have a Stripe customer yet", "code": "billing_customer_missing"}, 409); return
+            origin = PUBLIC_ORIGIN if PUBLIC_ORIGIN != "*" else f"http://127.0.0.1:{PORT}"
+            try:
+                session = stripe_api_request("/v1/billing_portal/sessions", {
+                    "customer": account["stripe_customer_id"], "return_url": origin + "/consumer"
+                }, secret_key, "portal:" + account["id"] + ":" + str(body.get("request_id") or uuid.uuid4()))
+            except RuntimeError as exc:
+                self._send_json({"error": str(exc), "code": "stripe_unavailable"}, 502); return
+            if not session.get("url"):
+                self._send_json({"error": "Stripe did not return a portal URL", "code": "stripe_invalid_response"}, 502); return
+            self._send_json({"portal_url": session["url"]}, 200)
             return
 
         # ── API Endpoint: Live Stripe Webhook Ingestion & Subscription Sync ──
@@ -3319,24 +3442,30 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             cfg = load_config()
             webhook_secret = (cfg.get("stripe_webhook_secret") or os.environ.get("STRIPE_WEBHOOK_SECRET") or "").strip()
             stripe_sig_header = self.headers.get("Stripe-Signature", "").strip()
+            signature_required = stripe_billing_enabled() or DEPLOYMENT_MODE != "local"
+            if signature_required and not webhook_secret:
+                self._send_json({"error": "Stripe webhook secret is not configured"}, 503); return
+            if signature_required and not stripe_sig_header:
+                self._send_json({"error": "Stripe-Signature header is required"}, 400); return
 
             # Cryptographic signature verification if configured and signature header provided
             if webhook_secret and not webhook_secret.startswith("whsec_placeholder") and not webhook_secret.startswith("whsec_mock") and stripe_sig_header:
                 try:
-                    sig_parts = {}
+                    timestamp_value = ""; signatures = []
                     for item in stripe_sig_header.split(","):
                         if "=" in item:
                             k, v = item.strip().split("=", 1)
-                            sig_parts[k] = v
-                    t = sig_parts.get("t", "")
-                    v1 = sig_parts.get("v1", "")
-                    if not t or not v1:
+                            if k == "t": timestamp_value = v
+                            elif k == "v1": signatures.append(v)
+                    if not timestamp_value or not signatures:
                         self._send_json({"error": "Invalid Stripe-Signature format"}, 400)
                         return
-                    
-                    signed_payload = f"{t}.".encode("utf-8") + post_data
+                    if abs(int(time.time()) - int(timestamp_value)) > 300:
+                        self._send_json({"error": "Stripe signature timestamp is outside the five-minute tolerance"}, 400)
+                        return
+                    signed_payload = f"{timestamp_value}.".encode("utf-8") + post_data
                     expected_sig = hmac.new(webhook_secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
-                    if not hmac.compare_digest(expected_sig, v1):
+                    if not any(hmac.compare_digest(expected_sig, signature) for signature in signatures):
                         self._send_json({"error": "Stripe signature verification failed"}, 400)
                         return
                 except Exception as e:
@@ -3351,6 +3480,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             event_type = event.get("type", "")
             event_id = event.get("id", f"evt_{int(time.time())}")
             data_obj = event.get("data", {}).get("object", {})
+            if not claim_stripe_event(event_id, event_type):
+                self._send_json({"received": True, "event": event_type, "status": "duplicate"}, 200); return
 
             # 1. Checkout session completed -> upgrade account to paid tier
             if event_type == "checkout.session.completed":
