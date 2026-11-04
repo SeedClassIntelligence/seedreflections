@@ -96,6 +96,10 @@ Send JSON to `POST /api/v2/integrations/import` with `Authorization: Bearer <con
 
 Manage connections through `GET /api/v2/integrations`, `POST /api/v2/integrations`, and `POST /api/v2/integrations/{id}/revoke`. Revocation stops future deliveries but preserves already imported evidence.
 
+## Team workspaces
+
+Hosted workspaces support owner, editor, and viewer memberships when `SEED_REFLECTIONS_TEAM_ENABLED=1`. Owners create email-bound, one-time invitation links in **Settings → Workspace Team** and manage member roles. Editors can import, analyze, and change workspace material. Viewers can read the shared workspace but every v2 mutation is rejected at the server authorization boundary. A user may retain memberships in multiple workspaces and switch without losing their original workspace. The final owner cannot be removed or demoted.
+
 ---
 
 ## Cryptographic Seed Signature Integration

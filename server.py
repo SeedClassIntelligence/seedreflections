@@ -40,7 +40,12 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
                            list_candidate_links, review_candidate_link)
 from document_ingest import import_document, import_document_path
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
-from auth_store import signup as auth_signup, login as auth_login, authenticate as auth_authenticate, logout as auth_logout, consume_auth_attempt
+from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
+    logout as auth_logout, consume_auth_attempt, list_members as auth_list_members,
+    list_workspaces as auth_list_workspaces, create_invitation as auth_create_invitation,
+    list_invitations as auth_list_invitations, accept_invitation as auth_accept_invitation,
+    switch_workspace as auth_switch_workspace, update_member_role as auth_update_member_role,
+    remove_member as auth_remove_member)
 from tenant_archive_store import (import_json as tenant_import_json, overview as tenant_archive_overview,
     list_conversations as tenant_list_conversations, get_conversation as tenant_get_conversation,
     analyze as tenant_analyze, list_candidates as tenant_list_candidates, review as tenant_review,
@@ -1007,6 +1012,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"status":"healthy","mode":DEPLOYMENT_MODE,"database":"sqlite_normalized",
                 "runtime":"unified","time":datetime.now().isoformat()})
             return
+        if path == "/api/v2/team":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"workspace_id":user["workspace_id"],"current_role":user["role"],
+                "members":auth_list_members(user["workspace_id"]),
+                "invitations":auth_list_invitations(user["workspace_id"]) if user["role"]=="owner" else []}); return
+        if path == "/api/v2/workspaces":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"workspaces":auth_list_workspaces(user["id"])}); return
         if path == "/api/v2/connectors":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -2596,6 +2611,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
+        permission_exempt={"/api/v2/auth/signup","/api/v2/auth/login","/api/v2/integrations/import",
+            "/api/v2/integrations/ping","/api/v2/team/invitations/accept","/api/v2/workspaces/switch"}
+        if path.startswith("/api/v2/") and path not in permission_exempt:
+            permission_user=self._runtime_user()
+            if permission_user and permission_user.get("role")=="viewer":
+                self._send_json({"error":"Viewer access is read-only","code":"insufficient_role"},403); return
         content_length = int(self.headers.get("Content-Length", 0))
         content_type = self.headers.get("Content-Type", "")
         if path == "/api/v2/restore/upload":
@@ -2716,6 +2737,42 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not integration: self._send_json({"error":"Invalid or revoked connection token"},401); return
             self._send_json({"status":"connected","integration_id":integration["id"],
                 "provider":integration["provider"],"name":integration["name"]}); return
+        if path == "/api/v2/team/invitations":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user.get("role")!="owner": self._send_json({"error":"Owner access is required"},403); return
+            if os.environ.get("SEED_REFLECTIONS_TEAM_ENABLED","0")!="1": self._send_json({"error":"Team collaboration is not enabled"},503); return
+            try: self._send_json(auth_create_invitation(user["workspace_id"],body.get("email"),body.get("role"),user["id"]),201)
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/team/invitations/accept":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(auth_accept_invitation(body.get("token"),user["id"]))
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        team_role_match=re.fullmatch(r"/api/v2/team/members/([^/]+)/role",path)
+        if team_role_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user.get("role")!="owner": self._send_json({"error":"Owner access is required"},403); return
+            try: self._send_json(auth_update_member_role(user["workspace_id"],urllib.parse.unquote(team_role_match.group(1)),body.get("role")))
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        team_remove_match=re.fullmatch(r"/api/v2/team/members/([^/]+)/remove",path)
+        if team_remove_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user.get("role")!="owner": self._send_json({"error":"Owner access is required"},403); return
+            try: self._send_json(auth_remove_member(user["workspace_id"],urllib.parse.unquote(team_remove_match.group(1))))
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/workspaces/switch":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(auth_switch_workspace(user["id"],body.get("workspace_id")))
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
         if path == "/api/v2/auth/signup":
             if not auth_request_allowed(f"{self.client_address[0]}:signup"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
@@ -3378,7 +3435,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             }, 200)
             return
 
-        elif path == "/api/v1/subscriptions/checkout" or path == "/subscriptions/checkout":
+        elif path in ("/api/v2/billing/checkout", "/api/v1/subscriptions/checkout", "/subscriptions/checkout"):
             plan = body.get("plan", "").lower()
             if plan not in {"pro", "master"}:
                 self._send_json({"error": "Choose the pro or master subscription plan"}, 400); return
@@ -3413,7 +3470,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"checkout_url": session["url"], "session_id": session.get("id"), "plan": plan}, 200)
             return
 
-        elif path == "/api/v1/subscriptions/portal" or path == "/subscriptions/portal":
+        elif path in ("/api/v2/billing/portal", "/api/v1/subscriptions/portal", "/subscriptions/portal"):
             if not stripe_billing_enabled():
                 self._send_json({"error": "Billing is not enabled for this deployment", "code": "billing_disabled"}, 503); return
             cfg = load_config(); secret_key = stripe_setting(cfg, "STRIPE_SECRET_KEY", "stripe_secret_key")

@@ -1653,8 +1653,22 @@ a{color:var(--accent);text-decoration:none}
         
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:11.5px;color:var(--text-muted)">Payment method: ** Mastercard ending 4209</span>
-          <button class="btn btn-ghost btn-sm">Update Billing</button>
+          <button class="btn btn-ghost btn-sm" onclick="openBillingPortal()">Manage Billing</button>
         </div>
+      </div>
+    </div>
+
+    <div class="card account-grid-full" id="team-settings-card">
+      <div class="card-header"><h3>Workspace Team</h3><span id="team-role-badge" class="mode-badge">Owner</span></div>
+      <div class="card-body">
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Invite collaborators into this workspace. Editors can work with sources, ideas, and decisions; viewers have read-only access.</p>
+        <div id="team-invite-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <input id="team-invite-email" type="email" placeholder="collaborator@example.com" style="flex:1;min-width:220px">
+          <select id="team-invite-role" style="width:130px"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
+          <button class="btn btn-primary btn-sm" onclick="inviteTeamMember()">Create Invite</button>
+        </div>
+        <div id="team-invite-result" style="display:none;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:11px"></div>
+        <div id="team-member-list" style="display:flex;flex-direction:column;gap:8px"><span style="color:var(--text-muted);font-size:12px">Loading workspace members…</span></div>
       </div>
     </div>
 
@@ -4989,19 +5003,53 @@ function highlightPlanCard(plan) {
 }
 
 async function selectBillingPlan(plan) {
-  if (accessToken()) {
-    showToast('Billing activation is dormant. Your current plan was not changed.');
-    return;
-  }
+  if (plan === 'free') { showToast('Use Manage Billing to cancel or change an existing subscription.'); return; }
   highlightPlanCard(plan);
   try {
-    await productFetch('/settings', {
+    var response=await productFetch('/billing/checkout', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ user_plan: plan })
+      body: JSON.stringify({ plan: plan, request_id: crypto.randomUUID() })
     });
-    showToast('Plan upgraded to ' + plan.toUpperCase() + ' successfully!');
-  } catch(e) {}
+    var result=await response.json();
+    if (!response.ok) throw new Error(result.error || 'Checkout could not be created');
+    location.assign(result.checkout_url);
+  } catch(e) { showToast(e.message); }
+}
+
+async function openBillingPortal() {
+  try {
+    var response=await productFetch('/billing/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:crypto.randomUUID()})});
+    var result=await response.json(); if(!response.ok) throw new Error(result.error||'Billing portal unavailable');
+    location.assign(result.portal_url);
+  } catch(e) { showToast(e.message); }
+}
+
+async function loadTeamSettings() {
+  var list=document.getElementById('team-member-list'); if(!list) return;
+  try {
+    var response=await productFetch('/team'); var team=await response.json(); if(!response.ok) throw new Error(team.error||'Team unavailable');
+    document.getElementById('team-role-badge').textContent=(team.current_role||'viewer').replace(/^./,function(c){return c.toUpperCase();});
+    document.getElementById('team-invite-controls').style.display=team.current_role==='owner'?'flex':'none';
+    list.innerHTML=(team.members||[]).map(function(member){
+      var controls=team.current_role==='owner'&&member.id!==undefined?'<select onchange="changeTeamRole(\''+member.id+'\',this.value)"><option value="owner" '+(member.role==='owner'?'selected':'')+'>Owner</option><option value="editor" '+(member.role==='editor'?'selected':'')+'>Editor</option><option value="viewer" '+(member.role==='viewer'?'selected':'')+'>Viewer</option></select>':'';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px"><div><strong>'+escapeHtml(member.name||member.email)+'</strong><div style="font-size:11px;color:var(--text-muted)">'+escapeHtml(member.email)+'</div></div>'+controls+'</div>';
+    }).join('')||'<span style="color:var(--text-muted)">No members found.</span>';
+  } catch(e) { list.innerHTML='<span style="color:var(--text-muted)">'+escapeHtml(e.message)+'</span>'; }
+}
+
+async function inviteTeamMember(){
+  try { var response=await productFetch('/team/invitations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('team-invite-email').value,role:document.getElementById('team-invite-role').value})}); var result=await response.json(); if(!response.ok) throw new Error(result.error); var box=document.getElementById('team-invite-result'); box.style.display='block'; box.textContent='Share this one-time invitation link: '+location.origin+'/consumer?invite='+encodeURIComponent(result.token); showToast('Invitation created.'); }
+  catch(e){showToast(e.message||'Invitation could not be created');}
+}
+
+async function changeTeamRole(userId,role){
+  try{var response=await productFetch('/team/members/'+encodeURIComponent(userId)+'/role',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:role})});var result=await response.json();if(!response.ok)throw new Error(result.error);showToast('Member role updated.');loadTeamSettings();}catch(e){showToast(e.message);loadTeamSettings();}
+}
+
+async function acceptPendingTeamInvitation(){
+  var params=new URLSearchParams(location.search),token=params.get('invite'); if(!token)return;
+  try{var response=await productFetch('/team/invitations/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})});var result=await response.json();if(!response.ok)throw new Error(result.error);history.replaceState({},'',location.pathname);showToast('Workspace invitation accepted.');await loadAllSeeds();await loadTeamSettings();}catch(e){showToast(e.message||'Invitation could not be accepted');}
 }
 
 async function saveAccountProfile() {
@@ -5424,6 +5472,8 @@ document.addEventListener('DOMContentLoaded', function() {
   restoreRailStates();
   boot();
   loadAccountSettings();
+  loadTeamSettings();
+  acceptPendingTeamInvitation();
   setupPrivacyListeners();
   var journeyVersion = localStorage.getItem('seed_reflections_journey_version');
   var savedTab = journeyVersion === '4' ? (localStorage.getItem('active_dash_tab') || 'workspace') : 'workspace';
