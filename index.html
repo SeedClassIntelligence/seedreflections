@@ -3,10 +3,10 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seed Reflections — Never Lose Another AI Conversation</title>
-  <meta name="description" content="Recover abandoned projects across ChatGPT, Claude, Gemini, and every AI platform. Plant seeds from your phone. Track what you&#39;re building. Keep every AI on task.">
-  <meta property="og:title" content="Never Lose Another AI Conversation — Seed Reflections">
-  <meta property="og:description" content="Recover abandoned projects. Track ideas across ChatGPT, Claude, Gemini. Plant seeds from your phone.">
+  <title>SeedReflections — Organize and Continue Your AI Work</title>
+  <meta name="description" content="Bring AI conversations, documents, and project history into one evidence-backed workspace. Find what matters, verify the source, and continue the work.">
+  <meta property="og:title" content="Organize and Continue Your AI Work — SeedReflections">
+  <meta property="og:description" content="Turn scattered AI conversations and documents into a searchable Library, reviewable project memory, and usable work artifacts.">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
@@ -442,7 +442,7 @@
 .site-header { position:sticky; top:0; z-index:100; background:rgba(6,8,15,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
 .nav-top { display:flex; align-items:center; justify-content:space-between; padding:0 5%; height:50px; border-bottom:1px solid rgba(33,38,45,.5); }
 .nav-logo { font-weight:900; font-size:17px; color:var(--green); letter-spacing:-.5px; text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; }
-.nav-logo em { color:inherit; font-style:normal; }
+.nav-logo em { color:var(--text,#f0f6fc); font-style:normal; }
 .nav-top-right { display:flex; align-items:center; gap:12px; }
 .nav-top-right a { font-size:13px; font-weight:600; text-decoration:none; }
 .nav-top-right .signin { color:var(--text3,#8b949e); }
@@ -531,7 +531,7 @@
 </style>
 <header class="site-header">
   <div class="nav-top">
-    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">SeedReflections</a>
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">Seed<em>Reflections</em></a>
     <div class="nav-top-right" id="nav-auth">
       <a href="auth.html?mode=login" class="signin">Sign In</a>
       <a href="auth.html?mode=signup" class="signup">Sign Up</a>
@@ -552,13 +552,13 @@
     <span class="hero-badge-dot"></span>
     Seed-Class Intelligence Architecture
   </div>
-  <h1>Every idea you lost<br>in your AI conversations.<br><span class="hl">Found and filed.</span></h1>
-  <p class="hero-sub">Seed Reflection scans your AI conversations for abandoned ideas, lost decisions, and unfinished seeds — then organizes, tracks, and helps you act on them. Never lose a breakthrough again.</p>
+  <h1>Your AI work is scattered.<br><span class="hl">Bring it back together.</span></h1>
+  <p class="hero-sub">Import years of AI conversations, documents, and project history into one workspace. Find buried ideas and decisions, verify them against the original source, and continue the work without starting over.</p>
   <div class="hero-btns">
-    <a href="auth.html?mode=signup" class="btn btn-green">Start for Free</a>
-    <a href="#demo-video" class="btn btn-outline" style="border-color:var(--cyan);color:var(--cyan);">See Seed Reflection →</a>
+    <a href="auth.html?mode=signup" class="btn btn-green">Bring in my AI history</a>
+    <a href="#demo-video" class="btn btn-outline" style="border-color:var(--cyan);color:var(--cyan);">See how it works →</a>
   </div>
-  <p class="hero-footnote">Free forever — no credit card · <a href="auth.html?mode=signup">Create account for saved history</a></p>
+  <p class="hero-footnote">Exports, documents, pasted conversations, selected local sources, and authorized integrations</p>
 </section>
 
 <!-- ── INTERACTIVE DEMO VIDEO ── -->
@@ -566,8 +566,8 @@
   <div class="section-inner" style="max-width:900px;">
     <div style="text-align:center;margin-bottom:36px;">
       <div class="eyebrow">See It In Action</div>
-      <h2 class="section-h2">Watch Seed Reflections <span class="hl">recover lost ideas</span> in real time.</h2>
-      <p class="section-p" style="margin:12px auto 0;text-align:center;">No signup. No install. Paste any AI conversation and watch the magic happen.</p>
+      <h2 class="section-h2">From scattered conversations to <span class="hl">organized, evidence-backed work.</span></h2>
+      <p class="section-p" style="margin:12px auto 0;text-align:center;">The real product flow: bring work in, review what matters, and continue inside the Workspace.</p>
     </div>
 
     <!-- Demo Player -->
@@ -581,112 +581,54 @@
         <div class="demo-dot" style="background:#ff5f57"></div>
         <div class="demo-dot" style="background:#febc2e"></div>
         <div class="demo-dot" style="background:#28c840"></div>
-        <span class="demo-url">seed reflections.dev — Seed Reflection</span>
+        <span class="demo-url">SeedReflections — Workspace</span>
         <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
           <button class="demo-control" onclick="toggleDemoPause()" id="demoPauseBtn" title="Pause/Play">⏸</button>
         </div>
       </div>
-      <!-- Scene container -->
+      <!-- Scene container: mirrors the real Workspace → Library → review → artifact flow -->
       <div class="demo-scenes" id="demoScenes">
-        <!-- Scene 1: Paste conversation -->
         <div class="demo-scene active" data-scene="0">
-          <div class="ds-label">STEP 1 — Paste your conversation</div>
-          <div class="ds-textarea">
-            <div class="ds-typing" id="dsTyping"></div>
-            <div class="ds-cursor">|</div>
-          </div>
-          <div class="ds-btn-row">
-            <div class="ds-action-btn">🌱 Reflect on this conversation</div>
-          </div>
+          <div class="ds-label">STEP 1 — BRING IN YOUR WORK</div>
+          <div class="ds-textarea"><div class="ds-typing" id="dsTyping"></div><div class="ds-cursor">|</div></div>
+          <div class="ds-btn-row"><div class="ds-action-btn">＋ Add or connect source</div></div>
         </div>
-        <!-- Scene 2: Seeds discovered -->
         <div class="demo-scene" data-scene="1">
-          <div class="ds-label">STEP 2 — Seeds discovered automatically</div>
+          <div class="ds-label">STEP 2 — BUILD ONE SEARCHABLE LIBRARY</div>
           <div class="ds-results">
-            <div class="ds-seed ds-seed-pop" style="animation-delay:0s;">
-              <div class="ds-seed-icon">🌱</div>
-              <div class="ds-seed-body">
-                <div class="ds-seed-title">Habit Tracker App</div>
-                <div class="ds-seed-meta">Status: <span style="color:var(--amber)">Abandoned</span> · Mentioned 4x · High value</div>
-                <div class="ds-seed-action">→ Next: "Set up React Native project with daily reminder system"</div>
-              </div>
-            </div>
-            <div class="ds-seed ds-seed-pop" style="animation-delay:.15s;">
-              <div class="ds-seed-icon">🌱</div>
-              <div class="ds-seed-body">
-                <div class="ds-seed-title">Auth with Passkeys</div>
-                <div class="ds-seed-meta">Status: <span style="color:var(--red)">Forgotten</span> · Quick win · 30 min</div>
-                <div class="ds-seed-action">→ Next: "Integrate WebAuthn flow into existing login page"</div>
-              </div>
-            </div>
-            <div class="ds-seed ds-seed-pop" style="animation-delay:.3s;">
-              <div class="ds-seed-icon">🌱</div>
-              <div class="ds-seed-body">
-                <div class="ds-seed-title">Export to Apple Health</div>
-                <div class="ds-seed-meta">Status: <span style="color:var(--amber)">Drifted</span> · CSS debugging took over</div>
-                <div class="ds-seed-action">→ Next: "Add HealthKit integration using HKWorkoutSession"</div>
-              </div>
-            </div>
+            <div class="ds-seed ds-seed-pop" style="animation-delay:0s;"><div class="ds-seed-icon">💬</div><div class="ds-seed-body"><div class="ds-seed-title">Product research conversations</div><div class="ds-seed-meta">ChatGPT export · 47 conversations · source preserved</div><div class="ds-seed-action">Searchable by title, message, platform, and project</div></div></div>
+            <div class="ds-seed ds-seed-pop" style="animation-delay:.15s;"><div class="ds-seed-icon">📄</div><div class="ds-seed-body"><div class="ds-seed-title">Launch planning documents</div><div class="ds-seed-meta">PDF and DOCX · normalized beside conversations</div><div class="ds-seed-action">Complete source remains available for inspection</div></div></div>
+            <div class="ds-seed ds-seed-pop" style="animation-delay:.3s;"><div class="ds-seed-icon">↻</div><div class="ds-seed-body"><div class="ds-seed-title">Selected local AI work</div><div class="ds-seed-meta">SeedBridge · read only · user-authorized scope</div><div class="ds-seed-action">Only changed eligible files synchronize</div></div></div>
           </div>
         </div>
-        <!-- Scene 3: Drift detection -->
         <div class="demo-scene" data-scene="2">
-          <div class="ds-label">STEP 3 — Drift points identified</div>
-          <div class="ds-drift-timeline">
-            <div class="ds-drift-line"></div>
-            <div class="ds-drift-node ds-drift-pop" style="animation-delay:0s;">
-              <div class="ds-drift-dot green"></div>
-              <div class="ds-drift-info">
-                <div class="ds-drift-time">Message #1</div>
-                <div class="ds-drift-text">"Let's build a habit tracker app with daily reminders..."</div>
-              </div>
-            </div>
-            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.2s;">
-              <div class="ds-drift-dot green"></div>
-              <div class="ds-drift-info">
-                <div class="ds-drift-time">Message #8</div>
-                <div class="ds-drift-text">"Can you add a streak counter with animations?"</div>
-              </div>
-            </div>
-            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.4s;">
-              <div class="ds-drift-dot amber"></div>
-              <div class="ds-drift-info">
-                <div class="ds-drift-time">Message #14 — ⚠ DRIFT</div>
-                <div class="ds-drift-text">"Actually, the CSS grid is broken on mobile…"</div>
-              </div>
-            </div>
-            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.6s;">
-              <div class="ds-drift-dot red"></div>
-              <div class="ds-drift-info">
-                <div class="ds-drift-time">Message #23 — ABANDONED</div>
-                <div class="ds-drift-text">Original goal never resumed. Habit tracker lost.</div>
-              </div>
-            </div>
+          <div class="ds-label">STEP 3 — REVIEW WHAT THE SYSTEM FOUND</div>
+          <div class="ds-drift-timeline"><div class="ds-drift-line"></div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:0s;"><div class="ds-drift-dot green"></div><div class="ds-drift-info"><div class="ds-drift-time">CANDIDATE IDEA</div><div class="ds-drift-text">Create a provider-neutral archive for AI work.</div></div></div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.2s;"><div class="ds-drift-dot green"></div><div class="ds-drift-info"><div class="ds-drift-time">SOURCE EVIDENCE</div><div class="ds-drift-text">Claude · “Architecture planning” · message 18</div></div></div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.4s;"><div class="ds-drift-dot amber"></div><div class="ds-drift-info"><div class="ds-drift-time">YOUR DECISION</div><div class="ds-drift-text">Accept · Defer · Reject · Inspect evidence</div></div></div>
+            <div class="ds-drift-node ds-drift-pop" style="animation-delay:.6s;"><div class="ds-drift-dot green"></div><div class="ds-drift-info"><div class="ds-drift-time">CONFIRMED PROJECT MEMORY</div><div class="ds-drift-text">Only reviewed findings become durable workspace knowledge.</div></div></div>
           </div>
         </div>
-        <!-- Scene 4: Provenance stamp -->
         <div class="demo-scene" data-scene="3">
-          <div class="ds-label">STEP 4 — Provenance stamp sealed</div>
+          <div class="ds-label">STEP 4 — CONTINUE INSIDE THE WORKSPACE</div>
           <div class="ds-stamp">
-            <div class="ds-stamp-header">🔒 SEED-SIGNATURE</div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Type:</span><span class="ds-stamp-v">SCIA-REFLECT-FULL</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Timestamp:</span><span class="ds-stamp-v" id="stampTime">2026-04-25T20:57:23Z</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">ID:</span><span class="ds-stamp-v" style="color:var(--purple);font-weight:700;">SR-L8KQ2MNP</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Seeds Found:</span><span class="ds-stamp-v" style="color:var(--green);font-weight:700;">3</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Abandoned:</span><span class="ds-stamp-v">2</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Drift Points:</span><span class="ds-stamp-v">1</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Coherence:</span><span class="ds-stamp-v" style="color:var(--amber)">42%</span></div>
-            <div class="ds-stamp-row"><span class="ds-stamp-k">Platform:</span><span class="ds-stamp-v">ChatGPT</span></div>
-            <div class="ds-stamp-footer">✓ Verified — tamper-proof provenance record</div>
+            <div class="ds-stamp-header">WORK ARTIFACT CREATED</div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Artifact:</span><span class="ds-stamp-v" style="color:var(--green);font-weight:700;">Launch plan</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Status:</span><span class="ds-stamp-v">Active</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Linked:</span><span class="ds-stamp-v">3 conversations · 2 ideas</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Evidence:</span><span class="ds-stamp-v">Available on demand</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Version:</span><span class="ds-stamp-v">Saved to workspace history</span></div>
+            <div class="ds-stamp-row"><span class="ds-stamp-k">Export:</span><span class="ds-stamp-v">Markdown or focused context</span></div>
+            <div class="ds-stamp-footer">Continue the work without starting over.</div>
           </div>
         </div>
       </div>
-      <!-- Step indicators -->
       <div class="demo-steps">
-        <button class="demo-step active" onclick="goToScene(0)"><span>1</span> Paste</button>
-        <button class="demo-step" onclick="goToScene(1)"><span>2</span> Discover</button>
-        <button class="demo-step" onclick="goToScene(2)"><span>3</span> Drift</button>
-        <button class="demo-step" onclick="goToScene(3)"><span>4</span> Stamp</button>
+        <button class="demo-step active" onclick="goToScene(0)"><span>1</span> Connect</button>
+        <button class="demo-step" onclick="goToScene(1)"><span>2</span> Organize</button>
+        <button class="demo-step" onclick="goToScene(2)"><span>3</span> Review</button>
+        <button class="demo-step" onclick="goToScene(3)"><span>4</span> Continue</button>
       </div>
     </div>
   </div>
@@ -844,7 +786,7 @@
   let progressTimer = null;
   let progressStart = 0;
 
-  const typingText = `User: I want to build a habit tracker app with daily\nreminders and streak counting. Minimal UI.\n\nAssistant: Great! Let's start with the data model.\nI'll set up a React Native project...\n\nUser: Actually wait — the CSS grid is broken on\nthe settings page. Can you fix that first?\n\nAssistant: Sure! Let me look at your grid layout.\nThe issue is with grid-template-columns...`;
+  const typingText = `ADD OR CONNECT\n\n▣ Upload export or document\n  JSON · PDF · DOCX · TXT · ZIP and more\n\n▣ Paste a conversation\n  Bring in one thread without an export\n\n▣ SeedBridge\n  Preview and authorize a selected local source\n\n▣ Connect API\n  Create a scoped, revocable delivery connection`;
 
   function typeText() {
     const el = document.getElementById('dsTyping');
@@ -1517,55 +1459,55 @@ function copyFullPrompt() {
 
 <!-- ── PLATFORM ROW ── -->
 <div class="platforms">
-  <div class="platforms-label">Works with every AI platform you already use</div>
+  <div class="platforms-label">Bring work in from the AI systems and tools you already use</div>
   <div class="platforms-row">
     <div class="platform-item"><span class="platform-icon">💬</span> ChatGPT</div>
     <div class="platform-item"><span class="platform-icon">🤖</span> Claude</div>
     <div class="platform-item"><span class="platform-icon">✨</span> Gemini</div>
-    <div class="platform-item"><span class="platform-icon">🦙</span> Llama</div>
-    <div class="platform-item"><span class="platform-icon">⚡</span> Grok</div>
-    <div class="platform-item"><span class="platform-icon">🔷</span> Copilot</div>
-    <div class="platform-item"><span class="platform-icon">+</span> Any AI</div>
+    <div class="platform-item"><span class="platform-icon">⌘</span> Codex</div>
+    <div class="platform-item"><span class="platform-icon">↻</span> Cursor</div>
+    <div class="platform-item"><span class="platform-icon">📄</span> Documents</div>
+    <div class="platform-item"><span class="platform-icon">+</span> Authorized adapters</div>
   </div>
 </div>
 
 <!-- ── PROOF STRIP ── -->
 <div class="proof">
-  <div class="proof-item"><div class="proof-num">115M+</div><div class="proof-label">daily AI chatbot users worldwide*</div></div>
-  <div class="proof-item"><div class="proof-num">40%+</div><div class="proof-label">of AI projects cancelled before completion†</div></div>
-  <div class="proof-item"><div class="proof-num">7</div><div class="proof-label">universal snippets for any platform</div></div>
-  <div class="proof-item"><div class="proof-num">0</div><div class="proof-label">setup required to start recovering</div></div>
+  <div class="proof-item"><div class="proof-num">1</div><div class="proof-label">workspace for conversations, sources, and artifacts</div></div>
+  <div class="proof-item"><div class="proof-num">4</div><div class="proof-label">ways to add work: upload, paste, bridge, or connect</div></div>
+  <div class="proof-item"><div class="proof-num">100%</div><div class="proof-label">of confirmed findings remain traceable to source evidence</div></div>
+  <div class="proof-item"><div class="proof-num">You</div><div class="proof-label">decide what becomes durable project memory</div></div>
 </div>
-<div style="text-align:center;padding:8px 5%;font-size:10px;color:var(--text3)">*Industry estimates, 2025–2026 (MasterOfCode, AI Funding Tracker) · †Gartner forecast for agentic AI projects through 2027</div>
+<div style="text-align:center;padding:8px 5%;font-size:11px;color:var(--text3)">No universal cloud-history claim: access depends on exports, user-authorized local sources, or a permitted integration.</div>
 
 <!-- ── FEATURE 1: CONVERSATION RECOVERY ── -->
 <section class="section" style="background:var(--bg)">
   <div class="section-inner">
     <div class="split">
       <div>
-        <div class="eyebrow">Conversation Recovery</div>
-        <h2 class="section-h2">Your AI history is full of<br><span class="hl">abandoned gold.</span></h2>
-        <p class="section-p">Upload your ChatGPT JSON export, paste a Claude conversation, or share any AI transcript. Seed Reflections reads it and builds a prioritized list of every idea you walked away from — with why it matters and exactly what to do next.</p>
+        <div class="eyebrow">Bring In Your Work</div>
+        <h2 class="section-h2">One archive for work that lives<br><span class="hl">across too many places.</span></h2>
+        <p class="section-p">Start with one conversation or years of exported history. SeedReflections normalizes supported exports, documents, pasted content, selected local AI-work folders, and authorized integration deliveries into one readable Library.</p>
         <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Works with ChatGPT JSON exports — just download and upload
+            Upload AI exports, JSON, PDFs, documents, transcripts, and supported archives
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Paste any conversation — Claude, Gemini, or plain text
+            Paste a single conversation when you do not need a full archive import
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Get a prioritized recovery list with next actions, not just summaries
+            Use SeedBridge for read-only synchronization from a user-selected local source
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Detects drift — moments where you got pulled off your real goal
+            Create a scoped connection for a permitted agent, automation, plugin, or adapter
           </div>
         </div>
         <div style="margin-top:32px">
-          <a href="index.html" class="btn btn-green btn-sm">Try Conversation Recovery →</a>
+          <a href="/consumer" class="btn btn-green btn-sm">Open the Workspace →</a>
         </div>
       </div>
       <div class="demo-wrap">
@@ -1574,39 +1516,39 @@ function copyFullPrompt() {
             <div class="demo-dot" style="background:#ff5f57"></div>
             <div class="demo-dot" style="background:#febc2e"></div>
             <div class="demo-dot" style="background:#28c840"></div>
-            <span class="demo-url">Seed Reflection — Recovery Report</span>
+            <span class="demo-url">SeedReflections — Add or connect</span>
           </div>
           <div class="demo-body">
-            <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">From your ChatGPT conversation · 47 messages</div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Choose how this source enters your workspace</div>
             <div class="conv-msg">
-              <div class="conv-role">You · 3 days ago</div>
-              <div class="conv-text">Let's build a habit tracker app. I want daily reminders, streaks, and a minimal UI...</div>
+              <div class="conv-role">UPLOAD EXPORT OR DOCUMENT</div>
+              <div class="conv-text">Import JSON, PDF, DOCX, TXT, ZIP, and other supported source formats.</div>
             </div>
-            <div style="font-size:10px;color:var(--text3);margin:-4px 0;text-align:center">↓ conversation drifted to something else ↓</div>
+            <div style="font-size:10px;color:var(--text3);margin:-4px 0;text-align:center">or connect a continuing source</div>
             <div style="background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.2);border-radius:8px;padding:10px 12px">
-              <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:4px">⚠ DRIFT DETECTED</div>
-              <div style="font-size:11px;color:var(--text3)">Conversation shifted to CSS debugging — original app never completed</div>
+              <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:4px">SEEDBRIDGE</div>
+              <div style="font-size:11px;color:var(--text3)">Preview and authorize a specific local AI-work folder. Read only; selected scope only.</div>
             </div>
-            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:-4px">3 seeds recovered:</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:-4px">Every path enters the same governed archive:</div>
             <div class="seed-found">
               <div class="seed-icon">🌱</div>
               <div>
-                <div class="seed-title">Habit Tracker App</div>
-                <div class="seed-desc">Started 3 days ago — never past wireframe. High value: you mentioned it 4x.</div>
+                <div class="seed-title">Source preserved</div>
+                <div class="seed-desc">Platform, file, conversation, message, and import context stay traceable.</div>
               </div>
             </div>
             <div class="seed-found">
               <div class="seed-icon">🌱</div>
               <div>
-                <div class="seed-title">Auth with Passkeys</div>
-                <div class="seed-desc">Mentioned wanting to try modern auth — no follow-up. Next: "Add passkey login flow"</div>
+                <div class="seed-title">Duplicates reconciled</div>
+                <div class="seed-desc">Updated and repeated imports do not silently multiply the same evidence.</div>
               </div>
             </div>
             <div class="seed-found">
               <div class="seed-icon">🌱</div>
               <div>
-                <div class="seed-title">Export to Apple Health</div>
-                <div class="seed-desc">Asked about HealthKit once, got distracted. Quick win — 30 min implementation.</div>
+                <div class="seed-title">Ready for review</div>
+                <div class="seed-desc">Readable conversations and documents become available in the Library.</div>
               </div>
             </div>
           </div>
@@ -1620,13 +1562,13 @@ function copyFullPrompt() {
 <section class="section" id="section-generator" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="section-inner" style="max-width:1040px;">
     <div style="text-align:center;margin-bottom:28px">
-      <div class="eyebrow">Seed Reflection</div>
-      <h2 class="section-h2">Your ideas don't disappear.<br><span class="hl">They just get buried.</span></h2>
+      <div class="eyebrow">Portable Prompt Tools</div>
+      <h2 class="section-h2">Carry focused instructions into<br><span class="hl">the AI assistant you choose.</span></h2>
       <p class="section-p" style="margin:16px auto 0;text-align:center;max-width:800px;font-size:17.5px;line-height:1.65;color:var(--text);font-weight:500;">
-        Seed Reflection scans your AI conversations for abandoned ideas, lost decisions, and unfinished seeds — then organizes, tracks, and helps you act on them. Never lose a breakthrough again.
+        The Workspace is the product center. The Prompt Engine is a secondary utility for preparing recovery prompts, intent starters, coherence checks, and handoff instructions outside the platform.
       </p>
       <p class="section-p" style="margin:12px auto 0;text-align:center;max-width:680px;font-size:13.5px;color:var(--text3);line-height:1.5;">
-        Use the Interactive Prompt Wizard below to compile custom system instructions, retrieve pre-built snippets, or generate recovery prompts to quickly wake up your buried ideas in any AI assistant.
+        It does not replace the Library or claim direct access to another provider's private history.
       </p>
     </div>
     
@@ -1852,63 +1794,63 @@ function copyFullPrompt() {
 <section class="section" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="section-inner">
     <div style="text-align:center;margin-bottom:48px">
-      <div class="eyebrow">Cross-Platform Tracking</div>
-      <h2 class="section-h2">All your AI platforms.<br><span class="hl">One dashboard.</span></h2>
-      <p class="section-p" style="margin:12px auto 0;text-align:center">Ideas from ChatGPT, Claude, Gemini, and anywhere else — unified in a single view. Never lose context when you switch platforms. Coherence tracking across every conversation.</p>
+      <div class="eyebrow">Library + Human Review</div>
+      <h2 class="section-h2">The system can identify possibilities.<br><span class="hl">You decide what becomes truth.</span></h2>
+      <p class="section-p" style="margin:12px auto 0;text-align:center">Read complete conversations, search across supported sources, inspect evidence, and decide which findings become durable project memory.</p>
     </div>
     <div class="cards-grid">
       <div class="fcard fcard-accent-green">
         <div class="fcard-icon">🗂️</div>
-        <h3>Unified Idea Board</h3>
-        <p>Ideas from ChatGPT and Claude sit side-by-side. Tag, prioritize, and track completion across all platforms in one place.</p>
+        <h3>Readable Library</h3>
+        <p>Raw exports become searchable conversations and source records without discarding where the material came from.</p>
       </div>
       <div class="fcard fcard-accent-blue">
         <div class="fcard-icon">🔄</div>
-        <h3>Context Continuity</h3>
-        <p>Switching from Claude to ChatGPT? Seed Reflections generates a handoff summary so the new conversation has full context instantly.</p>
+        <h3>Evidence-Linked Findings</h3>
+        <p>Candidate ideas, decisions, tasks, constraints, and drift remain linked to the original message or document evidence.</p>
       </div>
       <div class="fcard fcard-accent-purple">
         <div class="fcard-icon">📈</div>
-        <h3>Coherence Tracking</h3>
-        <p>Score how well each conversation stayed on your original intent. See drift patterns before they waste hours of work.</p>
+        <h3>Human Review</h3>
+        <p>Accept, defer, reject, or inspect a finding. Machine interpretation never silently becomes user authority.</p>
       </div>
       <div class="fcard fcard-accent-amber">
         <div class="fcard-icon">🔍</div>
-        <h3>Searchable History</h3>
-        <p>Every idea you've ever planted, from any platform. Full-text search across your entire AI conversation history.</p>
+        <h3>Focused Continuity</h3>
+        <p>Build a focused context package or export a work artifact without moving the entire archive into another AI session.</p>
       </div>
     </div>
     <div style="margin-top:40px;background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:24px">
-      <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px">Your dashboard — seeds across all platforms</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px">Library source coverage — based on what you actually imported</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div class="platform-row">
           <div class="platform-avatar" style="background:rgba(16,163,127,.15)">💬</div>
           <div class="plat-info">
             <div class="plat-name">ChatGPT</div>
-            <div class="plat-meta">Last active 2 hours ago · 12 conversations</div>
+            <div class="plat-meta">Export imported · conversations and messages indexed</div>
           </div>
-          <div class="plat-seeds">8 seeds</div>
+          <div class="plat-seeds">Source preserved</div>
         </div>
         <div class="platform-row">
           <div class="platform-avatar" style="background:rgba(188,140,255,.15)">🤖</div>
           <div class="plat-info">
             <div class="plat-name">Claude</div>
-            <div class="plat-meta">Last active today · 7 conversations</div>
+            <div class="plat-meta">Document and conversation evidence available</div>
           </div>
-          <div class="plat-seeds">5 seeds</div>
+          <div class="plat-seeds">Reviewable</div>
         </div>
         <div class="platform-row">
           <div class="platform-avatar" style="background:rgba(66,133,244,.15)">✨</div>
           <div class="plat-info">
             <div class="plat-name">Gemini</div>
-            <div class="plat-meta">Last active yesterday · 4 conversations</div>
+            <div class="plat-meta">Represented only when this workspace contains Gemini material</div>
           </div>
-          <div class="plat-seeds">3 seeds</div>
+          <div class="plat-seeds">Dynamic coverage</div>
         </div>
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;color:var(--text3)">Total: <strong style="color:var(--text)">16 active seeds</strong> across 3 platforms</div>
-        <a href="auth.html?mode=signup" class="btn btn-green btn-sm">Start Recovering Ideas</a>
+        <div style="font-size:13px;color:var(--text3)">Overview reports <strong style="color:var(--text)">the sources actually present</strong> in your workspace.</div>
+        <a href="/consumer" class="btn btn-green btn-sm">Explore the Library</a>
       </div>
     </div>
 </section>
@@ -1918,31 +1860,31 @@ function copyFullPrompt() {
   <div class="section-inner">
     <div class="split">
       <div>
-        <div class="eyebrow">Proof of Creation</div>
-        <h2 class="section-h2">Anyone can copy AI content.<br><span class="hl">Only you can prove you own the Original Seed.</span></h2>
-        <p class="section-p">When you collaborate with AI to generate code, text, or plans — how do you establish provenance? <strong>Seed Signature</strong> is a cryptographic attribution protocol that stamps your <strong>Original Seed</strong> (your genesis intent) directly into the generated assets. Anywhere that content is pasted, it carries your cryptographically signed lineage.</p>
+        <div class="eyebrow">Evidence + User Control</div>
+        <h2 class="section-h2">An interpretation is only useful<br><span class="hl">when you can inspect its source.</span></h2>
+        <p class="section-p">SeedReflections preserves the evidence behind its findings. You can inspect the original conversation or document, review how a finding was interpreted, and decide whether it belongs in your project memory.</p>
         
         <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Provable Attribution: Every block of output carries your cryptographically signed authorship.
+            Original conversation, message, platform, file, and import context remain traceable.
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Tamper-Proof Provenance: If anyone edits a single character of your content, the hash mismatches and the signature breaks.
+            SeedBridge is read only, scoped by the user, and synchronizes only eligible changed files.
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--text2)">
             <span style="color:var(--green);font-size:16px;flex-shrink:0">✓</span>
-            Cross-Platform Portability: Your signed seeds remain verified across Claude, ChatGPT, Gemini, or GitHub.
+            Integration connections are scoped, displayed once, stored as digests, and revocable.
           </div>
         </div>
 
         <div style="margin-top:24px;padding:16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--text2)">
           <div style="font-weight:700;color:var(--text);margin-bottom:8px">What this means for you:</div>
           <div style="display:flex;gap:16px;flex-wrap:wrap">
-            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Guaranteed authorship</span>
-            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Tamper-detection registry</span>
-            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Standalone signature licensing</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Human review</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Evidence lineage</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="color:var(--green)">✓</span> Verified backup and restore</span>
           </div>
         </div>
       </div>
@@ -1952,45 +1894,45 @@ function copyFullPrompt() {
            <div class="sig-receipt-header">
              <div class="sig-receipt-title">
                <span class="sig-receipt-dot"></span>
-               SEED SIGNATURE STAMP
+               EVIDENCE RECORD
              </div>
-             <div style="color:var(--text3);font-size:10px;">[SCIA v4.0]</div>
+             <div style="color:var(--text3);font-size:10px;">REVIEWABLE</div>
            </div>
            
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Signature-ID</span>
-             <span class="sig-receipt-val" style="color:var(--purple);font-weight:700;">SIG_9F83A21B8C</span>
+             <span class="sig-receipt-label">Finding</span>
+             <span class="sig-receipt-val" style="color:var(--purple);font-weight:700;">Provider-neutral archive</span>
            </div>
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Original-Seed</span>
-             <span class="sig-receipt-val" style="color:var(--text);font-weight:600;">"JWT auth flow for SaaS app"</span>
+             <span class="sig-receipt-label">Source</span>
+             <span class="sig-receipt-val" style="color:var(--text);font-weight:600;">Architecture planning</span>
            </div>
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Content-Hash</span>
-             <span class="sig-receipt-val">sha256_82f1b99a03e1cf...</span>
+             <span class="sig-receipt-label">Location</span>
+             <span class="sig-receipt-val">Claude · message 18</span>
            </div>
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Attributed-Owner</span>
-             <span class="sig-receipt-val" style="color:var(--green)">usr_x92fk309 (Verified)</span>
+             <span class="sig-receipt-label">Review</span>
+             <span class="sig-receipt-val" style="color:var(--green)">Accepted by workspace owner</span>
            </div>
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Integrity-Check</span>
-             <span class="sig-receipt-val" style="color:var(--green)">PASS (Untampered)</span>
+             <span class="sig-receipt-label">Source digest</span>
+             <span class="sig-receipt-val" style="color:var(--green)">Verified on import</span>
            </div>
            <div class="sig-receipt-row">
-             <span class="sig-receipt-label">Lineage-Network</span>
-             <span class="sig-receipt-val">ChatGPT, Claude, GitHub</span>
+             <span class="sig-receipt-label">Project link</span>
+             <span class="sig-receipt-val">Archive architecture</span>
            </div>
            
            <div class="sig-receipt-footer">
-             <span>🔒 Cryptographically Signed Provenance Certificate</span>
+             <span>Source evidence remains available on demand</span>
            </div>
          </div>
          
          <div style="text-align:center;padding:10px 20px;">
            <div style="font-size:16px;font-weight:800;color:var(--green);line-height:1.4">
-             Others store conversation logs.<br>
-             <span style="color:var(--text);font-size:14px;font-weight:600;">Seed Reflections signs your intellectual lineage.</span>
+             AI can identify possibilities.<br>
+             <span style="color:var(--text);font-size:14px;font-weight:600;">You decide what becomes durable project memory.</span>
            </div>
          </div>
       </div>
@@ -2002,26 +1944,26 @@ function copyFullPrompt() {
 <section class="section">
   <div class="section-inner" style="text-align:center">
     <div class="eyebrow">How It Works</div>
-    <h2 class="section-h2">Three steps to <span class="hl">never losing an idea again.</span></h2>
+    <h2 class="section-h2">Three surfaces. <span class="hl">One continuous way of working.</span></h2>
     <div class="how-steps">
       <div class="how-step">
         <div class="how-num">1</div>
-        <h3>Paste or Upload</h3>
-        <p>Paste any AI conversation, upload an AI JSON export, or paste directly to recover your ideas.</p>
+        <h3>Workspace</h3>
+        <p>Add or connect sources, ask questions, focus a project, and continue work as plans, briefs, reports, task sets, and notes.</p>
       </div>
       <div class="how-step">
         <div class="how-num">2</div>
-        <h3>Recover &amp; Plant</h3>
-        <p>Seed Reflections finds every abandoned idea and plants them as seeds — structured, prioritized, ready to pick up.</p>
+        <h3>Library</h3>
+        <p>Read and search conversations, review ideas and decisions, inspect sources, and keep every interpretation tied to evidence.</p>
       </div>
       <div class="how-step">
         <div class="how-num">3</div>
-        <h3>Track &amp; Complete</h3>
-        <p>Watch your seeds grow across sessions and platforms. Nothing falls through the cracks again.</p>
+        <h3>Overview</h3>
+        <p>Understand archive size, recovery progress, source coverage, represented platforms, synchronization, and account status.</p>
       </div>
     </div>
     <div style="margin-top:48px">
-      <a href="index.html" class="btn btn-green">Try it free — no signup needed</a>
+      <a href="/consumer" class="btn btn-green">Open the Workspace</a>
     </div>
   </div>
 </section>
@@ -2031,54 +1973,54 @@ function copyFullPrompt() {
 <!-- ── SOCIAL PROOF ── -->
 <section class="social-section">
   <div class="section-inner" style="text-align:center">
-    <div class="eyebrow">What people are saying</div>
-    <h2 class="section-h2" style="margin-bottom:0">Finally, <span class="hl">AI conversations that stick.</span></h2>
+    <div class="eyebrow">Continue the Work</div>
+    <h2 class="section-h2" style="margin-bottom:0">Recovery is only valuable when it becomes <span class="hl">usable work.</span></h2>
     <div class="testimonials">
       <div class="tcard">
-        <div class="tcard-quote">"I uploaded 6 months of ChatGPT exports and Seed Reflections pulled out 23 features I'd completely forgotten I planned to build."</div>
+        <div class="tcard-quote">Create a plan, brief, report, task set, or note directly from the conversations and findings you selected.</div>
         <div class="tcard-author">
-          <div class="tcard-avatar">🌱</div>
-          <div><div class="tcard-name">Startup Founder</div><div class="tcard-meta">Use case: conversation recovery</div></div>
+          <div class="tcard-avatar">▤</div>
+          <div><div class="tcard-name">Durable artifacts</div><div class="tcard-meta">Draft · active · complete · archived</div></div>
         </div>
       </div>
       <div class="tcard">
-        <div class="tcard-quote">"I use Claude for everything but the conversations all blend together. Having one dashboard to track ideas across sessions changed how I work."</div>
+        <div class="tcard-quote">Link artifacts to conversations, ideas, and projects so the work retains the context that produced it.</div>
         <div class="tcard-author">
-          <div class="tcard-avatar">🌱</div>
-          <div><div class="tcard-name">Indie Developer</div><div class="tcard-meta">Use case: cross-session tracking</div></div>
+          <div class="tcard-avatar">↔</div>
+          <div><div class="tcard-name">Connected context</div><div class="tcard-meta">Evidence available without cluttering the work surface</div></div>
         </div>
       </div>
       <div class="tcard">
-        <div class="tcard-quote">"The Universal Snippets alone are worth it. I paste the coherence check mid-conversation and the AI immediately course-corrects back to my original goal."</div>
+        <div class="tcard-quote">Export Markdown or build a focused context package for another AI session without handing over your entire archive.</div>
         <div class="tcard-author">
-          <div class="tcard-avatar">🌱</div>
-          <div><div class="tcard-name">Writer &amp; Researcher</div><div class="tcard-meta">Use case: coherence tracking</div></div>
+          <div class="tcard-avatar">⇧</div>
+          <div><div class="tcard-name">Portable continuity</div><div class="tcard-meta">Take only the context the next session needs</div></div>
         </div>
       </div>
     </div>
-    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text3);font-style:italic">These examples illustrate typical use cases. Individual results vary.</div>
+    <div style="text-align:center;margin-top:18px"><a href="/consumer" class="btn btn-green btn-sm">Continue in the Workspace →</a></div>
   </div>
 </section>
 
 <!-- ── CONSUMER PRICING ── -->
 <section class="pricing-section" id="pricing">
   <div class="eyebrow">Pricing</div>
-  <h2 class="section-h2" style="letter-spacing:-1.5px">Start free. Upgrade when you're hooked.</h2>
-  <p style="font-size:16px;color:var(--text3);max-width:520px;margin:12px auto 0">No credit card. No limits on the core recovery tools. Pay only for saved history and the dashboard.</p>
+  <h2 class="section-h2" style="letter-spacing:-1.5px">Start with the archive you have. Scale as it grows.</h2>
+  <p style="font-size:16px;color:var(--text3);max-width:620px;margin:12px auto 0">The current plans differ by confirmed-seed capacity and monthly reflections. Storage, upload, compute, and deployment safeguards still apply.</p>
   <div class="pricing-grid">
     <!-- Free -->
     <div class="pcard">
       <div class="pcard-label">Free Plan</div>
       <div class="pcard-price">$0</div>
-      <div class="pcard-tagline">Everything to start recovering ideas today.</div>
+      <div class="pcard-tagline">Explore the real Workspace and begin organizing your AI history.</div>
       <ul class="pcard-features">
         <li>50 reflections / month</li>
         <li>20 seeds capacity</li>
-        <li>Local storage</li>
-        <li>All 7 Universal Snippets</li>
-        <li>Session handoff summaries</li>
+        <li>Workspace, Library, and Overview</li>
+        <li>Upload and paste supported sources</li>
+        <li>Prompt tools and focused handoffs</li>
         <li class="dim">Unlimited seeds</li>
-        <li class="dim">Persisted database</li>
+        <li class="dim">More than 50 monthly reflections</li>
       </ul>
       <a href="auth.html?mode=signup&plan=free" class="pcard-btn">Create free account →</a>
     </div>
@@ -2087,15 +2029,15 @@ function copyFullPrompt() {
       <div class="pcard-popular">Most Popular</div>
       <div class="pcard-label">Pro Tier</div>
       <div class="pcard-price">$9<sub>/mo</sub></div>
-      <div class="pcard-tagline">Unlimited seeds and persisted database storage.</div>
+      <div class="pcard-tagline">More room to build durable project memory.</div>
       <ul class="pcard-features">
         <li>Everything in Free</li>
         <li>250 reflections / month</li>
         <li>Unlimited seeds</li>
-        <li>Persisted database</li>
-        <li>Saved reflection library</li>
-        <li>Cross-platform tracking</li>
-        <li>Custom LLM config access</li>
+        <li>Workspace artifacts and version history</li>
+        <li>Evidence-linked Library</li>
+        <li>Dynamic source coverage</li>
+        <li>Focused context and Markdown export</li>
       </ul>
       <a href="auth.html?mode=signup&plan=pro" class="pcard-btn primary">Get Pro Tier →</a>
     </div>
@@ -2103,19 +2045,19 @@ function copyFullPrompt() {
     <div class="pcard">
       <div class="pcard-label">Master Tier</div>
       <div class="pcard-price">$20<sub>/mo</sub></div>
-      <div class="pcard-tagline">Unlimited power and priority parsing.</div>
+      <div class="pcard-tagline">The highest current application quota for sustained use.</div>
       <ul class="pcard-features">
         <li>Everything in Pro</li>
         <li>Unlimited reflections</li>
-        <li>Host Platform Master</li>
-        <li>Priority parsing</li>
-        <li>Full dashboard access</li>
-        <li>Team sharing (5 seats)</li>
-        <li>API access & developer tools</li>
+        <li>Unlimited confirmed seeds</li>
+        <li>Workspace, Library, and Overview</li>
+        <li>Artifacts, evidence, and focused exports</li>
+        <li>Subject to infrastructure and safety limits</li>
       </ul>
       <a href="auth.html?mode=signup&plan=master" class="pcard-btn">Get Master Tier →</a>
     </div>
   </div>
+  <p class="pricing-note">Paid checkout is available only when production billing is enabled and ready. Team collaboration and integration delivery are deployment-controlled capabilities, not unverified tier promises.</p>
 </section>
 
 
@@ -2123,7 +2065,7 @@ function copyFullPrompt() {
 <footer>
   <div class="footer-grid">
     <div class="footer-brand">
-      <div style="font-weight:900;font-size:18px;letter-spacing:-.5px">Seed<em style="color:var(--cyan);font-style:normal">Reflections</em></div>
+      <div style="font-weight:900;font-size:18px;letter-spacing:-.5px;color:var(--green)">Seed<em style="color:var(--text);font-style:normal">Reflections</em></div>
       <p>Seed-Class Intelligence Architecture. Never lose another idea in an AI conversation.</p>
     </div>
     <div>

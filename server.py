@@ -67,6 +67,8 @@ from connector_store import (discover as discover_connectors, list_connectors as
 from integration_store import (create_integration as create_api_integration, list_integrations as list_api_integrations,
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
+from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
+from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential
 
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
 DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower()
@@ -125,6 +127,13 @@ def production_readiness():
         check("persistence",bool(status.get("database")),"SQLite workspace storage reachable")
     except Exception as exc: check("persistence",False,"Workspace storage unavailable: "+str(exc))
     billing=stripe_billing_enabled(); cfg=load_config()
+    credential_master=os.environ.get("SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY","").strip()
+    legacy_model_key=bool(cfg.get("llm_api_key"))
+    credential_ready=(not legacy_model_key) and (DEPLOYMENT_MODE=="local" or bool(credential_master))
+    check("credential_storage",credential_ready,
+        ("legacy plaintext model key must be rotated through encrypted storage" if legacy_model_key else
+         ("local OS credential boundary" if DEPLOYMENT_MODE=="local" else
+          ("encrypted credential backend configured" if credential_master else "hosted BYOK requires a deployment-secret master key"))))
     billing_values=[stripe_setting(cfg,"STRIPE_SECRET_KEY","stripe_secret_key"),stripe_setting(cfg,"STRIPE_WEBHOOK_SECRET","stripe_webhook_secret"),
         stripe_setting(cfg,"STRIPE_PRICE_PRO","stripe_price_pro"),stripe_setting(cfg,"STRIPE_PRICE_MASTER","stripe_price_master")]
     check("billing",not billing or all(billing_values),"disabled" if not billing else "server secret, webhook secret, and both price IDs configured")
@@ -699,6 +708,41 @@ def load_config():
             cfg[k] = v
     return cfg
 
+def runtime_model_catalog():
+    """Return candidate models with truthful runtime availability."""
+    cfg=load_config(); catalog=model_public_catalog(); provider=cfg.get("llm_provider","ollama")
+    available_ids=set()
+    if provider=="ollama":
+        try:
+            base=(cfg.get("llm_api_url") or "http://127.0.0.1:11434").rstrip("/")
+            with urllib.request.urlopen(base+"/api/tags",timeout=1.5) as response:
+                payload=json.loads(response.read().decode("utf-8"))
+            installed={str(item.get("name") or item.get("model") or "") for item in payload.get("models",[])}
+            available_ids={item["id"] for item in catalog if item["provider"]=="ollama" and item["model"] in installed}
+        except Exception:
+            available_ids=set()
+    configured_model=str(cfg.get("llm_model") or "").strip()
+    if configured_model and provider!="ollama":
+        configured_id=provider+":"+configured_model
+        if not any(item["id"]==configured_id for item in catalog):
+            catalog.append({"id":configured_id,"provider":provider,"model":configured_model,"label":configured_model,
+                "source":"configured","cost_tier":"provider","capabilities":sorted(set().union(*TASK_CAPABILITIES.values())),"context_window":0})
+        if cfg.get("llm_api_key") or model_credential_status("local",provider).get("credential_configured"): available_ids.add(configured_id)
+    for item in catalog: item["available"]=item["id"] in available_ids
+    return catalog
+
+def resolve_task_runtime(task, cfg=None, settings=None):
+    """Resolve an available task route and its matching provider connection."""
+    cfg=cfg or load_config(); settings=settings or {}
+    route=select_task_model(task,catalog=[item for item in runtime_model_catalog() if item.get("available")],
+        preferred_model_id=settings.get("preferred_model_id") or cfg.get("preferred_model_id",""),
+        selection_mode=settings.get("model_selection_mode") or cfg.get("model_selection_mode","auto"))
+    provider=cfg.get("llm_provider","ollama"); model=cfg.get("llm_model","llama3")
+    if route and route.get("provider")==provider: model=route["model"]
+    workspace_id=settings.get("workspace_id","local")
+    api_key=cfg.get("llm_api_key","") or load_model_credential(workspace_id,provider)
+    return provider,(cfg.get("llm_api_url") or "").rstrip("/"),api_key,model,route
+
 def save_config(config_data):
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
@@ -1135,10 +1179,22 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings.setdefault("user_plan","free")
             settings.setdefault("api_mode","managed" if DEPLOYMENT_MODE!="local" else "self_hosted")
             settings.setdefault("llm_provider","managed" if DEPLOYMENT_MODE!="local" else "ollama")
+            settings.setdefault("model_selection_mode","auto")
+            settings.setdefault("preferred_model_id","")
             for key in ("privacy_analytics","privacy_store_transcripts","privacy_sign_seeds"):
                 settings.setdefault(key,True)
             settings.setdefault("privacy_ai_training",False); settings.setdefault("privacy_marketing_emails",False)
+            settings.pop("llm_api_key",None)
+            settings["model_credential"]=model_credential_status(user["workspace_id"],settings.get("llm_provider","ollama"))
             self._send_json(settings)
+            return
+        if path == "/api/v2/models":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
+            self._send_json({"models":runtime_model_catalog(),"tasks":sorted(TASK_CAPABILITIES),
+                "selection_mode":settings.get("model_selection_mode","auto"),
+                "preferred_model_id":settings.get("preferred_model_id","")})
             return
         conversation_match=re.fullmatch(r"/api/v2/conversations/([^/]+)",path)
         if conversation_match:
@@ -2299,6 +2355,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         # ── API Endpoint: Get Settings ──
         elif path == "/api/v1/settings":
             cfg = load_config()
+            cfg.pop("llm_api_key",None)
+            cfg["model_credential"]=model_credential_status("local",cfg.get("llm_provider","ollama"))
             self._send_json(cfg)
             return
 
@@ -2909,11 +2967,29 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             allowed={"user_name","user_email","api_mode","llm_provider","llm_model","llm_api_url","llm_api_key",
+                "model_selection_mode","preferred_model_id",
                 "privacy_analytics","privacy_store_transcripts","privacy_sign_seeds","privacy_ai_training","privacy_marketing_emails"}
             workspace=load_workspace(workspace_id=user["workspace_id"]); settings=dict(workspace.get("settings") or {})
-            settings.update({key:value for key,value in body.items() if key in allowed})
+            provider=str(body.get("llm_provider") or settings.get("llm_provider") or "ollama")
+            supplied_key=str(body.get("llm_api_key") or "").strip()
+            if supplied_key:
+                try: store_model_credential(user["workspace_id"],provider,supplied_key,DEPLOYMENT_MODE)
+                except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
+            if body.get("clear_llm_api_key"): delete_model_credential(user["workspace_id"],provider)
+            settings.update({key:value for key,value in body.items() if key in allowed and key not in {"llm_api_key","clear_llm_api_key"}})
+            settings.pop("llm_api_key",None)
             workspace["settings"]=settings; save_workspace(workspace,user["workspace_id"],"settings_updated")
             self._send_json({"status":"success"})
+            return
+        if path == "/api/v2/models/select":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
+            available=[item for item in runtime_model_catalog() if item.get("available")]
+            selected=select_task_model(body.get("task"),catalog=available,preferred_model_id=body.get("preferred_model_id") or settings.get("preferred_model_id",""),
+                selection_mode=body.get("selection_mode") or settings.get("model_selection_mode","auto"))
+            if not selected: self._send_json({"error":"No eligible model is available"},503); return
+            self._send_json({"selected_model":selected})
             return
         if path == "/api/v2/connectors/connect":
             user=self._runtime_user()
@@ -4674,10 +4750,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
                 
                 cfg = load_config()
-                provider = cfg.get("llm_provider", "ollama")
-                api_url = cfg.get("llm_api_url", "").rstrip("/")
-                api_key = cfg.get("llm_api_key", "")
-                model = cfg.get("llm_model", "llama3")
+                provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
                 
                 seeds_to_append = []
                 assimilated = []
@@ -4950,6 +5023,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         # ── API Endpoint: Save Settings ──
         elif path in ("/api/v1/settings", "/api/v1/admin/config"):
             cfg = load_config()
+            supplied_key=str(body.pop("llm_api_key","") or "").strip()
+            provider=str(body.get("llm_provider") or cfg.get("llm_provider") or "ollama")
+            if supplied_key:
+                try: store_model_credential("local",provider,supplied_key,DEPLOYMENT_MODE)
+                except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
+                cfg.pop("llm_api_key",None)
+            clear_key=body.pop("clear_llm_api_key",False)
+            if clear_key: delete_model_credential("local",provider); cfg.pop("llm_api_key",None)
             if "ai_monthly_budget_usd" in body:
                 try:
                     body["ai_monthly_budget_usd"] = float(body["ai_monthly_budget_usd"])
@@ -4961,7 +5042,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 body["ai_killswitch_enabled"] = bool(body["ai_killswitch_enabled"])
             cfg.update(body)
             save_config(cfg)
-            self._send_json({"status": "saved", "config": cfg})
+            public_cfg=dict(cfg); public_cfg.pop("llm_api_key",None)
+            self._send_json({"status": "saved", "config": public_cfg,"model_credential":model_credential_status("local",provider)})
             return
 
         # ── API Endpoint: Emergency AI Killswitch Toggle ──
@@ -5195,7 +5277,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 return
             provider = body.get("llm_provider") or cfg.get("llm_provider", "openai_compatible")
             api_url = body.get("llm_api_url") or cfg.get("llm_api_url", "https://api.groq.com/openai/v1")
-            api_key = body.get("llm_api_key") or cfg.get("llm_api_key", "")
+            api_key = body.get("llm_api_key") or cfg.get("llm_api_key", "") or load_model_credential("local",provider)
             model = body.get("llm_model") or cfg.get("llm_model", "qwen-qwq-32b")
 
             if not api_key:
@@ -5339,10 +5421,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
 
             cfg = load_config()
-            provider = cfg.get("llm_provider", "ollama")
-            api_url = cfg.get("llm_api_url", "").rstrip("/")
-            api_key = cfg.get("llm_api_key", "")
-            model = cfg.get("llm_model", "llama3")
+            provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
 
             extracted_seeds = []
             extraction_method = "heuristics_fallback"
@@ -5638,10 +5717,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     )
 
             cfg = load_config()
-            provider = cfg.get("llm_provider", "ollama")
-            api_url = cfg.get("llm_api_url", "").rstrip("/")
-            api_key = cfg.get("llm_api_key", "")
-            model = cfg.get("llm_model", "llama3")
+            requested_task=body.get("task") or ("code" if body.get("coding") else "chat")
+            provider,api_url,api_key,model,model_route = resolve_task_runtime(requested_task,cfg)
 
             answer = ""
 

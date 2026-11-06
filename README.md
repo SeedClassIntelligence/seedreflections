@@ -4,6 +4,8 @@
 
 **Seed Reflections** imports complete AI conversation exports and documents, preserves their source evidence, maps reviewable ideas and decisions, and provides a workspace for continuing the work.
 
+The authoritative product definition, consumer journey, capability inventory, tier truth, and public-claims rules are maintained in [PRODUCT_CAPABILITIES_AND_TIERS.md](PRODUCT_CAPABILITIES_AND_TIERS.md).
+
 This folder is completely independent and has no dependencies on the Seed Reflections Code Indexer repository.
 
 ---
@@ -48,6 +50,8 @@ seed-reflection-isolated/
 Run `docker compose up --build`. The application listens on port `8476`, stores all mutable state in the `seed-reflections-data` volume, runs as a non-root user, and exposes `/api/v2/health` for orchestration health checks.
 
 For hosted or enterprise mode, copy `.env.example` into your deployment secret/configuration system. Set an explicit `SEED_REFLECTIONS_PUBLIC_ORIGIN`; startup rejects wildcard or missing origins outside local mode. Do not bake `.env`, databases, uploads, or source evidence into the image.
+
+Hosted BYOK additionally requires `SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY`, a URL-safe base64-encoded 32-byte key injected by the deployment secret manager. It must not be committed, stored in SQLite, included in backups, or exposed to the browser. Model credentials are encrypted with per-credential data keys before persistence; hosted credential writes fail closed when the master key is unavailable.
 
 Public hosting uses `docker-compose.prod.yml` and the TLS reverse-proxy boundary documented in [DEPLOYMENT.md](DEPLOYMENT.md). The application port stays private in that configuration.
 

@@ -39,11 +39,12 @@ a{color:var(--accent);text-decoration:none}
 /* ── Navbar ─────────────────────────────────────────────────────────── */
 .navbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;background:rgba(6,8,15,0.82);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
 .nav-brand{font-weight:900;font-size:17px;color:var(--green);letter-spacing:-.5px;text-decoration:none;white-space:nowrap;display:flex;align-items:center}
-.nav-brand em{color:inherit;font-style:normal}
+.nav-brand em{color:var(--text);font-style:normal}
 .nav-brand-sub{font-size:11px;color:var(--text-muted);margin-left:8px;padding-left:8px;border-left:1px solid var(--border)}
 .nav-right{display:flex;align-items:center;gap:12px}
 .nav-btn{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
 .nav-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-btn-labeled{width:auto;padding:0 11px;gap:7px;font:700 11px/1 'Inter',sans-serif;white-space:nowrap}
 .nav-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--cyan));color:#031108;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;cursor:pointer}
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
@@ -1060,7 +1061,7 @@ a{color:var(--accent);text-decoration:none}
 <!-- ── Navbar ──────────────────────────────────────────────────────── -->
 <nav class="navbar">
   <a href="index.html" class="nav-brand">
-    SeedReflections
+    Seed<em>Reflections</em>
     <span class="nav-brand-sub">Idea Intelligence</span>
   </a>
   <div class="nav-right">
@@ -1068,11 +1069,13 @@ a{color:var(--accent);text-decoration:none}
       <option value="">All Projects</option>
       <option value="default_project">Default Project</option>
     </select>
-    <button class="nav-btn" title="Prompt Snippets" onclick="openModal('snippets-modal')">
+    <button class="nav-btn nav-btn-labeled" aria-label="Open prompt tools" onclick="openModal('snippets-modal')">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 1v14M11 1v14M1 5h14M1 11h14"/></svg>
+      <span>Prompt tools</span>
     </button>
-    <button class="nav-btn" title="Settings" onclick="switchDashTab('account')">
+    <button class="nav-btn nav-btn-labeled" title="Settings" aria-label="Open settings" onclick="switchDashTab('account')">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.5 1.5M11.6 11.6l1.5 1.5M13.1 2.9l-1.5 1.5M4.4 11.6l-1.5 1.5"/></svg>
+      <span>Settings</span>
     </button>
     <button class="nav-btn" title="Sign Out" onclick="handleSignOut()" style="border-color:rgba(248,81,73,0.3);color:var(--red);">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3M6 12l4-4-4-4M10 8H2"/></svg>
@@ -1618,9 +1621,33 @@ a{color:var(--accent);text-decoration:none}
           <label for="acc-api-mode">API Operational Mode</label>
           <select id="acc-api-mode" onchange="toggleApiModeFields()">
             <option value="managed">Platform Managed Keys (Included Tier usage)</option>
-            <option value="self_hosted">Bring Your Own Key (Self-Hosted / Unlimited)</option>
+            <option value="self_hosted">Bring Your Own Key or Local Model</option>
           </select>
         </div>
+
+        <div class="setting-row">
+          <label for="acc-model-selection-mode">Model Selection</label>
+          <select id="acc-model-selection-mode" onchange="toggleModelSelectionFields()">
+            <option value="auto">Automatic — SeedReflections chooses for each task</option>
+            <option value="manual">Manual — always use my selected model</option>
+          </select>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:6px">Automatic routing matches extraction, research, planning, writing, and coding tasks to an available model's declared capabilities.</div>
+        </div>
+
+        <div class="setting-row" id="preferred-model-block" style="display:none">
+          <label for="acc-preferred-model">Preferred Model</label>
+          <select id="acc-preferred-model"><option value="">Load available models…</option></select>
+        </div>
+
+        <div id="self-hosted-settings-block" style="display:none">
+          <div class="setting-row"><label for="acc-llm-provider">Provider</label><select id="acc-llm-provider" onchange="toggleAccProviderFields()"><option value="ollama">Ollama / Local</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option><option value="openai_compatible">OpenAI-compatible / Open source host</option></select></div>
+          <div class="setting-row"><label for="acc-llm-model">Provider Model ID</label><input id="acc-llm-model" placeholder="qwen2.5:7b"></div>
+          <div class="setting-row" id="acc-lbl-url-block"><label for="acc-llm-url">Endpoint URL</label><input id="acc-llm-url" type="url" placeholder="http://localhost:11434"></div>
+          <div class="setting-row" id="acc-lbl-key-block"><label for="acc-llm-key">API Key</label><input id="acc-llm-key" type="password" autocomplete="new-password" placeholder="Provider API key"></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">A model API key powers analysis; it does not import private conversation history. Hosted credentials require encrypted secret storage before production use.</div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-primary btn-sm" onclick="saveAccLLMConfig()">Save AI Configuration</button></div>
 
         <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-top:12px;">
           <span style="font-size:22px;">🤖</span>
@@ -4991,6 +5018,8 @@ async function loadAccountSettings() {
     document.getElementById('acc-llm-model').value = cfg.llm_model || '';
     document.getElementById('acc-llm-url').value = cfg.llm_api_url || '';
     document.getElementById('acc-llm-key').value = cfg.llm_api_key || '';
+    document.getElementById('acc-model-selection-mode').value = cfg.model_selection_mode || 'auto';
+    await loadModelCatalog(cfg.preferred_model_id || '');
     
     // Billing Plan
     var plan = cfg.user_plan || 'pro';
@@ -5004,6 +5033,7 @@ async function loadAccountSettings() {
     document.getElementById('priv-marketing').checked = cfg.privacy_marketing_emails === true;
     
     toggleApiModeFields();
+    toggleModelSelectionFields();
     toggleAccProviderFields();
   } catch(e) {}
 }
@@ -5111,6 +5141,8 @@ async function saveAccLLMConfig() {
     llm_model: document.getElementById('acc-llm-model').value,
     llm_api_url: document.getElementById('acc-llm-url').value,
     llm_api_key: document.getElementById('acc-llm-key').value
+    ,model_selection_mode: document.getElementById('acc-model-selection-mode').value
+    ,preferred_model_id: document.getElementById('acc-preferred-model').value
   };
   try {
     await productFetch('/settings', {
@@ -5125,10 +5157,28 @@ async function saveAccLLMConfig() {
   }
 }
 
+async function loadModelCatalog(selectedId) {
+  var select = document.getElementById('acc-preferred-model');
+  try {
+    var response = await productFetch('/models'), data = await response.json();
+    var available=(data.models || []).filter(function(m){return m.available;});
+    select.innerHTML = available.map(function(m){
+      var caps=(m.capabilities||[]).join(', ');
+      return '<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.label)+' · '+escapeHtml(caps)+'</option>';
+    }).join('') || '<option value="">No available models — configure or start a provider</option>';
+    if (selectedId) select.value=selectedId;
+  } catch(e) { select.innerHTML='<option value="">Model catalog unavailable</option>'; }
+}
+
+function toggleModelSelectionFields() {
+  var manual=document.getElementById('acc-model-selection-mode').value==='manual';
+  document.getElementById('preferred-model-block').style.display=manual?'block':'none';
+}
+
 function toggleApiModeFields() {
   var mode = document.getElementById('acc-api-mode').value;
   var block = document.getElementById('self-hosted-settings-block');
-  block.style.display = (mode === 'self_hosted') ? 'block' : 'none';
+  if (block) block.style.display = (mode === 'self_hosted') ? 'block' : 'none';
   
   var badge = document.getElementById('api-mode-badge');
   badge.textContent = mode === 'self_hosted' ? 'Self-Hosted' : 'Managed';
