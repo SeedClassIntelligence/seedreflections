@@ -203,58 +203,114 @@ def get_conversation(workspace_id, conversation_id):
 
 
 def analyze(workspace_id, conversation_id):
+    """Phrase-rule analysis using the same detector as local mode.
+
+    Like local mode, a conversation that already has candidates is preserved as-is:
+    re-analysis never recreates items the user already reviewed or dismissed."""
+    from archive_store import detect_candidates
     detail = get_conversation(workspace_id, conversation_id)
     if not detail:
         raise KeyError("Conversation not found")
     created = 0
     with _connect() as db:
-        db.execute("DELETE FROM tenant_candidates WHERE workspace_id=? AND conversation_id=? AND status='pending'", (workspace_id, conversation_id))
+        existing = db.execute("SELECT COUNT(*) FROM tenant_candidates WHERE workspace_id=? AND conversation_id=?", (workspace_id, conversation_id)).fetchone()[0]
+        if existing:
+            db.execute("UPDATE tenant_conversations SET analysis_status='analyzed' WHERE id=? AND workspace_id=?", (conversation_id, workspace_id))
+            return {"conversation_id": conversation_id, "candidates_created": 0, "existing": existing, "abstained": False}
+        seen = set()
         for message in detail["messages"]:
-            if message["role"].lower() not in {"user","human","customer"}:
-                continue
-            text = " ".join(message["content"].split())
-            lowered = text.lower()
-            if len(text) < 35 or not any(marker in lowered for marker in ("i want", "we should", "we need", "decision:", "must ", "idea")):
-                continue
-            title = text[:120].rstrip(" .")
-            kind = "decision" if "decision:" in lowered else "idea"
-            db.execute("INSERT INTO tenant_candidates VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                       (uuid.uuid4().hex, workspace_id, conversation_id, message["id"], kind, title, text,
-                        .70, "Explicit user-authored intent language found in source message.", "pending", None, _now()))
-            created += 1
+            for found in detect_candidates(message["role"], message["content"], seen):
+                db.execute("INSERT INTO tenant_candidates VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                           (uuid.uuid4().hex, workspace_id, conversation_id, message["id"], found["kind"], found["title"], found["interpretation"],
+                            found["confidence"], found["rationale"], "pending", None, _now()))
+                created += 1
         db.execute("UPDATE tenant_conversations SET analysis_status='analyzed' WHERE id=? AND workspace_id=?", (conversation_id, workspace_id))
-    return {"conversation_id": conversation_id, "candidates_created": created, "abstained": created == 0}
+    return {"conversation_id": conversation_id, "candidates_created": created, "existing": 0, "abstained": created == 0}
 
 
-def list_candidates(workspace_id, status="pending", limit=250, offset=0):
+CANDIDATE_STATUSES = ("pending", "deferred", "accepted", "rejected")
+
+
+def _candidate_filter(workspace_id, status, kind=None, platform=None, query=None):
+    clauses, params = ["c.workspace_id=?", "c.status=?"], [workspace_id, status]
+    if kind:
+        clauses.append("c.kind=?"); params.append(kind)
+    if platform:
+        clauses.append("LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown'))=?"); params.append(str(platform).lower())
+    if query and str(query).strip():
+        like = f"%{str(query).strip()}%"
+        clauses.append("(c.title LIKE ? OR c.interpretation LIKE ? OR v.title LIKE ?)"); params += [like, like, like]
+    return " AND ".join(clauses), params
+
+
+def list_candidates(workspace_id, status="pending", limit=250, offset=0, kind=None, platform=None, query=None, sort="newest"):
     """Page through candidates; ``limit=None`` returns all (internal callers only)."""
     initialize()
+    where, params = _candidate_filter(workspace_id, status, kind, platform, query)
+    order = {"confidence": "c.confidence DESC,c.id", "oldest": "c.created_at ASC,c.id",
+             "reviewed": "c.reviewed_at DESC,c.id"}.get(sort, "c.created_at DESC,c.id")
     paging = "" if limit is None else " LIMIT ? OFFSET ?"
-    arguments = (workspace_id, status) if limit is None else (workspace_id, status, max(1,min(int(limit),1000)), max(0,int(offset)))
+    arguments = tuple(params) if limit is None else (*params, max(1,min(int(limit),1000)), max(0,int(offset)))
     with _connect() as db:
-        rows = db.execute("""SELECT c.*,m.content excerpt,v.title conversation_title,v.platform
+        rows = db.execute(f"""SELECT c.*,m.content excerpt,m.ordinal message_ordinal,v.title conversation_title,v.platform
           FROM tenant_candidates c JOIN tenant_messages m ON m.id=c.message_id AND m.workspace_id=c.workspace_id
           JOIN tenant_conversations v ON v.id=c.conversation_id AND v.workspace_id=c.workspace_id
-          WHERE c.workspace_id=? AND c.status=? ORDER BY c.created_at DESC,c.id""" + paging, arguments).fetchall()
+          WHERE {where} ORDER BY {order}""" + paging, arguments).fetchall()
     return [dict(row) for row in rows]
 
 
-def count_candidates(workspace_id, status="pending"):
+def count_candidates(workspace_id, status="pending", kind=None, platform=None, query=None):
+    initialize()
+    where, params = _candidate_filter(workspace_id, status, kind, platform, query)
+    with _connect() as db:
+        return db.execute(f"""SELECT COUNT(*) FROM tenant_candidates c JOIN tenant_conversations v
+          ON v.id=c.conversation_id AND v.workspace_id=c.workspace_id WHERE {where}""", params).fetchone()[0]
+
+
+def candidate_facets(workspace_id, status="pending"):
     initialize()
     with _connect() as db:
-        return db.execute("SELECT COUNT(*) FROM tenant_candidates WHERE workspace_id=? AND status=?",(workspace_id,status)).fetchone()[0]
+        statuses={row[0]:row[1] for row in db.execute("SELECT status,COUNT(*) FROM tenant_candidates WHERE workspace_id=? GROUP BY status",(workspace_id,))}
+        kinds={row[0]:row[1] for row in db.execute("SELECT kind,COUNT(*) FROM tenant_candidates WHERE workspace_id=? AND status=? GROUP BY kind",(workspace_id,status))}
+        sources={row[0]:row[1] for row in db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown')),COUNT(*)
+          FROM tenant_candidates c JOIN tenant_conversations v ON v.id=c.conversation_id AND v.workspace_id=c.workspace_id
+          WHERE c.workspace_id=? AND c.status=? GROUP BY 1""",(workspace_id,status))}
+    return {"statuses":{name:statuses.get(name,0) for name in CANDIDATE_STATUSES},"kinds":kinds,"sources":sources}
+
+
+def get_candidate_detail(workspace_id, candidate_id, window=2):
+    initialize(); window=max(0,min(int(window),6))
+    with _connect() as db:
+        row=db.execute("""SELECT c.*,v.title conversation_title,v.platform,v.created_at conversation_created_at,
+          m.ordinal message_ordinal,m.content excerpt FROM tenant_candidates c
+          JOIN tenant_conversations v ON v.id=c.conversation_id AND v.workspace_id=c.workspace_id
+          JOIN tenant_messages m ON m.id=c.message_id AND m.workspace_id=c.workspace_id
+          WHERE c.id=? AND c.workspace_id=?""",(candidate_id,workspace_id)).fetchone()
+        if not row: return None
+        ordinal=row["message_ordinal"]
+        context=db.execute("""SELECT id,role,content,ordinal FROM tenant_messages WHERE workspace_id=? AND conversation_id=?
+          AND ordinal BETWEEN ? AND ? ORDER BY ordinal""",(workspace_id,row["conversation_id"],ordinal-window,ordinal+window)).fetchall()
+        total=db.execute("SELECT COUNT(*) FROM tenant_messages WHERE workspace_id=? AND conversation_id=?",(workspace_id,row["conversation_id"])).fetchone()[0]
+        try:
+            related=db.execute("""SELECT COUNT(*) FROM tenant_candidate_links WHERE workspace_id=? AND status='pending'
+              AND (left_candidate_id=? OR right_candidate_id=?)""",(workspace_id,candidate_id,candidate_id)).fetchone()[0]
+        except Exception: related=0
+    return {"candidate":dict(row),"context":[dict(item)|{"is_source":item["id"]==row["message_id"]} for item in context],
+            "message_total":total,"related_suggestions":related,"method":"evidence_rules_v1"}
 
 
 def review(workspace_id, candidate_id, action):
-    mapped = {"accept":"accepted", "reject":"rejected", "defer":"deferred"}
+    """accept / defer / reject from pending or deferred; reopen returns a deferred or rejected item to pending."""
+    mapped = {"accept":"accepted", "reject":"rejected", "defer":"deferred", "reopen":"pending"}
     if action not in mapped:
-        raise ValueError("Action must be accept, reject, or defer")
+        raise ValueError("Action must be accept, reject, defer, or reopen")
+    allowed = ("deferred", "rejected") if action == "reopen" else ("pending", "deferred")
     with _connect() as db:
         candidate = db.execute("SELECT * FROM tenant_candidates WHERE id=? AND workspace_id=?", (candidate_id, workspace_id)).fetchone()
-        if not candidate or candidate["status"] != "pending":
-            raise KeyError("Pending candidate not found")
+        if not candidate or candidate["status"] not in allowed:
+            raise KeyError("Candidate not found in a reviewable state")
         db.execute("UPDATE tenant_candidates SET status=?,reviewed_at=? WHERE id=? AND workspace_id=?",
-                   (mapped[action], _now(), candidate_id, workspace_id))
+                   (mapped[action], None if action == "reopen" else _now(), candidate_id, workspace_id))
     result = dict(candidate)
     result["status"] = mapped[action]
     return result
@@ -571,12 +627,31 @@ def generate_links(workspace_id):
     return {"links_created":created}
 
 
-def list_links(workspace_id,status="pending"):
+def count_links(workspace_id,status="pending"):
     initialize()
-    with _connect() as db: rows=db.execute("SELECT * FROM tenant_candidate_links WHERE workspace_id=? AND status=? ORDER BY created_at DESC",(workspace_id,status)).fetchall()
+    with _connect() as db:
+        return db.execute("SELECT COUNT(*) FROM tenant_candidate_links WHERE workspace_id=? AND status=?",(workspace_id,status)).fetchone()[0]
+
+
+def list_links(workspace_id,status="pending",limit=250,offset=0):
+    """Relationship suggestions with the titles a reviewer needs, matching local mode's shape."""
+    initialize()
+    with _connect() as db:
+        rows=db.execute("""SELECT l.*,a.title left_title,a.interpretation left_interpretation,av.title left_conversation,
+          b.title right_title,b.interpretation right_interpretation,bv.title right_conversation
+          FROM tenant_candidate_links l
+          JOIN tenant_candidates a ON a.id=l.left_candidate_id AND a.workspace_id=l.workspace_id
+          JOIN tenant_conversations av ON av.id=a.conversation_id AND av.workspace_id=l.workspace_id
+          JOIN tenant_candidates b ON b.id=l.right_candidate_id AND b.workspace_id=l.workspace_id
+          JOIN tenant_conversations bv ON bv.id=b.conversation_id AND bv.workspace_id=l.workspace_id
+          WHERE l.workspace_id=? AND l.status=? ORDER BY l.score DESC,l.created_at DESC,l.id LIMIT ? OFFSET ?""",
+          (workspace_id,status,max(1,min(int(limit),1000)),max(0,int(offset)))).fetchall()
     items=[]
     for row in rows:
-        item=dict(row); item["shared_terms"]=json.loads(item.pop("shared_terms_json")); items.append(item)
+        item=dict(row); item["shared_terms"]=json.loads(item.pop("shared_terms_json"))
+        item.setdefault("relation_type","possible_overlap")
+        item.setdefault("rationale","These candidates share specific source-language terms across different conversations. Lexical overlap does not prove they are the same idea.")
+        items.append(item)
     return items
 
 

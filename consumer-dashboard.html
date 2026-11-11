@@ -1306,6 +1306,50 @@ body{background:#050c09;color:var(--text)}
 @media (max-width:900px){.artifact-shell{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:600px){.artifact-meta{grid-template-columns:minmax(0,1fr)}}
 .candidate-meta{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.inbox{border:1px solid var(--border);border-radius:14px;background:var(--bg-card);overflow:hidden;margin-bottom:18px}
+.inbox-toolbar{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.inbox-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.inbox-tab{background:none;border:1px solid transparent;border-radius:8px;color:var(--text-muted);padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.inbox-tab[aria-selected="true"]{background:var(--green-glow);color:var(--green);border-color:var(--green);font-weight:700}
+.inbox-tab .n{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.85}
+.inbox-filters{display:flex;gap:8px;flex-wrap:wrap}
+.inbox-filters select,.inbox-filters input{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 10px;font:inherit;font-size:13px;min-width:0}
+.inbox-filters input{flex:1 1 180px}
+.inbox-body{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);min-height:520px}
+.inbox-list-pane{border-right:1px solid var(--border);overflow:auto;max-height:70vh}
+.inbox-list{list-style:none;margin:0;padding:0}
+.inbox-row{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--border);padding:11px 14px;color:var(--text);font:inherit;cursor:pointer}
+.inbox-row:hover{background:var(--bg-elevated)}
+.inbox-row[aria-selected="true"]{background:var(--green-glow);box-shadow:inset 3px 0 0 var(--green)}
+.inbox-row .t{font-size:13.5px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.inbox-row .s{font-size:12px;color:var(--text-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kind-chip{display:inline-block;font-size:12px;font-weight:700;text-transform:capitalize;color:var(--green);margin-right:8px}
+.inbox-detail{padding:18px 22px;overflow:auto;max-height:70vh;min-width:0}
+.inbox-empty{color:var(--text-muted);font-size:13px;padding:30px 4px}
+.inbox-detail h3{margin:6px 0 4px;font-size:18px;line-height:1.3}
+.inbox-meta{font-size:12.5px;color:var(--text-muted)}
+.ctx{margin:14px 0 0}
+.ctx-msg{border-left:2px solid var(--border);padding:6px 12px;margin:0 0 8px;font-size:13px;line-height:1.55;max-height:200px;overflow:auto;color:var(--text-muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.ctx-msg .who{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.ctx-msg.src{border-left:3px solid var(--green);color:var(--text);background:var(--bg-elevated);max-height:340px}
+.ctx-msg mark{background:var(--green-glow);color:var(--text);border-bottom:2px solid var(--green);padding:0 1px}
+.inbox-edit{display:grid;gap:8px;margin:16px 0 12px}
+.inbox-edit label{font-size:12.5px;font-weight:600;color:var(--text-muted)}
+.inbox-edit input,.inbox-edit textarea{width:100%;box-sizing:border-box;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font:inherit;font-size:13.5px}
+.inbox-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inbox-note{font-size:12.5px;color:var(--text-muted);margin-top:10px}
+.inbox-back{display:none;margin-bottom:10px}
+.inbox-relationships{border-top:1px solid var(--border)}
+@media (max-width:900px){
+  .inbox-body{grid-template-columns:minmax(0,1fr)}
+  .inbox-list-pane{border-right:0;max-height:none}
+  .inbox-body .inbox-detail{display:none}
+  .inbox-body.detail-open .inbox-list-pane{display:none}
+  .inbox-body.detail-open .inbox-detail{display:block;max-height:none}
+  .inbox-back{display:inline-flex}
+}
 </style>
 </head>
 <body>
@@ -1732,13 +1776,27 @@ body{background:#050c09;color:var(--text)}
 <!-- ── Idea Browser ───────────────────────────────────────────────── -->
 <div class="section" id="section-browser">
   <div class="section-head review-only"><div><div class="journey-kicker">Review</div><div class="section-title">Confirm what becomes part of your work</div><p class="workspace-intro">Seed Reflections proposes ideas and relationships from source evidence. Nothing becomes accepted knowledge until you decide.</p></div></div>
-  <div class="review-queue review-only">
-    <div class="review-queue-head"><div><strong>Evidence Review Queue</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px">Suggested intelligence stays here until you confirm it.</div></div><span id="candidate-count" class="seed-badge">0 pending</span></div>
-    <div id="candidate-review-grid" class="candidate-grid"><div style="color:var(--text-muted);font-size:12px">No pending candidates.</div></div>
-  </div>
-  <div class="review-queue review-only">
-    <div class="review-queue-head"><div><strong>Related Work Suggestions</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px">Cross-conversation overlap is proposed from shared source language—not declared as semantic fact.</div></div><span id="candidate-link-count" class="seed-badge">0 pending</span></div>
-    <div id="candidate-link-grid" class="candidate-grid"><div style="color:var(--text-muted);font-size:12px">No pending relationship suggestions.</div></div>
+  <div class="inbox review-only" id="review-inbox">
+    <div class="inbox-toolbar">
+      <div class="inbox-tabs" role="tablist" aria-label="Review status" id="inbox-tabs"></div>
+      <div class="inbox-filters" id="inbox-filters">
+        <label class="sr-only" for="inbox-kind">Type</label><select id="inbox-kind" onchange="inboxFilterChanged()"><option value="">All types</option></select>
+        <label class="sr-only" for="inbox-source">Source</label><select id="inbox-source" onchange="inboxFilterChanged()"><option value="">All sources</option></select>
+        <label class="sr-only" for="inbox-search">Search findings</label><input id="inbox-search" type="search" placeholder="Search findings" oninput="inboxSearchChanged()">
+        <label class="sr-only" for="inbox-sort">Sort</label><select id="inbox-sort" onchange="inboxFilterChanged()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="confidence">Strongest phrase first</option></select>
+      </div>
+    </div>
+    <div class="inbox-body" id="inbox-body">
+      <div class="inbox-list-pane">
+        <ul class="inbox-list" id="inbox-list" role="listbox" aria-label="Findings awaiting your decision"></ul>
+        <button class="btn btn-ghost btn-sm" id="inbox-more" style="display:none;margin:10px" onclick="inboxLoadMore()">Load more</button>
+      </div>
+      <section class="inbox-detail" id="inbox-detail" aria-live="polite"><div class="inbox-empty">Select a finding to read it in context.</div></section>
+    </div>
+    <div class="inbox-relationships" id="inbox-relationships" style="display:none">
+      <div class="review-queue-head"><div><strong>Related work suggestions</strong><div style="font-size:12px;color:var(--text-muted);margin-top:3px">Cross-conversation overlap proposed from shared source language, never declared as semantic fact. Kept apart from findings so each decision stays clear.</div></div><span id="candidate-link-count" class="seed-badge">0 pending</span></div>
+      <div id="candidate-link-grid" class="candidate-grid"><div style="color:var(--text-muted);font-size:12px">No pending relationship suggestions.</div></div>
+    </div>
   </div>
   <div class="section-head" style="display:flex;justify-content:space-between;align-items:center;">
     <div class="section-title">Ideas & decisions</div>
@@ -2631,51 +2689,210 @@ async function revokeApiIntegration(integrationId) {
   } catch(error) { showToast(error.message || 'Connection could not be revoked.'); }
 }
 
-async function loadCandidateQueue() {
-  var grid = document.getElementById('candidate-review-grid');
-  var count = document.getElementById('candidate-count');
-  if (!grid) return;
+/* ── Review work inbox ───────────────────────────────────────────── */
+var INBOX = {status:'pending', kind:'', source:'', q:'', sort:'newest', items:[], total:0, selectedId:null, facets:null, pageSize:50, timer:null, linksPending:0, dirty:false};
+var INBOX_TABS = [['pending','To review'],['deferred','Deferred'],['accepted','Accepted'],['rejected','Dismissed'],['relationships','Relationships']];
+function inboxIsNarrow() { return window.matchMedia('(max-width: 900px)').matches; }
+
+function inboxQuery(offset) {
+  var p = ['status=' + encodeURIComponent(INBOX.status), 'limit=' + INBOX.pageSize, 'offset=' + offset, 'sort=' + encodeURIComponent(INBOX.sort)];
+  if (INBOX.kind) p.push('kind=' + encodeURIComponent(INBOX.kind));
+  if (INBOX.source) p.push('source=' + encodeURIComponent(INBOX.source));
+  if (INBOX.q) p.push('q=' + encodeURIComponent(INBOX.q));
+  return p.join('&');
+}
+
+async function loadCandidateQueue(preferId) {
+  var list = document.getElementById('inbox-list');
+  if (!list) return;
+  if (INBOX.status === 'relationships') { renderInboxTabs(); return; }
   try {
-    var response = await productFetch('/archive/candidates?status=pending');
-    var data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Candidate queue unavailable');
-    var candidates = data.candidates || [];
-    var pendingTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : candidates.length;
-    PENDING_CANDIDATE_COUNT = pendingTotal;
-    if (ARCHIVE_TOTALS) ARCHIVE_TOTALS.pending = pendingTotal;
-    if (count) count.textContent = pendingTotal > candidates.length
-      ? 'Showing ' + candidates.length + ' of ' + pendingTotal.toLocaleString() + ' pending'
-      : pendingTotal + ' pending';
-    if (!candidates.length) {
-      grid.innerHTML = '<div class="review-empty"><strong>All proposed ideas are reviewed.</strong><p>Open a source conversation and map its ideas when you want to bring more work into this queue.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Browse conversations →</button></div>';
-      return;
-    }
-    grid.innerHTML = candidates.map(function(item) {
-      var acceptLabel = item.kind === 'decision' ? 'Accept Decision' : item.kind === 'abandoned' ? 'Confirm History' : 'Accept as Idea';
-      return '<article class="candidate-card">' +
-        '<div class="candidate-meta"><span class="candidate-kind">' + escHtml(item.kind) + '</span><span>Phrase match · review source</span></div>' +
-        '<h4>' + escHtml(item.title) + '</h4>' +
-        '<div class="candidate-source">' + escHtml(item.conversation_title) + ' · message ' + (Number(item.message_ordinal || 0) + 1) + '</div>' +
-        '<blockquote>' + escHtml(item.excerpt) + '</blockquote>' +
-        '<p>' + escHtml(item.rationale) + '</p>' +
-        '<div class="candidate-actions"><button class="btn btn-primary btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'accept\')">' + acceptLabel + '</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'defer\')">Defer</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'reject\')">Reject</button></div>' +
-      '</article>';
-    }).join('');
+    var results = await Promise.all([
+      productFetch('/archive/candidates?' + inboxQuery(0)),
+      productFetch('/archive/candidates/summary?status=' + encodeURIComponent(INBOX.status))
+    ]);
+    var data = await results[0].json(), facets = await results[1].json();
+    if (!results[0].ok) throw new Error(data.error || 'Review inbox unavailable');
+    INBOX.items = data.candidates || []; INBOX.total = Number(data.total || 0); INBOX.facets = facets;
+    var pending = Number((facets.statuses || {}).pending || 0);
+    PENDING_CANDIDATE_COUNT = pending; if (ARCHIVE_TOTALS) ARCHIVE_TOTALS.pending = pending;
+    renderInboxTabs(); renderInboxFilters(); renderInboxList();
+    var keep = preferId || INBOX.selectedId;
+    var target = INBOX.items.find(function(i){ return i.id === keep; }) || (inboxIsNarrow() ? null : INBOX.items[0]);
+    if (target) await selectCandidate(target.id, true); else { INBOX.selectedId = null; renderInboxDetail(null); }
   } catch (error) {
-    grid.innerHTML = '<div style="color:var(--red);font-size:12px">Evidence review queue could not be loaded.</div>';
+    list.innerHTML = '<li style="padding:14px;color:var(--red);font-size:13px">The review inbox could not be loaded. ' + escHtml(error.message || '') + '</li>';
   }
 }
+
+function renderInboxTabs() {
+  var el = document.getElementById('inbox-tabs'); if (!el) return;
+  var st = (INBOX.facets && INBOX.facets.statuses) || {};
+  el.innerHTML = INBOX_TABS.map(function(t) {
+    var n = t[0] === 'relationships' ? INBOX.linksPending : Number(st[t[0]] || 0);
+    return '<button class="inbox-tab" role="tab" aria-selected="' + (INBOX.status === t[0]) + '" onclick="inboxSetStatus(\'' + t[0] + '\')">' + t[1] + '<span class="n">' + n.toLocaleString() + '</span></button>';
+  }).join('');
+  var rel = INBOX.status === 'relationships';
+  document.getElementById('inbox-body').style.display = rel ? 'none' : '';
+  document.getElementById('inbox-filters').style.display = rel ? 'none' : '';
+  document.getElementById('inbox-relationships').style.display = rel ? '' : 'none';
+}
+
+function renderInboxFilters() {
+  var f = INBOX.facets || {};
+  function fill(id, label, counts, current) {
+    var sel = document.getElementById(id), keys = Object.keys(counts || {}).sort();
+    sel.innerHTML = '<option value="">' + label + '</option>' + keys.map(function(k){ return '<option value="' + escHtml(k) + '">' + escHtml(k.charAt(0).toUpperCase() + k.slice(1)) + ' (' + Number(counts[k]).toLocaleString() + ')</option>'; }).join('');
+    sel.value = keys.indexOf(current) >= 0 ? current : '';
+  }
+  fill('inbox-kind', 'All types', f.kinds, INBOX.kind); fill('inbox-source', 'All sources', f.sources, INBOX.source);
+}
+
+function renderInboxList() {
+  var list = document.getElementById('inbox-list'), more = document.getElementById('inbox-more');
+  if (!INBOX.items.length) {
+    var filtered = INBOX.kind || INBOX.source || INBOX.q;
+    var msg = filtered ? 'No findings match these filters.' : ({pending:'Everything proposed has been reviewed.', deferred:'Nothing is deferred.', accepted:'Nothing accepted yet.', rejected:'Nothing dismissed.'}[INBOX.status]);
+    list.innerHTML = '<li class="inbox-empty">' + msg + (filtered ? ' <button class="btn btn-ghost btn-sm" onclick="inboxClearFilters()">Clear filters</button>' : '') + '</li>';
+    more.style.display = 'none'; return;
+  }
+  var summary = '<li role="presentation" class="inbox-count" style="padding:8px 14px;font-size:12.5px;color:var(--text-muted);border-bottom:1px solid var(--border)">' + (INBOX.items.length < INBOX.total ? 'Showing ' + INBOX.items.length.toLocaleString() + ' of ' + INBOX.total.toLocaleString() : INBOX.total.toLocaleString()) + (INBOX.kind || INBOX.source || INBOX.q ? ' matching' : '') + ' finding' + (INBOX.total === 1 ? '' : 's') + '</li>';
+  list.innerHTML = summary + INBOX.items.map(function(i) {
+    return '<li role="presentation"><button class="inbox-row" role="option" id="row-' + escHtml(i.id) + '" data-id="' + escHtml(i.id) + '" aria-selected="' + (i.id === INBOX.selectedId) + '" onclick="selectCandidate(\'' + escHtml(i.id) + '\')">' +
+      '<div class="t">' + escHtml(i.title) + '</div><div class="s"><span class="kind-chip">' + escHtml(i.kind) + '</span>' + escHtml(i.conversation_title || '') + '</div></button></li>';
+  }).join('');
+  more.style.display = INBOX.items.length < INBOX.total ? '' : 'none';
+  more.textContent = 'Load more (' + (INBOX.total - INBOX.items.length).toLocaleString() + ' remaining)';
+}
+
+async function inboxLoadMore() {
+  var response = await productFetch('/archive/candidates?' + inboxQuery(INBOX.items.length)); var data = await response.json();
+  if (response.ok) { INBOX.items = INBOX.items.concat(data.candidates || []); renderInboxList(); }
+}
+function inboxSetStatus(status) { INBOX.status = status; INBOX.selectedId = null; INBOX.kind = ''; INBOX.source = ''; INBOX.q = ''; document.getElementById('inbox-search').value = ''; if (status === 'relationships') { loadCandidateLinkQueue(); renderInboxTabs(); } else loadCandidateQueue(); }
+function inboxFilterChanged() { INBOX.kind = document.getElementById('inbox-kind').value; INBOX.source = document.getElementById('inbox-source').value; INBOX.sort = document.getElementById('inbox-sort').value; INBOX.selectedId = null; loadCandidateQueue(); }
+function inboxSearchChanged() { clearTimeout(INBOX.timer); INBOX.timer = setTimeout(function(){ INBOX.q = document.getElementById('inbox-search').value.trim(); INBOX.selectedId = null; loadCandidateQueue(); }, 300); }
+function inboxClearFilters() { INBOX.kind = ''; INBOX.source = ''; INBOX.q = ''; document.getElementById('inbox-search').value = ''; loadCandidateQueue(); }
+
+function highlightPassage(content, c) {
+  var needle = (c.interpretation && content.indexOf(c.interpretation) >= 0) ? c.interpretation : ((c.excerpt && c.excerpt.length < content.length && content.indexOf(c.excerpt) >= 0) ? c.excerpt : '');
+  if (!needle) return escHtml(content);
+  var i = content.indexOf(needle);
+  return escHtml(content.slice(0, i)) + '<mark>' + escHtml(needle) + '</mark>' + escHtml(content.slice(i + needle.length));
+}
+
+async function selectCandidate(id, quiet) {
+  INBOX.selectedId = id;
+  document.querySelectorAll('.inbox-row').forEach(function(r){ r.setAttribute('aria-selected', r.getAttribute('data-id') === id ? 'true' : 'false'); });
+  var detailEl = document.getElementById('inbox-detail');
+  try {
+    var response = await productFetch('/archive/candidates/' + encodeURIComponent(id)); var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Finding unavailable');
+    if (INBOX.selectedId !== id) return;
+    renderInboxDetail(data);
+    if (inboxIsNarrow() && !quiet) { document.getElementById('inbox-body').classList.add('detail-open'); detailEl.scrollTop = 0; window.scrollTo({top: document.getElementById('review-inbox').offsetTop, behavior: 'smooth'}); }
+  } catch (error) { detailEl.innerHTML = '<div class="inbox-empty" style="color:var(--red)">' + escHtml(error.message) + '</div>'; }
+}
+
+function renderInboxDetail(d) {
+  var el = document.getElementById('inbox-detail');
+  if (!d) { el.innerHTML = '<div class="inbox-empty">Select a finding to read it in context.</div>'; return; }
+  var c = d.candidate, st = c.status, editable = (st === 'pending' || st === 'deferred');
+  var label = c.kind === 'decision' ? 'Decision statement' : 'Idea or finding';
+  var ctx = d.context.map(function(m) {
+    var who = String(m.role || '').toLowerCase() === 'assistant' ? 'Assistant' : 'You';
+    return '<div class="ctx-msg' + (m.is_source ? ' src' : '') + '"><span class="who">' + who + ' · message ' + (Number(m.ordinal) + 1) + (m.is_source ? ' · source of this finding' : '') + '</span>' + (m.is_source ? highlightPassage(m.content, c) : escHtml(m.content)) + '</div>';
+  }).join('');
+  var actions = '';
+  if (editable) actions = '<button class="btn btn-primary btn-sm" id="inbox-accept" onclick="inboxAct(\'accept\')">' + (c.kind === 'decision' ? 'Accept decision' : 'Accept') + '</button>' +
+    (st === 'pending' ? '<button class="btn btn-ghost btn-sm" onclick="inboxAct(\'defer\')">Defer</button>' : '') +
+    '<button class="btn btn-ghost btn-sm" onclick="inboxAct(\'reject\')">Dismiss</button>';
+  else if (st === 'rejected' || st === 'deferred') actions = '<button class="btn btn-ghost btn-sm" onclick="inboxAct(\'reopen\')">Return to inbox</button>';
+  var note = st === 'accepted' ? 'Accepted on ' + escHtml(String(c.reviewed_at || '').slice(0, 10)) + '. It now lives in Ideas &amp; decisions; accepted findings are not undone from here.' :
+             st === 'rejected' ? 'Dismissed on ' + escHtml(String(c.reviewed_at || '').slice(0, 10)) + '. The source conversation is unchanged.' :
+             st === 'deferred' ? 'Deferred on ' + escHtml(String(c.reviewed_at || '').slice(0, 10)) + '. Decide now or return it to the inbox.' :
+             'Nothing is added to your work until you accept. Editing the wording above is optional.';
+  var rel = d.related_suggestions ? '<div class="inbox-note"><button class="btn btn-ghost btn-sm" onclick="inboxSetStatus(\'relationships\')">' + Number(d.related_suggestions) + ' relationship suggestion' + (d.related_suggestions === 1 ? '' : 's') + ' involve this finding</button></div>' : '';
+  el.innerHTML = '<button class="btn btn-ghost btn-sm inbox-back" onclick="document.getElementById(\'inbox-body\').classList.remove(\'detail-open\')">← All findings</button>' +
+    '<div class="inbox-meta"><span class="kind-chip">' + escHtml(c.kind) + '</span>Phrase match (rule-based, not an AI judgment)</div>' +
+    '<h3>' + escHtml(c.title) + '</h3>' +
+    '<div class="inbox-meta">' + escHtml(c.conversation_title || 'Untitled conversation') + ' · ' + escHtml(c.platform || 'unknown source') + ' · message ' + (Number(c.message_ordinal) + 1) + ' of ' + Number(d.message_total) + '</div>' +
+    '<div class="ctx" aria-label="Source passage and surrounding messages">' + ctx + '</div>' +
+    (editable ? '<div class="inbox-edit"><label for="inbox-title">' + label + '</label><input id="inbox-title" value="' + escHtml(c.title) + '" oninput="inboxEdited()"><label for="inbox-intent">Meaning, in your words</label><textarea id="inbox-intent" rows="3" oninput="inboxEdited()">' + escHtml(c.interpretation) + '</textarea></div>' : '') +
+    '<div class="inbox-actions">' + actions + '</div><div class="inbox-note">' + note + '</div>' + rel;
+  var src = el.querySelector('.ctx-msg.src mark'); if (src && src.scrollIntoView) src.scrollIntoView({block: 'nearest'});
+  INBOX.dirty = false; INBOX.detail = d;
+}
+
+function inboxEdited() {
+  var c = INBOX.detail && INBOX.detail.candidate; if (!c) return;
+  INBOX.dirty = document.getElementById('inbox-title').value !== c.title || document.getElementById('inbox-intent').value !== c.interpretation;
+  var b = document.getElementById('inbox-accept'); if (b) b.textContent = INBOX.dirty ? 'Accept with edits' : (c.kind === 'decision' ? 'Accept decision' : 'Accept');
+}
+
+function inboxShowUndo(text, id) {
+  var host = document.getElementById('review-inbox'), bar = document.getElementById('inbox-undo');
+  if (!bar) { bar = document.createElement('div'); bar.id = 'inbox-undo'; bar.setAttribute('role', 'status'); bar.style.cssText = 'display:flex;gap:12px;align-items:center;padding:8px 14px;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-size:13px'; host.insertBefore(bar, host.firstChild); }
+  bar.innerHTML = '<span>' + escHtml(text) + '</span><button class="btn btn-ghost btn-sm" onclick="inboxUndo(\'' + escHtml(id) + '\')">Undo</button>';
+  clearTimeout(bar._t); bar._t = setTimeout(function(){ bar.remove(); }, 12000);
+}
+async function inboxUndo(id) { var bar = document.getElementById('inbox-undo'); if (bar) bar.remove(); await reviewCandidate(id, 'reopen', true); }
+
+async function inboxAct(action) {
+  var c = INBOX.detail && INBOX.detail.candidate; if (!c) return;
+  await reviewCandidate(c.id, action);
+}
+
+async function reviewCandidate(candidateId, action, silent) {
+  try {
+    var body = {action: action};
+    if (action === 'accept' && document.getElementById('inbox-title') && INBOX.selectedId === candidateId) { body.title = document.getElementById('inbox-title').value.trim(); body.intent = document.getElementById('inbox-intent').value.trim(); if (!body.title) throw new Error('A title is needed to accept this finding.'); }
+    var response = await productFetch('/archive/candidates/' + encodeURIComponent(candidateId) + '/review', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Review failed');
+    var idx = INBOX.items.findIndex(function(i){ return i.id === candidateId; });
+    var next = INBOX.items[idx + 1] || INBOX.items[idx - 1] || null;
+    var leaves = (action !== 'reopen' || INBOX.status !== 'pending');
+    await loadCandidateQueue(leaves && next ? next.id : candidateId);
+    await loadCandidateLinkQueue();
+    if (silent) { showToast('Returned to your inbox.'); return; }
+    if (action === 'accept') {
+      await loadAllSeeds();
+      showToast(data.decision_id ? 'Decision accepted and added to the Decision Register.' : 'Accepted and added to your ideas.');
+    } else if (action === 'defer') { inboxShowUndo('Deferred. Nothing in your work changed.', candidateId);
+    } else if (action === 'reject') { inboxShowUndo('Dismissed. The source conversation is unchanged.', candidateId);
+    } else { showToast('Returned to your inbox.'); }
+  } catch (error) {
+    showToast(error.message || 'Candidate review failed.');
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  var inbox = document.getElementById('review-inbox');
+  if (!inbox || !inbox.offsetParent || INBOX.status === 'relationships') return;
+  var tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.metaKey || e.ctrlKey || e.altKey) return;
+  var i = INBOX.items.findIndex(function(x){ return x.id === INBOX.selectedId; });
+  if (e.key === 'j' || e.key === 'ArrowDown') { if (INBOX.items[i + 1]) { e.preventDefault(); selectCandidate(INBOX.items[i + 1].id); var r = document.getElementById('row-' + INBOX.items[i + 1].id); if (r) r.scrollIntoView({block:'nearest'}); } }
+  else if (e.key === 'k' || e.key === 'ArrowUp') { if (INBOX.items[i - 1]) { e.preventDefault(); selectCandidate(INBOX.items[i - 1].id); var q = document.getElementById('row-' + INBOX.items[i - 1].id); if (q) q.scrollIntoView({block:'nearest'}); } }
+  else if (e.key === 'd' && INBOX.status === 'pending' && INBOX.selectedId) inboxAct('defer');
+  else if (e.key === 'x' && (INBOX.status === 'pending' || INBOX.status === 'deferred') && INBOX.selectedId) inboxAct('reject');
+  /* Accept is deliberately click-only: it is the one action that is not undone from the inbox. */
+});
 
 async function loadCandidateLinkQueue() {
   var grid = document.getElementById('candidate-link-grid');
   var count = document.getElementById('candidate-link-count');
   if (!grid) return;
   try {
-    var response = await productFetch('/archive/links?status=pending');
+    var response = await productFetch('/archive/links?status=pending&limit=50');
     var data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Relationship queue unavailable');
     var links = data.links || [];
-    if (count) count.textContent = links.length + ' pending';
+    var linkTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : links.length;
+    if (count) count.textContent = linkTotal > links.length ? 'Showing ' + links.length + ' of ' + linkTotal.toLocaleString() + ' pending' : linkTotal + ' pending';
+    INBOX.linksPending = linkTotal; renderInboxTabs();
     if (!links.length) {
       grid.innerHTML = '<div class="review-empty"><strong>No relationships need a decision.</strong><p>Suggestions appear when separate conversations share specific source evidence.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Explore the archive →</button></div>';
       return;
@@ -2713,28 +2930,6 @@ async function reviewCandidateLink(linkId, action) {
     else showToast('Relationship suggestion rejected.');
   } catch (error) {
     showToast(error.message || 'Relationship review failed.');
-  }
-}
-
-async function reviewCandidate(candidateId, action) {
-  try {
-    var response = await productFetch('/archive/candidates/' + encodeURIComponent(candidateId) + '/review', {
-      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: action})
-    });
-    var data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Review failed');
-    await loadCandidateQueue();
-    await loadCandidateLinkQueue();
-    if (action === 'accept') {
-      await loadAllSeeds();
-      showToast(data.entity_type === 'decision' ? 'Decision accepted and added to the Decision Register.' : 'Candidate accepted and added to your Idea Browser.');
-    } else if (action === 'defer') {
-      showToast('Candidate deferred without changing your ideas.');
-    } else {
-      showToast('Candidate rejected. The source conversation remains unchanged.');
-    }
-  } catch (error) {
-    showToast(error.message || 'Candidate review failed.');
   }
 }
 

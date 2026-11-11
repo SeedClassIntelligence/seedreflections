@@ -27,7 +27,7 @@ Labels used: **VERIFIED** (observed running), **TEST** (automated test evidence)
 | **S2** | High | Admin password defaults to `changeme` when `ADMIN_PASSWORD` is unset, and the `/admin` check uses a non-constant-time comparison. I added a readiness check for hosted mode (D8) but did not audit the admin API routes. | VERIFIED default, OPEN rest |
 | **R1** | High | **No real release gate ran.** `release_check.py` only reads `/api/v2/readiness`, which validates configuration strings. It passed for `https://example.test` with no TLS, certificate, HSTS or header check. No real HTTPS origin, billing webhook or team feature was exercised. | VERIFIED |
 | **R2** | ~~High~~ **Closed (Nov 11)** | Local in-app restore now exists: verified preview, typed `REPLACE` confirmation, safety snapshot, automatic rollback, live credentials/tokens/identity preserved. Proven through the real dashboard on a 3,306-conversation archive and in `tests/test_local_restore.py` (6 tests incl. tamper, mid-restore failure rollback, running-job refusal, expired token). Device-loss recovery = restore from the user's own complete backup; hosted account recovery remains a separate identity-verified process (not built). | VERIFIED, TEST |
-| **P1** | High | **Review queue cannot be worked at scale.** The UI renders 250 cards (about 1,510 buttons) with no pagination control, no filters and no batch actions, so 3,657 of 3,907 candidates are unreachable. The API now pages (D4); the UI does not yet. | VERIFIED |
+| **P1** | ~~High~~ **Largely closed (Nov 11)** | Review is now a work inbox (filters, search, passage-in-context, edit-and-accept, defer, dismiss, undo, history tabs, separate relationships). Verified in a browser on 3,906 pending findings and in hosted mode over HTTP. Still open: a project filter, and a human usability test. | VERIFIED, TEST |
 
 ### S1: proposed patch (not applied, needs approval)
 
@@ -109,3 +109,20 @@ Each was reproduced first, then fixed, and verified again. "Test" means the new 
 - `project-handoff/ARCHITECTURE.md`, `CURRENT_IMPLEMENTATION.md` and `DESIGN_SYSTEM.md` are marked historical.
 - About 20 one-off `patch_*.py`, `repair_*.py` and similar scripts sit in the repository root. They are excluded from the Docker image, but they are clutter and a source-disclosure risk; I left them alone pending your call.
 - `workroom-prototype.html` is not in the repository; I did not touch it.
+
+---
+
+## 8. Found while building the Review inbox (Nov 11)
+
+| ID | Sev | Finding | Status |
+|---|---|---|---|
+| **D10** | **High** | **Hosted and local modes ran different detectors.** Hosted used 5 substrings and produced only / (a decision only if the text literally contained "decision:", so "We decided to…" was missed); local used 7 typed regex rules. The same export gave different findings by deployment mode (about 1,405 hosted vs 3,907 local earlier). Contradicts "one product". | **Fixed**: one shared ; parity test. Hosted now finds decisions, ideas and tasks on the same 300 conversations (63 / 166 / 71). |
+| D11 | Medium | Rule gaps in the shared detector:  with a colon and plain  (without "to") were not detected in either mode. | Fixed |
+| D12 | High | **Hosted re-analysis deleted and recreated pending candidates**, which also re-proposed items the user had dismissed. | Fixed: matches local (existing candidates are preserved); test |
+| D13 | High | **Hosted relationship cards had no titles** ("undefined ↔ undefined"): the hosted list returned bare rows. | Fixed; test |
+| D14 | Medium | The Relationships list was silently capped at 250 with no total (true count 15,616). | Fixed: /paging; UI shows the true count |
+| D15 | Medium | A deferred item could never be decided later, and a mistaken dismissal could not be undone. | Fixed: deferred can be accepted or dismissed; deferred/dismissed can be returned to the inbox. Accepted items are deliberately not undone (accepting creates a decision or idea). |
+| D16 | High | **No catch-all around request handlers**: any unexpected exception dropped the connection with no response (seen when I broke hosted accept). | Fixed: JSON 500 , details not leaked; test |
+| D17 | Medium | Hosted accept of a deferred item crashed (my own change updated the SELECT but not the matching UPDATE). Caught by the live hosted run, not by unit tests. | Fixed; test |
+
+Detection remains **transparent phrase rules**, labelled as such in the interface. Model-assisted discovery is still open.

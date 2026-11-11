@@ -252,7 +252,7 @@ def accept_tenant_candidate(workspace_id, candidate_id, project_id=None, title=N
     initialize(); now=_now()
     with _connect() as db:
         db.execute("BEGIN IMMEDIATE")
-        candidate=db.execute("SELECT * FROM tenant_candidates WHERE id=? AND workspace_id=? AND status='pending'",
+        candidate=db.execute("SELECT * FROM tenant_candidates WHERE id=? AND workspace_id=? AND status IN ('pending','deferred')",
                              (candidate_id,workspace_id)).fetchone()
         if not candidate: raise KeyError("Pending candidate not found")
         state=db.execute("SELECT document_json,revision FROM workspace_state WHERE workspace_id=?",(workspace_id,)).fetchone()
@@ -279,7 +279,7 @@ def accept_tenant_candidate(workspace_id, candidate_id, project_id=None, title=N
         _sync_entities(db,document,workspace_id)
         db.execute("UPDATE workspace_state SET document_json=?,revision=?,updated_at=? WHERE workspace_id=?",(encoded,revision,now,workspace_id))
         db.execute("INSERT INTO workspace_revisions VALUES(?,?,?,?,?)",(workspace_id,revision,encoded,"candidate_accepted_atomic",now))
-        changed=db.execute("UPDATE tenant_candidates SET status='accepted',reviewed_at=? WHERE id=? AND workspace_id=? AND status='pending'",
+        changed=db.execute("UPDATE tenant_candidates SET status='accepted',reviewed_at=? WHERE id=? AND workspace_id=? AND status IN ('pending','deferred')",
                            (now,candidate_id,workspace_id)).rowcount
         if changed!=1: raise RuntimeError("Candidate acceptance lost its concurrency race")
     result=dict(candidate); result["status"]="accepted"
