@@ -135,6 +135,21 @@ def overview(workspace_id):
     return result
 
 
+def source_coverage(workspace_id):
+    initialize()
+    with _connect() as db:
+        rows=db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown')) provider,
+          COUNT(DISTINCT c.import_id) imports, COUNT(*) conversations,
+          COALESCE(SUM(c.message_count),0) messages,
+          MAX(COALESCE(c.updated_at,c.created_at,i.created_at)) last_activity
+          FROM tenant_conversations c LEFT JOIN tenant_imports i
+            ON i.id=c.import_id AND i.workspace_id=c.workspace_id
+          WHERE c.workspace_id=?
+          GROUP BY LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown'))
+          ORDER BY conversations DESC,provider""",(workspace_id,)).fetchall()
+    return [dict(row) for row in rows]
+
+
 def usage(workspace_id):
     initialize()
     with _connect() as db:

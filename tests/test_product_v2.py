@@ -105,6 +105,17 @@ class ProductLocalFlowTests(unittest.TestCase):
         _, data = self.runtime.request("GET", "/api/v2/capabilities")
         self.assertFalse(any("key" in key or "secret" in key for key in data))
 
+    def test_tools_report_real_connection_state_without_exposing_secrets(self):
+        status, data = self.runtime.request("GET", "/api/v2/tools")
+        self.assertEqual(status, 200)
+        gmail = next(item for item in data["tools"] if item["id"] == "gmail")
+        self.assertIn(gmail["state"], {"configuration_required", "authorization_required", "connected"})
+        self.assertNotIn("client_secret", str(data).lower())
+        if gmail["state"] == "configuration_required":
+            status, result = self.runtime.request("POST", "/api/v2/tools/gmail/connect", {})
+            self.assertEqual(status, 503)
+            self.assertEqual(result["code"], "provider_configuration_required")
+
 
 class ProductHostedAuthTests(unittest.TestCase):
     def setUp(self): self.runtime = Runtime("hosted")

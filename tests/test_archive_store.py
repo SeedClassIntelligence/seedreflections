@@ -187,6 +187,15 @@ class ArchiveStoreTests(unittest.TestCase):
         after = archive_store.archive_analysis_overview()
         self.assertEqual((after["mapped"], after["unmapped"], after["no_explicit_evidence"]), (2, 0, 1))
 
+    def test_source_coverage_accepts_arbitrary_provider_names(self):
+        archive_store.import_json(json.dumps([{
+            "id":"deepseek-one", "title":"Model research",
+            "messages":[{"role":"user", "content":"Compare the model routes."}]
+        }]), "deepseek-export.json")
+        coverage = archive_store.source_coverage()
+        deepseek = next(item for item in coverage if item["provider"] == "deepseek")
+        self.assertEqual((deepseek["imports"], deepseek["conversations"], deepseek["messages"]), (1, 1, 1))
+
     def test_cross_conversation_links_are_proposals_with_explained_shared_terms(self):
         imported = archive_store.import_json(json.dumps([
             {"id":"a", "title":"Archive concept", "messages":[{"role":"user", "content":"We should create a source-linked archive map for conversation history."}]},

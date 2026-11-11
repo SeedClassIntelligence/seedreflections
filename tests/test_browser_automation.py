@@ -113,14 +113,12 @@ class TestBrowserAutomation(unittest.TestCase):
             url = f"http://localhost:{self.port}/consumer"
             page.goto(url)
 
-            # Workspace is the entrance; sources open contextually without leaving it.
+            # Workspace is the entrance; sources are a native Library destination.
             page.wait_for_selector("#section-workspace", state="visible")
             self.assertTrue(page.locator("#chat-input").is_visible())
             page.get_by_role("button",name="＋ Add or connect").click()
             page.wait_for_selector("text=Bring your history home.")
             self.assertTrue(page.locator("#section-intake").is_visible())
-            page.get_by_role("button",name="Close").click()
-
             page.click(".app-primary-tab[data-primary='library']")
             page.click(".library-view-tab[data-library='map']")
             page.wait_for_selector("#section-map", state="visible")
@@ -137,12 +135,11 @@ class TestBrowserAutomation(unittest.TestCase):
             # Open Settings and verify core configuration controls are reachable.
             page.click("button[title='Settings']")
             page.wait_for_selector("#section-account", state="visible")
-            page.click("button:has-text('Data, AI & portability')")
-            page.wait_for_selector("#settings-modal", state="visible")
-            self.assertTrue(page.locator("button:has-text('Export Package v2')").is_visible())
-            self.assertTrue(page.locator("button:has-text('Import Package v2')").is_visible())
-            self.assertTrue(page.locator("button:has-text('Download Complete Archive')").is_visible())
-            self.assertTrue(page.locator("button:has-text('Restore Complete Archive')").is_visible())
+            # Data portability is part of the native Settings page, not a retrofit modal.
+            self.assertTrue(page.locator("#section-account button:has-text('Export package v2')").is_visible())
+            self.assertTrue(page.locator("#section-account button:has-text('Import package v2')").is_visible())
+            self.assertTrue(page.locator("#section-account button:has-text('Download complete archive')").is_visible())
+            self.assertTrue(page.locator("#section-account button:has-text('Restore complete archive')").is_visible())
 
             browser.close()
 

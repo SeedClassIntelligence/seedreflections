@@ -36,7 +36,7 @@ from archive_store import list_imports as list_archive_imports
 from archive_store import create_import_job, update_import_job, get_import_job, list_import_jobs
 from archive_store import (analyze_conversation, list_candidates, review_candidate,
                            create_analysis_job, get_analysis_job, run_archive_analysis,
-                           archive_analysis_overview, generate_candidate_links,
+                           archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
                            list_candidate_links, review_candidate_link)
 from document_ingest import import_document, import_document_path
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
@@ -55,7 +55,7 @@ from tenant_archive_store import (import_json as tenant_import_json, overview as
     get_analysis_job as tenant_get_analysis_job, run_analysis_job as tenant_run_analysis_job,
     generate_links as tenant_generate_links, list_links as tenant_list_links, review_link as tenant_review_link,
     preserve_source as tenant_preserve_source, list_sources as tenant_list_sources, get_source as tenant_get_source)
-from tenant_archive_store import count_conversations as tenant_count_conversations
+from tenant_archive_store import count_conversations as tenant_count_conversations, source_coverage as tenant_source_coverage
 from tenant_archive_store import usage as tenant_usage
 from tenant_archive_store import export_backup as tenant_export_backup, export_backup_archive as tenant_export_backup_archive, restore_backup as tenant_restore_backup, restore_backup_archive as tenant_restore_backup_archive
 from connector_store import (discover as discover_connectors, list_connectors as list_source_connectors,
@@ -69,6 +69,7 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential
+from tool_store import list_tools as list_workspace_tools, get_tool as get_workspace_tool, disconnect_tool as disconnect_workspace_tool
 
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
 DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower()
@@ -1112,6 +1113,13 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"integrations":list_api_integrations(user["workspace_id"]),
                 "import_endpoint":"/api/v2/integrations/import","authentication":"Bearer connection token"})
             return
+        if path == "/api/v2/tools":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"tools":list_workspace_tools(user["workspace_id"]),
+                "connection_policy":{"external_writes_require_confirmation":True,
+                    "credentials":"encrypted_server_side","client_side_secrets":False}})
+            return
         connector_health_match=re.fullmatch(r"/api/v2/connectors/([^/]+)/health",path)
         if connector_health_match:
             user=self._runtime_user()
@@ -1128,12 +1136,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"imports":len(list_archive_imports()),"conversations":archive["total"],
                     "messages":sum(item.get("message_count",item.get("depth",0)) for item in list_archive_conversations()),
                     "pending":archive["pending_candidates"],"seeds":len(workspace.get("seeds",[])),
-                    "projects":len(workspace.get("projects",[])),"recovered":sum(1 for item in workspace.get("seeds",[]) if str(item.get("continuity_status","")).lower()=="recovered")})
+                    "projects":len(workspace.get("projects",[])),"recovered":sum(1 for item in workspace.get("seeds",[]) if str(item.get("continuity_status","")).lower()=="recovered"),
+                    "source_coverage":archive_source_coverage()})
             else:
                 create_empty_workspace(user["workspace_id"]); status=storage_status(user["workspace_id"]); counts=status["entity_counts"]
                 archive=tenant_archive_overview(user["workspace_id"])
                 self._send_json({**archive,"total":archive["conversations"],"pending_candidates":archive["pending"],
-                    "seeds":counts["seeds"],"projects":counts["projects"],"recovered":0})
+                    "seeds":counts["seeds"],"projects":counts["projects"],"recovered":0,
+                    "source_coverage":tenant_source_coverage(user["workspace_id"])})
             return
         if path == "/api/v2/conversations":
             user=self._runtime_user()
@@ -2799,6 +2809,26 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 created["import_endpoint"]="/api/v2/integrations/import"
                 self._send_json(created,201)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        tool_connect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/connect",path)
+        if tool_connect_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            tool_id=urllib.parse.unquote(tool_connect_match.group(1)); tool=get_workspace_tool(tool_id)
+            if not tool or tool.get("category")=="built_in": self._send_json({"error":"External tool not found"},404); return
+            catalog=next(item for item in list_workspace_tools(user["workspace_id"]) if item["id"]==tool_id)
+            if catalog["connected"]: self._send_json({"tool":catalog,"status":"already_connected"}); return
+            if not catalog["provider_configured"]:
+                self._send_json({"error":"This connection is available but its provider authentication has not been configured for this deployment.",
+                    "code":"provider_configuration_required","tool":catalog},503); return
+            self._send_json({"error":"Provider authorization is configured, but the OAuth handoff is not enabled in this build.",
+                "code":"authorization_handoff_unavailable","tool":catalog},501); return
+        tool_disconnect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/disconnect",path)
+        if tool_disconnect_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json({"tool":disconnect_workspace_tool(user["workspace_id"],urllib.parse.unquote(tool_disconnect_match.group(1)))})
+            except KeyError as exc: self._send_json({"error":str(exc)},404)
             return
         integration_revoke_match=re.fullmatch(r"/api/v2/integrations/([^/]+)/revoke",path)
         if integration_revoke_match:

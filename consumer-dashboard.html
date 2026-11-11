@@ -1095,6 +1095,210 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 .cockpit-inspector{display:none}.cockpit-inspector.open{display:block}
 @media(max-width:900px){.section-head{align-items:flex-start}.section-head>div:last-child{width:100%}.cockpit-layout{gap:12px}.cockpit-shelf{width:280px;min-width:280px;max-width:280px}}
 @media(max-width:720px){.navbar{padding:0 14px}.nav-brand-sub,.nav-btn-labeled span,#project-filter,.navbar .nav-avatar,.navbar .nav-btn[title="Sign Out"]{display:none!important}.nav-right{gap:8px}.telemetry-strip{padding:9px 14px}.section{padding:28px 14px}.section-title{font-size:28px}.cockpit-layout{display:block}.cockpit-shelf{width:100%;min-width:0;max-width:none;margin-bottom:14px}.cockpit-chat{min-height:580px}.chat-bubble.assistant{max-width:92%}}
+
+/* ── Product shell v5: neutral canvas, persistent navigation ───── */
+:root{
+  --bg-deep:#f6f7f8;--bg-card:#fff;--bg-elevated:#eef1f2;
+  --surface:#fff;--surface-raised:#f8faf9;
+  --border:#dfe4e2;--border-bright:#c6cfcb;
+  --text:#161c19;--text-secondary:#35413c;--text-muted:#68736e;--text-dim:#8b9590;
+  --accent:#157347;--accent-glow:rgba(21,115,71,.09);--green:#157347;--green-glow:rgba(21,115,71,.09);
+  --cyan:#176b87;--cyan-glow:rgba(23,107,135,.09);--blue:#315fbd;--blue-glow:rgba(49,95,189,.09);
+  --purple:#7052a3;--purple-glow:rgba(112,82,163,.09);--amber:#a26212;--amber-glow:rgba(162,98,18,.1);--red:#b33a3a;
+  --radius:8px;--radius-sm:6px;--radius-lg:10px;--shadow-card:0 1px 2px rgba(16,24,20,.04);
+}
+body{background:#f6f7f8;background-image:none;color:var(--text);padding-left:224px;padding-top:60px}
+body::before{display:none}
+.navbar{position:fixed;z-index:130;inset:0 0 auto 0;height:60px;background:#fff;border-bottom:1px solid var(--border);padding:0 20px;box-shadow:none}
+.nav-brand{width:204px;font-size:18px;color:#157347;letter-spacing:-.55px}.nav-brand em{color:#161c19}.nav-brand-sub{display:none}
+.navbar .nav-btn{border-color:var(--border);color:var(--text-secondary);background:#fff}.navbar .nav-btn:hover{background:#f3f6f4;color:#157347;border-color:#aebbb5}.nav-avatar{background:#173e2d;color:#fff;border:0}
+#project-filter{background:#fff!important;color:var(--text)!important;border-color:var(--border)!important;min-height:34px}
+.telemetry-strip{display:none}
+.app-primary-nav{position:fixed;z-index:120;left:0;top:60px;bottom:0;width:224px;max-width:none;margin:0;padding:22px 12px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.app-primary-tab{display:flex;align-items:center;gap:11px;width:100%;border:0;border-radius:7px;padding:11px 12px;color:#52605a;font-size:13px;text-align:left;font-weight:650}
+.app-primary-tab:hover{background:#f2f5f3;color:#17201c}.app-primary-tab.active{background:#eaf4ee;color:#12643e;border:0;box-shadow:none}
+.nav-glyph{display:grid;place-items:center;width:18px;height:18px;color:currentColor;font-size:15px}.nav-divider{height:1px;background:var(--border);margin:12px 8px}.nav-caption{padding:5px 12px;color:#8a948f;font-size:10px;font-weight:750;letter-spacing:.09em;text-transform:uppercase}
+.library-subnav{position:fixed;z-index:125;left:12px;top:256px;width:200px;max-width:none;margin:0;padding:4px 0 8px 29px;border:0;display:none;flex-direction:column;align-items:stretch;gap:2px;background:#fff}
+.library-subnav.visible{display:flex}.library-view-tab{border:0;border-radius:6px;background:transparent;color:#68736e;text-align:left;padding:8px 10px;font-size:11px}.library-view-tab:hover{background:#f3f6f4}.library-view-tab.active{background:#f0f5f2;color:#12643e;border:0}
+.section{max-width:1440px;padding:32px 38px}.section-head{align-items:center;margin-bottom:18px}.section-title{font-family:'Inter',sans-serif;font-size:24px;line-height:1.15;letter-spacing:-.55px}.workspace-intro{font-size:13px;line-height:1.55;margin-top:6px}
+.card,.intake-card,.review-queue,.cockpit-panel,.archive-detail,.import-ledger{background:#fff;border-color:var(--border);box-shadow:var(--shadow-card);border-radius:10px}
+.cockpit-layout{gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;min-height:680px}.cockpit-panel{border:0;border-radius:0;box-shadow:none}.cockpit-shelf{width:286px;min-width:286px;max-width:286px;border-right:1px solid var(--border)}.cockpit-chat{background:#fff;min-height:680px}.cockpit-panel-head{background:#fff;border-color:var(--border);padding:13px 15px}.cockpit-panel-title{font-family:'Inter',sans-serif;font-size:13px;color:var(--text)}
+.cockpit-shelf,.shelf-mode-tabs,.cockpit-shelf-search,.chat-wrap,.chat-input-row,.chips{background:#fff}.shelf-seed-item,.shelf-thread-item{background:#fff!important;border-left:2px solid transparent!important;border-bottom:1px solid #edf0ee!important}.shelf-seed-item:hover,.shelf-thread-item:hover{background:#f6f9f7!important;border-left-color:#157347!important}.shelf-seed-item.active{background:#edf6f0!important;border-left-color:#157347!important}
+.chat-messages{padding:28px 34px 18px}.chat-bubble.assistant{background:#f1f4f2;border:0;border-radius:4px 12px 12px 12px;color:#25302b;max-width:78%}.chat-bubble.user{background:#173e2d;color:#fff}.chat-input-row{border-color:var(--border);padding:14px 18px}.chat-input-row .chat-input{background:#fff;border-color:#bdc8c3;color:var(--text)}
+.btn-primary{background:#157347;color:#fff}.btn-primary:hover{background:#105c39}.btn-ghost{background:#fff;color:#3b4943;border-color:var(--border-bright)}.btn-ghost:hover{background:#f4f7f5;color:#12643e;border-color:#8da398}
+.journey-title{font-family:'Inter',sans-serif;letter-spacing:-1.1px}.journey-kicker{color:#157347!important}.journey-step,.source-method,.archive-map-card,.idea-card,.decision-card{background:#fff!important}.source-method.active{background:#173e2d;color:#fff;border-color:#173e2d}
+.platform-grid{grid-template-columns:1fr}.platform-card{display:grid;grid-template-columns:minmax(190px,1.1fr) minmax(330px,2fr) minmax(180px,1fr);align-items:center;gap:20px;border:1px solid var(--border)!important;border-top:1px solid var(--border)!important;border-radius:9px;background:#fff;padding:16px 18px}.platform-header{margin:0}.platform-stats{margin:0}.platform-bar{margin:0}
+.review-queue{margin-bottom:14px}.review-only{display:none}.review-mode .review-only{display:block}.library-mode .review-only{display:none}
+.overview-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:4px 0 22px}.overview-stat{background:#fff;border:1px solid var(--border);border-radius:9px;padding:15px}.overview-stat strong{display:block;font-size:22px;letter-spacing:-.7px}.overview-stat span{display:block;font-size:9px;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}.overview-stat button{border:0;background:none;color:#176442;padding:7px 0 0;font-size:9px;font-weight:700}.overview-lifecycle{grid-template-columns:1fr}.overview-lifecycle .card{min-height:250px}
+.tools-manager{width:min(900px,94vw);max-height:88vh;overflow:auto}.tools-manager-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--border)}.tools-manager-head h2{font:800 23px/1.2 'Inter',sans-serif;letter-spacing:-.6px;margin:5px 0}.tools-manager-head p{font-size:11px;color:var(--text-muted);margin:0;max-width:610px}.tools-policy{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.tools-policy>div{border:1px solid var(--border);border-radius:8px;padding:13px;background:#fafbfa}.tools-policy b{display:block;font-size:11px}.tools-policy span{display:block;color:var(--text-muted);font-size:9px;line-height:1.45;margin-top:4px}.tools-group-title{font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7d8983;margin:21px 0 9px}.tools-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.tool-card{border:1px solid var(--border);border-radius:9px;padding:14px;display:flex;gap:11px;background:#fff}.tool-mark{width:36px;height:36px;border-radius:8px;background:#123b2c;color:#fff;display:grid;place-items:center;font-size:9px;font-weight:850;flex:0 0 auto}.tool-card[data-tool="gmail"] .tool-mark{background:#d8483e}.tool-card[data-tool="google_drive"] .tool-mark,.tool-card[data-tool="google_calendar"] .tool-mark{background:#376fdd}.tool-info{flex:1;min-width:0}.tool-info b{font-size:11px}.tool-info p{font-size:9px;line-height:1.45;color:var(--text-muted);margin:4px 0 10px}.tool-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}.tool-state{font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#65716b}.tool-action{border:1px solid var(--border-bright);background:#fff;color:#176442;border-radius:6px;padding:6px 9px;font-size:9px;font-weight:750}.tool-action:disabled{color:#8b9590;background:#f5f7f6}.tool-action.danger{color:#a23f3f}.tools-error{display:none;margin-top:14px;border-left:3px solid var(--amber);background:#fff8ec;color:#76531f;padding:11px 13px;font-size:10px;line-height:1.45}
+@media(max-width:900px){body{padding-left:76px}.app-primary-nav{width:76px;padding:18px 10px}.app-primary-tab{justify-content:center;padding:12px}.app-primary-tab .nav-label,.nav-caption,.nav-divider{display:none}.library-subnav{left:76px;top:64px;width:180px;border:1px solid var(--border);box-shadow:0 12px 30px rgba(20,30,25,.1);padding:8px}.cockpit-shelf{width:250px;min-width:250px;max-width:250px}.platform-card{grid-template-columns:1fr}}
+@media(max-width:720px){body{padding-left:0;padding-bottom:66px}.navbar{padding:0 12px}.nav-brand{width:auto}.app-primary-nav{inset:auto 0 0 0;width:auto;height:64px;padding:7px 8px;flex-direction:row;border:0;border-top:1px solid var(--border);justify-content:space-around}.app-primary-tab{width:auto;min-width:62px;flex-direction:column;gap:3px;padding:6px 8px;font-size:10px}.app-primary-tab .nav-label{display:block}.library-subnav{position:fixed;left:8px;right:8px;top:auto;bottom:70px;width:auto}.section{padding:24px 14px}.cockpit-layout{display:block}.cockpit-shelf{width:100%;min-width:0;max-width:none;border-right:0;border-bottom:1px solid var(--border)}.platform-card{display:block}.platform-stats,.platform-bar{margin-top:14px}}
+@media(max-width:720px){.tools-grid,.tools-policy{grid-template-columns:1fr}.tools-manager{width:96vw;max-height:92vh}.tools-manager-head{padding-right:35px}.tools-manager-head h2{font-size:20px}}
+@media(max-width:1000px){.overview-summary{grid-template-columns:repeat(3,1fr)}}@media(max-width:620px){.overview-summary{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Approved visual direction applied to the real product DOM ─── */
+:root{--bg-deep:#f3f5f4;--bg-card:#fff;--bg-elevated:#eef2f0;--surface:#fff;--surface-raised:#f8faf9;--border:#d9dfdc;--border-bright:#bdc8c2;--text:#111916;--text-secondary:#415049;--text-muted:#6d7973;--text-dim:#8b9690;--accent:#1f8a55;--accent-glow:rgba(31,138,85,.1);--green:#28b86c;--green-glow:rgba(40,184,108,.1);--cyan:#4073db;--cyan-glow:rgba(64,115,219,.09);--blue:#5b76f7;--blue-glow:rgba(91,118,247,.1);--purple:#745ab0;--purple-glow:rgba(116,90,176,.09)}
+body{background:#f3f5f4}
+.navbar{background:linear-gradient(90deg,#0d3527 0,#0d3527 224px,#fff 224px,#fff 100%);border-bottom:1px solid var(--border);box-shadow:none}.nav-brand{color:#47d486}.nav-brand em{color:#fff}.navbar .nav-btn{background:#fff;color:#394740;border-color:var(--border)}.navbar .nav-btn:hover{background:#f3f7f5;color:#176442;border-color:#9fb1a8}.navbar .nav-avatar{background:#0d3527;color:#fff;border:0}
+.app-primary-nav{background:#0d3527;border-right:0;color:#fff}.app-primary-tab{color:#a8beb5}.app-primary-tab:hover{background:rgba(255,255,255,.055);color:#fff}.app-primary-tab.active{background:rgba(71,212,134,.13);color:#fff}.app-primary-tab.active .nav-glyph{color:#47d486}.nav-divider{background:rgba(255,255,255,.09)}.nav-caption{color:#6f9383}.library-subnav{background:#0d3527}.library-view-tab{color:#96afa4}.library-view-tab:hover{background:rgba(255,255,255,.055);color:#fff}.library-view-tab.active{background:rgba(71,212,134,.12);color:#fff}
+.section{max-width:1500px;padding:31px 34px 42px}.section-title{font-family:'Inter',sans-serif;font-size:27px;font-weight:800;letter-spacing:-.8px}.journey-kicker{color:#268257!important;font-size:9px;letter-spacing:.13em}.workspace-intro{max-width:720px}.card,.intake-card,.review-queue,.archive-detail,.import-ledger{border-radius:10px;box-shadow:0 1px 2px rgba(13,38,28,.03)}
+#section-workspace .section-head{margin-bottom:20px}#section-workspace .section-title{font-family:Georgia,'Times New Roman',serif;font-size:31px;letter-spacing:-.8px}.cockpit-layout{min-height:710px;border-radius:12px;box-shadow:0 18px 45px rgba(18,42,32,.055)}.cockpit-shelf{background:#fafbfa;width:244px;min-width:244px;max-width:244px}.cockpit-panel-head{height:50px;padding:0 15px;background:#fff}.cockpit-panel-title{font-size:11px;font-weight:750}.shelf-mode-tabs{padding:8px;background:#fafbfa}.shelf-mode-tab{border-radius:6px;font-size:10px}.cockpit-shelf-search{padding:10px 11px}.shelf-seed-item,.shelf-thread-item{padding:11px 12px!important;background:#fafbfa!important;border-left:2px solid transparent!important}.shelf-seed-item:hover,.shelf-thread-item:hover{background:#eff5f1!important}.shelf-seed-item.active{background:#e6f2eb!important;border-left-color:#28b86c!important}.shelf-seed-title,.shelf-thread-title{font-size:11px!important}.cockpit-chat{background:#fff}.chat-messages{padding:36px clamp(28px,5vw,72px) 20px}.chat-bubble.assistant{background:#f2f5f3;color:#29352f;max-width:82%;line-height:1.65}.chat-bubble.user{background:#0d3527}.chips{background:#fff;padding-left:18px;padding-right:18px}.chip{background:#fff;border-color:var(--border);color:#5d6963}.chat-input-row{padding:13px 18px;background:#fff}.chat-input-row .chat-input{border-color:#bfc9c4;box-shadow:none}.cockpit-inspector{background:#fbfcfb;border-left:1px solid var(--border)}
+.review-queue{background:#fff}.review-queue-head{padding:16px 18px}.candidate-card{background:#fafbfa;border-radius:8px}.archive-map-card,.idea-card,.decision-card{border-radius:8px!important;box-shadow:none!important}.archive-map-card:hover,.idea-card:hover,.decision-card:hover{border-color:#7ca18e!important;box-shadow:0 8px 22px rgba(13,53,39,.07)!important}.platform-card{box-shadow:none}.garden-grid .card{background:#fff}.source-method.active{background:#0d3527;border-color:#0d3527}.btn-primary{background:#0d4b35}.btn-primary:hover{background:#0a3b2a}.seed-badge,.mode-badge{border-radius:5px!important}
+@media(max-width:900px){.navbar{background:#fff}.nav-brand em{color:#111916}.app-primary-nav{background:#0d3527}.library-subnav{background:#0d3527}}
+
+/* ── Workspace playground: homepage dark canvas + green side panels ── */
+#section-workspace{
+  max-width:none;
+  width:100%;
+  min-height:calc(100vh - 60px);
+  margin:0;
+  box-sizing:border-box;
+  color:#edf7f1;
+  background:
+    radial-gradient(circle at 72% 0,rgba(38,130,87,.12),transparent 30%),
+    linear-gradient(180deg,#08130e 0%,#050c09 100%);
+}
+#section-workspace .section-head{padding:4px 2px 2px}
+#section-workspace .section-title{color:#f1f8f4}
+#section-workspace .workspace-intro{color:#9cb1a6}
+#section-workspace .section-head>div:last-child>span{color:#8fa69b!important}
+#section-workspace .section-head .seed-badge{background:#143d2d!important;color:#8fe0b3!important;border-color:#2c674d!important}
+#section-workspace .section-head .btn-ghost{background:#102219;color:#c7d9cf;border-color:#345244}
+#section-workspace .section-head .btn-ghost:hover{background:#173326;color:#fff;border-color:#47d486}
+#section-workspace .cockpit-layout{background:#07110d;border-color:#244537;box-shadow:0 22px 54px rgba(4,18,12,.18)}
+#section-workspace .cockpit-chat,
+#section-workspace .chat-wrap,
+#section-workspace .chat-messages{background:#07110d;color:#edf7f1}
+#section-workspace .cockpit-shelf,
+#section-workspace .cockpit-inspector{background:#0d3527;border-color:#255642;color:#e7f3ec}
+#section-workspace .cockpit-panel-head{background:#103d2d;border-color:#275843}
+#section-workspace .cockpit-panel-title{color:#f2faf5}
+#section-workspace .cockpit-collapse{background:#164936;border-color:#32634e;color:#bcd5c8}
+#section-workspace .shelf-mode-tabs,
+#section-workspace .cockpit-shelf-search{background:#0d3527;border-color:#255642}
+#section-workspace .shelf-mode-tab{color:#9ebcaf}
+#section-workspace .shelf-mode-tab.active{background:#174b37;color:#fff;border-color:#47d486}
+#section-workspace .cockpit-shelf-search input{background:#09291e;border-color:#2b5b47;color:#edf7f1}
+#section-workspace .cockpit-shelf-search input::placeholder{color:#78998a}
+#section-workspace .shelf-seed-item,
+#section-workspace .shelf-thread-item{background:#0d3527!important;border-bottom-color:#204d3a!important;color:#e7f3ec!important}
+#section-workspace .shelf-seed-item:hover,
+#section-workspace .shelf-thread-item:hover{background:#154634!important;border-left-color:#47d486!important}
+#section-workspace .shelf-seed-item.active{background:#19513c!important;border-left-color:#47d486!important}
+#section-workspace .shelf-seed-title,
+#section-workspace .shelf-thread-title{color:#f1f8f4!important}
+#section-workspace .shelf-seed-meta,
+#section-workspace .shelf-thread-meta{color:#91afa1!important}
+#section-workspace .chat-bubble.system{color:#759486}
+#section-workspace .chat-bubble.assistant{background:#111f19;color:#dce9e2;border:1px solid #243d31}
+#section-workspace .chat-bubble.assistant h1,
+#section-workspace .chat-bubble.assistant h2,
+#section-workspace .chat-bubble.assistant h3{color:#f2f8f4}
+#section-workspace .chat-bubble.assistant code,
+#section-workspace .chat-bubble.assistant pre{background:#08140f;border-color:#294337;color:#dce9e2}
+#section-workspace .chat-bubble.user{background:#176b49;color:#fff}
+#section-workspace .chips{background:#0a1711;border-color:#22392f}
+#section-workspace .chip{background:#102219;border-color:#294438;color:#a9c0b5}
+#section-workspace .chip:hover{background:#163326;border-color:#47d486;color:#fff}
+#section-workspace .chat-input-row{background:#0a1711;border-color:#22392f}
+#section-workspace .chat-input-row .chat-input{background:#101f18;border-color:#345244;color:#f2f8f4}
+#section-workspace .chat-input-row .chat-input::placeholder{color:#789084}
+#section-workspace .ws-inline-staging{background:#0d1c15;border-color:#294337}
+#section-workspace .cockpit-inspector .seed-detail-section h4{color:#85aa98}
+#section-workspace .cockpit-inspector .seed-detail-section p{color:#c8dacf}
+#section-workspace .cockpit-lineage-canvas,
+#section-workspace .cockpit-provenance-box{background:#09291e;border-color:#2b5b47;color:#a9c2b5}
+
+/* ── Blackout shell: green navigation column, dark product canvas ── */
+:root{
+  --bg-deep:#050c09;--bg-card:#0b1510;--bg-elevated:#111f19;
+  --surface:#0b1510;--surface-raised:#111f19;
+  --border:#22372d;--border-bright:#345244;
+  --text:#edf7f1;--text-secondary:#c6d7ce;--text-muted:#91a69b;--text-dim:#6f887b;
+  --accent:#47d486;--accent-glow:rgba(71,212,134,.12);--green:#47d486;--green-glow:rgba(71,212,134,.12);
+  --shadow-card:0 1px 2px rgba(0,0,0,.22);
+}
+body{background:#050c09;color:var(--text)}
+.navbar{background:linear-gradient(90deg,#0d3527 0,#0d3527 224px,#07110d 224px,#07110d 100%);border-bottom-color:#1e3229}
+.navbar .nav-btn{background:#0e1c16;color:#b6cabf;border-color:#294337}.navbar .nav-btn:hover{background:#163326;color:#fff;border-color:#47d486}
+.navbar .nav-avatar{background:#176b49;color:#fff}.navbar #project-filter{background:#101f18!important;color:#eaf4ee!important;border-color:#345244!important}
+.app-primary-nav,.library-subnav{background:#0d3527}
+.section{background:#050c09;color:var(--text)}
+.section-title,.journey-title{color:#f1f8f4}.workspace-intro,.journey-copy{color:#9cb1a6}
+.card,.intake-card,.review-queue,.archive-detail,.import-ledger,.platform-card,.overview-stat,.candidate-card,.tool-card,.tools-policy>div,.snippet-card{background:#0b1510!important;border-color:#22372d!important;color:#edf7f1!important}
+.card-header,.review-queue-head,.import-ledger-head,.archive-detail-head{background:#0d1913;border-color:#22372d}
+.btn-ghost{background:#101f18;color:#c6d7ce;border-color:#345244}.btn-ghost:hover{background:#173326;color:#fff;border-color:#47d486}
+.btn-primary{background:#176b49;color:#fff}.btn-primary:hover{background:#1b7d55}
+.filter-select,.modal input,.modal select,.modal textarea,.intake-textarea,.chat-input,.search-wrap input,.setting-row input,.setting-row select{background:#101f18!important;color:#edf7f1!important;border-color:#345244!important}
+.source-method,.journey-step,.archive-map-card,.idea-card,.decision-card,.library-view-tab{background:#0b1510!important;color:#a9bdb2!important;border-color:#294337!important}
+.source-method.active,.library-view-tab.active{background:#153d2d!important;color:#fff!important;border-color:#47d486!important}
+.archive-map-card:hover,.idea-card:hover,.decision-card:hover{background:#101f18!important;border-color:#47d486!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important}
+.modal,.modal-content{background:#0b1510!important;color:#edf7f1}.modal-overlay{background:rgba(0,0,0,.78)}
+.overview-stat button,.journey-kicker{color:#47d486!important}
+.tools-manager-head,.tools-policy,.tool-foot{border-color:#22372d}.tool-action{background:#101f18;color:#78dfa6;border-color:#345244}.tool-action:disabled{background:#0d1813;color:#6f887b}
+.privacy-toggle-item,.plan-tier-card,.r-stat,.pattern-item{background:#101f18;border-color:#294337;color:#edf7f1}
+.section input,.section select,.section textarea{background:#101f18;color:#edf7f1;border-color:#345244}
+.section input::placeholder,.section textarea::placeholder{color:#71877c}
+
+/* Project Memory/Summary and Context belong to the blackout canvas, not the green navigation rail. */
+#section-workspace .cockpit-shelf,
+#section-workspace .cockpit-inspector{background:#09130e;border-color:#294337;color:#edf7f1}
+#section-workspace .cockpit-panel-head{background:#0d1913;border-color:#294337}
+#section-workspace .shelf-mode-tabs,
+#section-workspace .cockpit-shelf-search{background:#09130e;border-color:#294337}
+#section-workspace .shelf-seed-item,
+#section-workspace .shelf-thread-item{background:#09130e!important;border-bottom-color:#1e3328!important}
+#section-workspace .shelf-seed-item:hover,
+#section-workspace .shelf-thread-item:hover{background:#102219!important}
+#section-workspace .shelf-seed-item.active{background:#143326!important}
+#section-workspace .cockpit-lineage-canvas,
+#section-workspace .cockpit-provenance-box{background:#07110d;border-color:#294337}
+@media(max-width:900px){.navbar{background:#07110d}.nav-brand em{color:#fff}}
+
+/* Impeccable guided legibility and navigation pass */
+.section{padding-top:42px;padding-bottom:64px}
+.section-head{margin-bottom:28px}
+.section-title{font-size:clamp(27px,2.4vw,36px);line-height:1.12;letter-spacing:-.035em}
+.workspace-intro,.journey-copy{font-size:15px;line-height:1.65;max-width:68ch}
+.journey-kicker{font-size:11px!important;letter-spacing:.12em}
+.app-primary-tab{font-size:14px;min-height:43px}
+.library-view-tab,.source-method{font-size:12px}
+.card-header h3,.review-queue-head strong{font-size:16px;line-height:1.3}
+.card-body,.review-queue,.intake-card{font-size:14px;line-height:1.6}
+.review-queue-head{padding:20px 22px}
+.candidate-grid{padding:18px;gap:14px}
+.candidate-card{padding:18px}
+.candidate-card h4{font-size:16px;line-height:1.35}
+.candidate-card p,.candidate-card blockquote,.candidate-source{font-size:13px;line-height:1.55}
+.review-empty{padding:12px 8px 18px;max-width:52ch}.review-empty strong{display:block;font-size:15px;color:#eaf5ee}.review-empty p{font-size:13px;line-height:1.55;color:#a4b9ad;margin:6px 0 16px}
+.seed-badge,.mode-badge{background:#153d2d!important;color:#a8e9c4!important;border:1px solid #2f664b!important;font-size:11px!important}
+.overview-stat{padding:20px;min-height:122px}
+.overview-summary{gap:0;background:#0b1510;border:1px solid #294337;border-radius:10px;overflow:hidden}
+.overview-stat{border:0!important;border-radius:0!important;border-right:1px solid #22372d!important;background:transparent!important}
+.overview-stat:last-child{border-right:0!important}
+.overview-stat strong{font-size:29px}.overview-stat span{font-size:11px}.overview-stat button{font-size:12px;cursor:pointer}
+.tool-info b{font-size:14px}.tool-info p,.tools-policy span,.tools-manager-head p{font-size:12px;line-height:1.55}.tool-state,.tool-action{font-size:11px}
+.tools-group-title{font-size:11px}.tools-policy b{font-size:13px}
+.snippet-card h4{font-size:15px}.snippet-card p,.snippet-card pre{font-size:12px;line-height:1.6}
+.section input::placeholder,.section textarea::placeholder{color:#91a69b}
+.nav-caption{color:#aac8b9}
+.app-primary-tab:focus-visible,.library-view-tab:focus-visible,.btn:focus-visible,.source-method:focus-visible{outline:2px solid #7ae3aa;outline-offset:2px}
+@media(max-width:720px){
+  body{padding-bottom:76px}
+  .section{padding:30px 20px 54px}
+  .section-title{font-size:28px}
+  .app-primary-nav{height:76px;justify-content:flex-start;gap:4px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:7px 10px;background:#0d3527}
+  .app-primary-nav{scrollbar-width:none}.app-primary-nav::-webkit-scrollbar{display:none}
+  .app-primary-tab{flex:0 0 auto;min-width:90px;min-height:58px;padding:7px 9px;gap:4px;scroll-snap-align:start;font-size:11px;line-height:1.15}
+  .app-primary-tab .nav-label{white-space:normal;text-align:center}
+  .library-subnav{bottom:84px}
+  .review-queue-head{padding:17px;gap:12px}
+  .review-queue-head strong{font-size:15px}
+  .overview-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+  .overview-stat{padding:15px;min-height:112px;border-bottom:1px solid #22372d!important}
+  .overview-stat:nth-child(2n){border-right:0!important}
+  .overview-stat:nth-last-child(-n+2){border-bottom:0!important}
+}
 </style>
 </head>
 <body>
@@ -1110,7 +1314,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
       <option value="">All Projects</option>
       <option value="default_project">Default Project</option>
     </select>
-    <button class="nav-btn nav-btn-labeled" aria-label="Open prompt tools" onclick="openModal('snippets-modal')">
+    <button class="nav-btn nav-btn-labeled" aria-label="Open prompt tools" onclick="switchDashTab('prompt')">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 1v14M11 1v14M1 5h14M1 11h14"/></svg>
       <span>Prompt tools</span>
     </button>
@@ -1154,16 +1358,32 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
   </div>
 </div>
 
-<!-- ── Product navigation: one library, one workspace, one overview ── -->
+<!-- ── Persistent product navigation ── -->
 <div class="app-primary-nav" aria-label="Primary navigation">
-  <button class="app-primary-tab active" data-primary="workspace" onclick="switchDashTab('workspace')">Workspace</button>
-  <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')">Library</button>
-  <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')">Overview</button>
+  <button class="app-primary-tab active" data-primary="workspace" onclick="switchDashTab('workspace')"><span class="nav-glyph">◫</span><span class="nav-label">Workspace</span></button>
+  <button class="app-primary-tab" data-primary="review" onclick="switchDashTab('review')"><span class="nav-glyph">✓</span><span class="nav-label">Review</span></button>
+  <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')"><span class="nav-glyph">≡</span><span class="nav-label">Library</span></button>
+  <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')"><span class="nav-glyph">⌁</span><span class="nav-label">Overview</span></button>
+  <button class="app-primary-tab" data-primary="tools" onclick="openToolsManager()"><span class="nav-glyph">⌘</span><span class="nav-label">Tools</span></button>
+  <button class="app-primary-tab" data-primary="prompt" onclick="switchDashTab('prompt')"><span class="nav-glyph">#</span><span class="nav-label">Prompt Engine</span></button>
+  <button class="app-primary-tab" data-primary="settings" onclick="switchDashTab('account')"><span class="nav-glyph">⚙</span><span class="nav-label">Settings</span></button>
+  <a class="app-primary-tab" href="/admin" style="text-decoration:none"><span class="nav-glyph">⌂</span><span class="nav-label">Admin Portal</span></a>
+  <div class="nav-divider"></div><div class="nav-caption">Workspace</div>
+</div>
+
+<div class="section" id="section-tools" style="display:none">
+  <div class="tools-manager" style="width:100%;max-height:none">
+    <div class="tools-manager-head"><div><div class="journey-kicker">Workspace tools</div><h2>Bring the services you already use.</h2><p>Connect a tool once, review what it can access, and use it inside the project where it belongs. Tool states below come from the server.</p></div></div>
+    <div class="tools-policy"><div><b>Project access stays contextual</b><span>Connected material appears as a source, attachment, or requested action—not another disconnected destination.</span></div><div><b>You control every connection</b><span>Credentials remain encrypted server-side. External writes require a separate confirmation.</span></div></div>
+    <div id="tools-manager-content"><div class="empty-state"><div class="empty-title">Loading tools…</div></div></div>
+    <div class="tools-error" id="tools-manager-error"></div>
+  </div>
 </div>
 <div class="library-subnav" id="library-subnav" aria-label="Library views">
   <button class="library-view-tab" data-library="map" onclick="switchDashTab('map')">Conversations</button>
   <button class="library-view-tab" data-library="browser" onclick="switchDashTab('browser')">Ideas & decisions</button>
   <button class="library-view-tab" data-library="intake" onclick="switchDashTab('intake')">Sources</button>
+  <button class="library-view-tab" data-library="artifacts" onclick="switchDashTab('artifacts')">Work artifacts</button>
 </div>
 
 <!-- ── Intake: the clear beginning of the product lifecycle ─────── -->
@@ -1274,7 +1494,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 <!-- ── Unified Workspace ──────────────────────────────────────────── -->
 <div class="section" id="section-workspace" style="display:none">
   <div class="section-head" style="display:flex; justify-content:space-between; align-items:center;">
-    <div><div class="section-title">Your workroom</div><p class="workspace-intro">Return to an idea, bring in new material, or turn what you have already learned into the next piece of work.</p></div>
+    <div><div class="section-title">Your workspace</div><p class="workspace-intro">Return to an idea, bring in new material, or turn what you have already learned into the next piece of work.</p></div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add or connect</button>
       <button class="btn btn-ghost btn-sm" onclick="openArtifactStudio()">Work artifacts</button>
@@ -1438,9 +1658,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
   </div>
 </div>
 
-<div class="modal-overlay" id="artifact-studio-modal" onclick="closeModalOnOverlay(event,'artifact-studio-modal')">
-  <div class="modal" style="max-width:920px">
-    <div style="display:flex;justify-content:space-between;align-items:center"><div><h2>Work artifacts</h2><p style="font-size:12px;color:var(--text-muted)">Turn workspace thinking into persistent plans, briefs, reports, task sets, and notes.</p></div><button class="btn btn-ghost" onclick="closeModal('artifact-studio-modal')">×</button></div>
+<div class="section" id="section-artifacts" style="display:none">
+  <div class="journey-shell">
+    <div class="section-head"><div><div class="journey-kicker">Library · Work artifacts</div><div class="section-title">Durable work, not disposable chat.</div><p class="workspace-intro">Create, revise, and export the plans, briefs, reports, task sets, and notes produced from your source-backed work.</p></div></div>
     <div style="display:grid;grid-template-columns:280px 1fr;gap:14px;margin-top:16px;min-height:430px">
       <div style="border-right:1px solid var(--border);padding-right:12px"><button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:10px" onclick="newArtifactDraft()">＋ New artifact</button><div id="artifact-list"></div></div>
       <div>
@@ -1460,36 +1680,22 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 <!-- ── Idea Garden ────────────────────────────────────────────────── -->
 <div class="section" id="section-garden">
   <div class="section-head">
-    <div><div class="journey-kicker">Overview</div><div class="section-title">Your work at a glance</div></div>
+    <div><div class="journey-kicker">Overview</div><div class="section-title">The state of your work.</div><p class="workspace-intro">Archive coverage, work awaiting your review, project continuity, and the progress of accepted ideas—without repeating the same metric under different names.</p></div>
   </div>
-  <div class="garden-grid">
+  <div class="overview-summary">
+    <div class="overview-stat"><strong id="ov-conversations">0</strong><span>Conversations</span><button onclick="switchDashTab('map')">Open library →</button></div>
+    <div class="overview-stat"><strong id="ov-sources">0</strong><span>Source providers</span><button onclick="switchDashTab('intake')">Manage sources →</button></div>
+    <div class="overview-stat"><strong id="ov-ideas">0</strong><span>Saved ideas</span><button onclick="switchDashTab('browser')">Browse ideas →</button></div>
+    <div class="overview-stat"><strong id="ov-decisions">0</strong><span>Decisions</span><button onclick="switchDashTab('browser')">View decisions →</button></div>
+    <div class="overview-stat"><strong id="ov-review">0</strong><span>Awaiting review</span><button onclick="switchDashTab('review')">Review now →</button></div>
+    <div class="overview-stat"><strong id="ov-projects">0</strong><span>Projects</span><button onclick="switchDashTab('workspace')">Continue work →</button></div>
+  </div>
+  <div class="garden-grid overview-lifecycle">
     <div class="card">
-      <div class="card-header"><h3>Seed Growth Rings</h3></div>
+      <div class="card-header"><h3>Idea progression</h3><span style="font-size:11px;color:var(--text-muted)">Accepted ideas only</span></div>
       <div class="card-body">
-        <div class="seed-ring-wrap" id="ring-chart-wrap">
-          <svg width="200" height="200" viewBox="0 0 200 200" id="ring-chart">
-            <circle cx="100" cy="100" r="90" fill="none" stroke="var(--border)" stroke-width="1" opacity=".3"/>
-            <circle cx="100" cy="100" r="70" fill="none" stroke="var(--border)" stroke-width="1" opacity=".3"/>
-            <circle cx="100" cy="100" r="50" fill="none" stroke="var(--border)" stroke-width="1" opacity=".3"/>
-            <!-- Rings drawn by JS -->
-            <circle id="ring-discovered" cx="100" cy="100" r="90" fill="none" stroke="var(--purple)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 565.5" transform="rotate(-90 100 100)" opacity=".85"/>
-            <circle id="ring-active" cx="100" cy="100" r="70" fill="none" stroke="var(--cyan)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 439.8" transform="rotate(-90 100 100)" opacity=".85"/>
-            <circle id="ring-completed" cx="100" cy="100" r="50" fill="none" stroke="var(--green)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 314.2" transform="rotate(-90 100 100)" opacity=".85"/>
-            <text x="100" y="96" text-anchor="middle" fill="var(--text)" font-size="28" font-weight="800" id="ring-center-count">0</text>
-            <text x="100" y="114" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-weight="600">TOTAL IDEAS</text>
-          </svg>
-        </div>
-        <div class="ring-legend">
-          <span class="leg-discovered">Discovered</span>
-          <span class="leg-active">Active</span>
-          <span class="leg-completed">Completed</span>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Lifecycle Pipeline</h3></div>
-      <div class="card-body garden-lifecycle" id="lifecycle-pipeline">
-        <!-- rendered by JS -->
+        <div class="garden-lifecycle" id="lifecycle-pipeline"></div>
+        <div id="continuity-overview" style="margin-top:20px"></div>
       </div>
     </div>
   </div>
@@ -1498,7 +1704,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 <!-- ── Cross-Platform Intelligence ────────────────────────────────── -->
 <div class="section" id="section-platforms">
   <div class="section-head">
-    <div class="section-title">Source coverage</div>
+    <div><div class="section-title">Source coverage</div><p class="workspace-intro">Providers actually represented in your archive. Connected services and available AI models are managed separately.</p></div>
   </div>
   <div class="platform-grid" id="platform-grid">
     <!-- rendered by JS -->
@@ -1518,11 +1724,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 
 <!-- ── Idea Browser ───────────────────────────────────────────────── -->
 <div class="section" id="section-browser">
-  <div class="review-queue">
+  <div class="section-head review-only"><div><div class="journey-kicker">Review</div><div class="section-title">Confirm what becomes part of your work</div><p class="workspace-intro">Seed Reflections proposes ideas and relationships from source evidence. Nothing becomes accepted knowledge until you decide.</p></div></div>
+  <div class="review-queue review-only">
     <div class="review-queue-head"><div><strong>Evidence Review Queue</strong><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Suggested intelligence stays here until you confirm it.</div></div><span id="candidate-count" class="seed-badge">0 pending</span></div>
     <div id="candidate-review-grid" class="candidate-grid"><div style="color:var(--text-muted);font-size:11px">No pending candidates.</div></div>
   </div>
-  <div class="review-queue">
+  <div class="review-queue review-only">
     <div class="review-queue-head"><div><strong>Related Work Suggestions</strong><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">Cross-conversation overlap is proposed from shared source language—not declared as semantic fact.</div></div><span id="candidate-link-count" class="seed-badge">0 pending</span></div>
     <div id="candidate-link-grid" class="candidate-grid"><div style="color:var(--text-muted);font-size:11px">No pending relationship suggestions.</div></div>
   </div>
@@ -1574,11 +1781,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
 <!-- ── Account, Plans & Privacy Settings ─────────────────────────── -->
 <div class="section" id="section-account" style="display:none;">
   <div class="section-head">
-    <div class="section-title">Settings</div>
-    <button class="btn btn-ghost" onclick="openModal('settings-modal')">Data, AI & portability</button>
+    <div><div class="journey-kicker">Settings</div><div class="section-title">Account, AI, data, and access.</div><p class="workspace-intro">Everything that governs how the platform works for you is visible here.</p></div>
   </div>
   
   <div class="account-grid">
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-header"><h3>Data & portability</h3></div>
+      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button><button class="btn btn-ghost btn-sm" onclick="exportInterchangePackage()">Export package v2</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-package-input').click()">Import package v2</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"><input id="import-package-input" type="file" accept=".zip,application/zip" hidden onchange="importInterchangePackage(event)"></div>
+    </div>
     
     <!-- Column 1: Usage Tracker -->
     <div class="card">
@@ -1909,18 +2119,16 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;ba
   </div>
 </div>
 
-<!-- ── Snippets Modal ──────────────────────────────────────────────── -->
-<div class="modal-overlay" id="snippets-modal" onclick="closeModalOnOverlay(event, 'snippets-modal')">
-  <div class="modal" style="max-width:800px">
-    <h2>Prompt Snippets Library</h2>
-    <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px">Quick templates to align external conversational LLMs, run drift checks, or document decision lineage.</p>
+<!-- ── Prompt Engine ──────────────────────────────────────────────── -->
+<div class="section" id="section-prompt" style="display:none">
+  <div class="journey-shell">
+    <div class="section-head"><div><div class="journey-kicker">Prompt Engine</div><div class="section-title">Carry intent between AI platforms.</div><p class="workspace-intro">Build recovery prompts, system instructions, new-thread handoffs, or use the complete set of seven universal continuity snippets.</p></div><a class="btn btn-primary" href="index.html#section-generator">Open guided prompt builder</a></div>
+    <div class="source-methods" style="margin-bottom:22px"><span class="source-method active">Recovery Prompt</span><span class="source-method">System Prompt</span><span class="source-method">New Thread</span><span class="source-method">Pre-made Snippets</span></div>
+    <h3 style="margin-bottom:5px">Seven universal SCIA utility prompts</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">The same canonical prompt set presented by the public Prompt Engine—available inside your workspace.</p>
     <div class="snippets-grid" id="snippets-grid">
       <!-- rendered by JS -->
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal('snippets-modal')">Done</button>
-    </div>
-  </div>
 </div>
 
 <!-- ── Create Project Modal ────────────────────────────────────────── -->
@@ -2117,10 +2325,12 @@ var ALL_PROJECTS = [];
 var ALL_DECISIONS = [];
 var ALL_CONFLICTS = [];
 var ALL_RELATIONSHIPS = [];
+var PENDING_CANDIDATE_COUNT = 0;
 var SELECTED_LINEAGE_CENTER_SEED = null;
 var SELECTED_GRAPH_NODE = null;
 var activeFocusSeedId = null;
 var uploadedConversations = [];
+var SOURCE_COVERAGE = [];
 var archiveConversationTotal = 0;
 var archiveConversationQuery = '';
 var selectedConvIds = new Set();
@@ -2162,6 +2372,7 @@ function productFetch(path, options) {
 
 /* ── Boot ──────────────────────────────────────────────────────────── */
 async function boot() {
+  await loadProductOverview();
   await loadAllSeeds();
   await loadArchiveThreads();
   await loadImportLedger();
@@ -2172,6 +2383,17 @@ async function boot() {
   await loadApiIntegrations();
   await loadLLMConfig();
   buildSnippetsGrid();
+}
+
+async function loadProductOverview() {
+  try {
+    var response = await productFetch('/overview');
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Overview unavailable');
+    SOURCE_COVERAGE = Array.isArray(data.source_coverage) ? data.source_coverage : [];
+  } catch (error) {
+    SOURCE_COVERAGE = [];
+  }
 }
 
 async function loadArchiveAnalysisOverview() {
@@ -2213,7 +2435,7 @@ async function mapEntireArchive() {
     await loadCandidateQueue();
     await loadCandidateLinkQueue();
     await loadArchiveAnalysisOverview();
-    switchDashTab('browser');
+    switchDashTab('review');
     showToast(job.candidates_created + ' new candidate(s) ready for review; ' + job.abstained + ' conversation(s) had no explicit evidence.');
   } catch (error) {
     showToast(error.message || 'Archive mapping failed.');
@@ -2404,9 +2626,10 @@ async function loadCandidateQueue() {
     var data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Candidate queue unavailable');
     var candidates = data.candidates || [];
+    PENDING_CANDIDATE_COUNT = candidates.length;
     if (count) count.textContent = candidates.length + ' pending';
     if (!candidates.length) {
-      grid.innerHTML = '<div style="color:var(--text-muted);font-size:11px">No pending candidates. Open a conversation in Archive Map and choose Map Ideas to create evidence-backed candidates.</div>';
+      grid.innerHTML = '<div class="review-empty"><strong>All proposed ideas are reviewed.</strong><p>Open a source conversation and map its ideas when you want to bring more work into this queue.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Browse conversations →</button></div>';
       return;
     }
     grid.innerHTML = candidates.map(function(item) {
@@ -2437,7 +2660,7 @@ async function loadCandidateLinkQueue() {
     var links = data.links || [];
     if (count) count.textContent = links.length + ' pending';
     if (!links.length) {
-      grid.innerHTML = '<div style="color:var(--text-muted);font-size:11px">No pending relationship suggestions. Suggestions appear only when separate conversations share enough specific source language.</div>';
+      grid.innerHTML = '<div class="review-empty"><strong>No relationships need a decision.</strong><p>Suggestions appear when separate conversations share specific source evidence.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Explore the archive →</button></div>';
       return;
     }
     grid.innerHTML = links.map(function(item) {
@@ -2507,7 +2730,7 @@ async function analyzeArchiveConversation(conversationId) {
     if (!response.ok) throw new Error(data.error || 'Analysis failed');
     await loadCandidateQueue();
     await loadCandidateLinkQueue();
-    switchDashTab('browser');
+    switchDashTab('review');
     var created = Number(data.created || data.candidates_created || 0);
     if (created) showToast(created + ' evidence-backed candidate(s) are ready for review.');
     else if (data.existing) showToast(data.existing + ' existing candidate(s) were preserved; no duplicates were created.');
@@ -2634,13 +2857,15 @@ function renderGarden() {
   var comp = ALL_SEEDS.filter(function(s){ return s.status === 'completed'; }).length;
   var ab = ALL_SEEDS.filter(function(s){ return s.status === 'abandoned'; }).length;
   var total = ALL_SEEDS.length || 1;
-
-  document.getElementById('ring-center-count').textContent = ALL_SEEDS.length;
-
-  // Draw concentric rings SVG offsets
-  setRingOffset('ring-discovered', 2 * Math.PI * 90, disc / total);
-  setRingOffset('ring-active', 2 * Math.PI * 70, act / total);
-  setRingOffset('ring-completed', 2 * Math.PI * 50, comp / total);
+  var summary={
+    'ov-conversations': archiveConversationTotal || uploadedConversations.length,
+    'ov-sources': SOURCE_COVERAGE.length,
+    'ov-ideas': ALL_SEEDS.length,
+    'ov-decisions': ALL_DECISIONS.length,
+    'ov-review': PENDING_CANDIDATE_COUNT,
+    'ov-projects': ALL_PROJECTS.length
+  };
+  Object.keys(summary).forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=summary[id];});
 
   // Render pipeline
   var pipeline = document.getElementById('lifecycle-pipeline');
@@ -2649,17 +2874,11 @@ function renderGarden() {
   html += '<div class="lc-connector"></div>';
   html += '<div class="lc-node"><div class="lc-count">' + act + '</div><div class="lc-dot" style="border-color:var(--cyan);color:var(--cyan)">⚡</div><div class="lc-label">Active</div></div>';
   html += '<div class="lc-connector"></div>';
-  html += '<div class="lc-node"><div class="lc-count">' + act + '</div><div class="lc-dot" style="border-color:var(--green);color:var(--green)">🔨</div><div class="lc-label">Picked Up</div></div>';
-  html += '<div class="lc-connector"></div>';
   html += '<div class="lc-node"><div class="lc-count">' + comp + '</div><div class="lc-dot" style="border-color:var(--green);color:var(--green)">✓</div><div class="lc-label">Completed</div></div>';
   html += '</div>';
-
-  html += '<div class="lc-abandoned">';
-  html += '<div class="lca-label"><span>⚠️ ' + ab + ' ideas left behind waiting for recovery</span></div>';
-  html += '<div class="lca-bar"><div class="lca-bar-fill" style="width:' + Math.round((ab / total) * 100) + '%"></div></div>';
-  html += '</div>';
-
   pipeline.innerHTML = html;
+  var continuity=document.getElementById('continuity-overview');
+  if(continuity) continuity.innerHTML='<div class="lc-abandoned"><div class="lca-label"><span>'+ab+' accepted ideas are inactive and available for recovery</span><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'browser\')">Review ideas</button></div><div class="lca-bar"><div class="lca-bar-fill" style="width:'+Math.round((ab/total)*100)+'%"></div></div></div>';
 }
 
 function setRingOffset(id, circumference, pct) {
@@ -2670,24 +2889,22 @@ function setRingOffset(id, circumference, pct) {
 function renderPlatforms() {
   var grid = document.getElementById('platform-grid');
   if (!grid) return;
-  var platforms = Array.from(new Set(
+  var coverage = SOURCE_COVERAGE.length ? SOURCE_COVERAGE.slice() : Array.from(new Set(
     uploadedConversations.map(function(item){ return String(item.platform || 'unknown').toLowerCase(); })
-      .concat(ALL_SEEDS.map(function(item){ return String(item.platform || 'unknown').toLowerCase(); }))
-  )).filter(Boolean).sort(function(a,b){
-    var ac=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===a;}).length;
-    var bc=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===b;}).length;
-    return bc-ac || a.localeCompare(b);
+  )).filter(Boolean).map(function(provider){
+    var rows=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===provider;});
+    return {provider:provider,imports:0,conversations:rows.length,messages:rows.reduce(function(sum,item){return sum+Number(item.depth||item.message_count||0);},0)};
   });
-  if (!platforms.length) platforms=['unknown'];
+  coverage.sort(function(a,b){return Number(b.conversations||0)-Number(a.conversations||0)||String(a.provider).localeCompare(String(b.provider));});
 
   var html = '';
-  var totalConversations = uploadedConversations.length || 1;
+  var totalConversations = coverage.reduce(function(sum,item){return sum+Number(item.conversations||0);},0) || 1;
 
-  platforms.forEach(function(p) {
-    var list = ALL_SEEDS.filter(function(s){ return s.platform === p; });
-    var conversations=uploadedConversations.filter(function(item){return String(item.platform || 'unknown').toLowerCase()===p;});
-    var messageCount=conversations.reduce(function(sum,item){return sum+Number(item.depth || item.message_count || 0);},0);
-    var pct = Math.round((conversations.length / totalConversations) * 100);
+  coverage.forEach(function(item) {
+    var p=String(item.provider||'unknown').toLowerCase();
+    var list = ALL_SEEDS.filter(function(s){ return String(s.platform||'unknown').toLowerCase() === p; });
+    var conversationCount=Number(item.conversations||0), messageCount=Number(item.messages||0);
+    var pct = Math.round((conversationCount / totalConversations) * 100);
     var act = list.filter(function(s){ return s.status === 'active'; }).length;
     var done = list.filter(function(s){ return s.status === 'completed'; }).length;
     var ab = list.filter(function(s){ return s.status === 'abandoned'; }).length;
@@ -2700,7 +2917,7 @@ function renderPlatforms() {
     html += '<span class="platform-badge" style="background:var(--green-glow);color:var(--green)">Imported</span>';
     html += '</div>';
     html += '<div class="platform-stats">';
-    html += '<div class="ps"><div class="ps-val">' + conversations.length + '</div><div class="ps-label">Conversations</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + conversationCount + '</div><div class="ps-label">Conversations</div></div>';
     html += '<div class="ps"><div class="ps-val">' + messageCount + '</div><div class="ps-label">Messages</div></div>';
     html += '<div class="ps"><div class="ps-val">' + list.length + '</div><div class="ps-label">Ideas</div></div>';
     html += '<div class="ps"><div class="ps-val">' + (act+done+ab) + '</div><div class="ps-label">Classified</div></div>';
@@ -2711,7 +2928,7 @@ function renderPlatforms() {
     html += '</div></div>';
   });
 
-  grid.innerHTML = html;
+  grid.innerHTML = html || '<div class="empty-state"><div class="empty-title">No source coverage yet</div><div class="empty-sub">Add an export, document, pasted conversation, or connected source. Every identified provider will appear here automatically.</div><button class="btn btn-primary" onclick="openWorkspaceSources(\'upload\')">Add your first source</button></div>';
 }
 
 function changeLineageCenterSeed() {
@@ -4351,7 +4568,7 @@ async function runReflectionOnSelectedThreads() {
     renderShelfThreads();
     await loadCandidateQueue();
     await loadCandidateLinkQueue();
-    switchDashTab('browser');
+    switchDashTab('review');
     appendChat('### 🌱 Evidence Mapping Complete\n\n**' + created + ' candidates** are ready for review. ' + existing + ' existing candidates were preserved and ' + abstained + ' thread(s) produced no explicit evidence. Nothing was added to your ideas without confirmation.', 'assistant');
     showToast(created + ' candidate(s) ready for review.');
   } catch (error) {
@@ -4581,6 +4798,7 @@ function appendChat(text, role) {
 function escHtml(str) {
   return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+function escapeHtml(str) { return escHtml(str); }
 
 function animateCount(id, target) {
   var el = document.getElementById(id);
@@ -5028,7 +5246,61 @@ function closeModalOnOverlay(e, id) {
   if (e.target.classList.contains('modal-overlay')) closeModal(id);
 }
 
-async function openArtifactStudio(){openModal('artifact-studio-modal');await loadArtifacts();if(!document.getElementById('artifact-id').value)newArtifactDraft();}
+async function openToolsManager() {
+  switchDashTab('tools');
+  await loadWorkspaceTools();
+}
+
+function toolMark(tool) {
+  if (tool.id === 'gmail') return 'M';
+  if (tool.id === 'google_drive') return 'D';
+  if (tool.id === 'google_calendar') return '31';
+  if (tool.id === 'web') return 'WEB';
+  return 'SR';
+}
+
+function toolStateLabel(state) {
+  return ({ready:'Ready',connected:'Connected',authorization_required:'Not connected',configuration_required:'Setup required',attention:'Needs attention'})[state] || String(state || 'Unavailable').replace(/_/g,' ');
+}
+
+async function loadWorkspaceTools() {
+  var content=document.getElementById('tools-manager-content'),error=document.getElementById('tools-manager-error');
+  error.style.display='none'; content.innerHTML='<div class="empty-state"><div class="empty-title">Loading tools…</div></div>';
+  try {
+    var response=await productFetch('/tools'),data=await response.json();
+    if (!response.ok) throw new Error(data.error || 'Tools are unavailable');
+    var built=(data.tools||[]).filter(function(item){return item.category==='built_in'});
+    var external=(data.tools||[]).filter(function(item){return item.category==='external'});
+    function cards(items){return '<div class="tools-grid">'+items.map(function(tool){
+      var action='';
+      if(tool.state==='ready') action='<button class="tool-action" disabled>Available</button>';
+      else if(tool.connected) action='<button class="tool-action danger" onclick="disconnectWorkspaceTool(\''+escHtml(tool.id)+'\')">Disconnect</button>';
+      else if(tool.state==='configuration_required') action='<button class="tool-action" disabled title="Provider OAuth must be configured by the deployment owner">Setup required</button>';
+      else action='<button class="tool-action" onclick="connectWorkspaceTool(\''+escHtml(tool.id)+'\')">Connect</button>';
+      return '<article class="tool-card" data-tool="'+escHtml(tool.id)+'"><div class="tool-mark">'+escHtml(toolMark(tool))+'</div><div class="tool-info"><b>'+escHtml(tool.name)+'</b><p>'+escHtml(tool.description)+'</p><div class="tool-foot"><span class="tool-state">'+escHtml(toolStateLabel(tool.state))+'</span>'+action+'</div></div></article>';
+    }).join('')+'</div>';}
+    content.innerHTML='<div class="tools-group-title">Built into Seed Reflections</div>'+cards(built)+'<div class="tools-group-title">Available connections</div>'+cards(external);
+  } catch (cause) {
+    content.innerHTML=''; error.textContent=cause.message || 'Tools are unavailable'; error.style.display='block';
+  }
+}
+
+async function connectWorkspaceTool(toolId) {
+  var error=document.getElementById('tools-manager-error'); error.style.display='none';
+  try {
+    var response=await productFetch('/tools/'+encodeURIComponent(toolId)+'/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),data=await response.json();
+    if(!response.ok) throw new Error(data.error || 'Connection could not begin');
+    if(data.authorization_url){location.assign(data.authorization_url);return;}
+    await loadWorkspaceTools();
+  } catch(cause) {error.textContent=cause.message || 'Connection could not begin';error.style.display='block';}
+}
+
+async function disconnectWorkspaceTool(toolId) {
+  if(!confirm('Disconnect this tool from Seed Reflections? Imported sources will be preserved.'))return;
+  try{var response=await productFetch('/tools/'+encodeURIComponent(toolId)+'/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),data=await response.json();if(!response.ok)throw new Error(data.error);await loadWorkspaceTools();showToast('Tool disconnected.');}catch(cause){showToast(cause.message||'Tool could not be disconnected');}
+}
+
+async function openArtifactStudio(){switchDashTab('artifacts');await loadArtifacts();if(!document.getElementById('artifact-id').value)newArtifactDraft();}
 async function loadArtifacts(){
   var response=await productFetch('/artifacts'),data=await response.json();WORK_ARTIFACTS=data.artifacts||[];
   var list=document.getElementById('artifact-list');list.innerHTML=WORK_ARTIFACTS.map(function(a){return '<button class="btn btn-ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" onclick="editArtifact(\''+a.artifact_id+'\')"><strong>'+escapeHtml(a.title)+'</strong><div style="font-size:10px;color:var(--text-muted)">'+escapeHtml(a.type.replace('_',' '))+' · '+escapeHtml(a.status)+'</div></button>';}).join('')||'<div style="font-size:11px;color:var(--text-muted)">No artifacts yet.</div>';
@@ -5491,24 +5763,32 @@ async function restoreArchiveBackup(event) {
 function buildSnippetsGrid() {
   var snippets = [
     {
-      title: '🔗 Session Continuity',
-      desc: 'Resume a conversation with full context from a previous session.',
-      prompt: 'I\'m continuing a previous conversation about [TOPIC]. Here is the context from my last session:\\n\\n[Paste seed/handoff payload here]\\n\\nPlease pick up where we left off. Summarize what we established, then help me make progress on the next steps.'
+      title: 'Plant a Seed', desc: 'State the goal and constraints at the start so the model has a durable intent boundary.',
+      prompt: '🌱 SEED PLANT — SCIA v4.0\\n\\nMy intent for this conversation:\\n[YOUR GOAL HERE]\\n\\nKey constraints: [any limits]\\nSuccess looks like: [what done means]\\n\\nPlease confirm you\'ve received this seed and repeat it back before we begin.'
     },
     {
-      title: '🌫️ Drift Detection',
-      desc: 'Identify when you\'re drifting away from your original intent.',
-      prompt: 'Analyze this conversation for topic drift. My original intent was: [ORIGINAL GOAL]\\n\\nPlease identify:\\n1. Where I started drifting from the original topic\\n2. Which tangents were productive vs unproductive\\n3. How to get back on track\\n4. Key decisions that were made along the way'
+      title: 'Recover Ideas', desc: 'Find ideas, projects, and questions that were started but not completed.',
+      prompt: '🔍 SEED RECOVERY — SCIA v4.0\\n\\nReview this conversation and identify:\\n1. Every idea I mentioned but didn\'t complete\\n2. Every project I started but abandoned\\n3. Every question I raised but never answered\\n\\nFor each, give me: what it was, why it matters, and the single next action to pick it up.'
     },
     {
-      title: '🌱 Seed Extraction',
-      desc: 'Extract actionable ideas from a conversation transcript.',
-      prompt: 'Extract all actionable ideas, plans, and decisions from this conversation:\\n\\n[Paste conversation here]\\n\\nFor each idea, provide:\\n- A clear title\\n- Description of the intent\\n- Status (active/discovered/completed/abandoned)\\n- Confidence level (0-100%)\\n- Suggested next steps'
+      title: 'Coherence Check', desc: 'Compare the current direction with the original goal and identify drift.',
+      prompt: '📊 COHERENCE CHECK — SCIA v4.0\\n\\nOriginal goal: [paste your opening message]\\n\\nAre we still working toward that goal?\\nWhat have we drifted from?\\nWhat should we do next to get back on track?'
     },
     {
-      title: '📋 Decision Audit',
-      desc: 'Review and document decisions made across sessions.',
-      prompt: 'Review these conversation seeds and create a decision audit:\\n\\n[Paste seeds or conversation context]\\n\\nFor each decision identified:\\n1. What was decided\\n2. What alternatives were considered\\n3. What evidence supported the decision\\n4. What risks or unknowns remain\\n5. Recommended follow-up actions'
+      title: 'Handoff Summary', desc: 'Produce a portable session bundle for continuing in another conversation or model.',
+      prompt: '📋 SESSION HANDOFF — SCIA v4.0\\n\\nGenerate a handoff summary I can paste into a new conversation:\\n1. My original goal\\n2. What we accomplished\\n3. What\'s still unfinished\\n4. The exact next step\\n5. Any important context a new session needs'
+    },
+    {
+      title: 'Priority Recovery', desc: 'Rank abandoned ideas by impact, effort, and urgency.',
+      prompt: '🎯 PRIORITY RECOVERY — SCIA v4.0\\n\\nFrom this conversation, list every abandoned idea.\\nScore each on:\\n- Impact (1-10): how much does completing this matter?\\n- Effort (1-10): how hard is it?\\n- Urgency (high/medium/low)\\n\\nSort by Impact/Effort ratio. Tell me what to do first.'
+    },
+    {
+      title: 'Provenance Stamp', desc: 'Request an alignment and provenance receipt with the response.',
+      prompt: '✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\\n\\nPlease end your response with a Provenance Stamp block:\\n\\n[SEED-SIG]\\nContent-Hash: {first 8 chars of SHA-256 of response}\\nIntent-Preserved: {yes/partial/no}\\nDrift-Score: {0-100, where 0 = perfect alignment}\\nNext-Seed: {the logical next question or action}\\n[/SEED-SIG]'
+    },
+    {
+      title: 'Project Bootstrap', desc: 'Turn a fresh idea into milestones, dependencies, and success criteria.',
+      prompt: '🚀 PROJECT BOOTSTRAP — SCIA v4.0\\n\\nIdea: [YOUR IDEA]\\n\\nHelp me structure this as a Seed Reflections project:\\n1. Core intent (one sentence)\\n2. Top 5 seeds (specific, actionable tasks)\\n3. Dependencies between seeds\\n4. What to build first and why\\n5. Success criteria for the whole project'
     }
   ];
 
@@ -5541,14 +5821,10 @@ function showSourceMethod(method) {
 
 function openWorkspaceSources(method) {
   showSourceMethod(method || 'upload');
-  var intake=document.getElementById('section-intake');
-  intake.classList.add('workspace-source-overlay'); intake.style.display='block';
-  var close=intake.querySelector('.workspace-source-close'); if (close) close.style.display='inline-flex';
+  switchDashTab('intake');
 }
 function closeWorkspaceSources() {
-  var intake=document.getElementById('section-intake');
-  intake.classList.remove('workspace-source-overlay'); intake.style.display='none';
-  var close=intake.querySelector('.workspace-source-close'); if (close) close.style.display='none';
+  switchDashTab('workspace');
 }
 
 /* ── Dashboard Tab Switching ────────────────────────────────────────── */
@@ -5556,8 +5832,8 @@ function switchDashTab(tabId) {
   if (tabId === 'library') tabId='map';
   if (tabId === 'garden') tabId='overview';
   if (tabId === 'intelligence') tabId='workspace';
-  var libraryViews=['intake','map','browser'];
-  var primary=libraryViews.indexOf(tabId)>=0 ? 'library' : (tabId==='overview' ? 'overview' : (tabId==='workspace' ? 'workspace' : 'settings'));
+  var libraryViews=['intake','map','browser','artifacts'];
+  var primary=tabId==='review' ? 'review' : (libraryViews.indexOf(tabId)>=0 ? 'library' : (tabId==='overview' ? 'overview' : (tabId==='workspace' ? 'workspace' : (tabId==='tools' ? 'tools' : (tabId==='prompt' ? 'prompt' : 'settings')))));
   document.querySelectorAll('.app-primary-tab').forEach(function(tab){ tab.classList.toggle('active',tab.dataset.primary===primary); });
   var librarySubnav=document.getElementById('library-subnav');
   librarySubnav.classList.toggle('visible',primary==='library');
@@ -5565,8 +5841,17 @@ function switchDashTab(tabId) {
 
   document.getElementById('section-intake').style.display = (tabId === 'intake') ? 'block' : 'none';
   document.getElementById('section-map').style.display = (tabId === 'map') ? 'block' : 'none';
+  document.getElementById('section-artifacts').style.display = (tabId === 'artifacts') ? 'block' : 'none';
   document.getElementById('section-workspace').style.display = (tabId === 'workspace') ? 'block' : 'none';
-  document.getElementById('section-browser').style.display = (tabId === 'browser') ? 'block' : 'none';
+  document.getElementById('section-browser').style.display = (tabId === 'browser' || tabId === 'review') ? 'block' : 'none';
+  document.getElementById('section-browser').classList.toggle('review-mode',tabId==='review');
+  document.getElementById('section-browser').classList.toggle('library-mode',tabId==='browser');
+  var browserHead=document.querySelector('#section-browser .section-head:not(.review-only)');
+  var browserControls=document.querySelector('#section-browser .browser-controls');
+  var browserGrid=document.getElementById('seed-list');
+  if (browserHead) browserHead.style.display=tabId==='review'?'none':'flex';
+  if (browserControls) browserControls.style.display=tabId==='review'?'none':'flex';
+  if (browserGrid) browserGrid.style.display=tabId==='review'?'none':'';
   
   var gardenDisplay = (tabId === 'overview') ? 'block' : 'none';
   document.getElementById('section-garden').style.display = gardenDisplay;
@@ -5574,12 +5859,16 @@ function switchDashTab(tabId) {
   
   document.getElementById('section-intel').style.display = 'none';
   document.getElementById('section-account').style.display = (tabId === 'account') ? 'block' : 'none';
+  document.getElementById('section-tools').style.display = (tabId === 'tools') ? 'block' : 'none';
+  document.getElementById('section-prompt').style.display = (tabId === 'prompt') ? 'block' : 'none';
   
   localStorage.setItem('active_dash_tab', tabId);
   if (tabId === 'workspace') {
     setTimeout(function(){ renderLineageGraphSVG(); }, 50);
   }
   if (tabId === 'map') renderArchiveMap();
+  if (tabId === 'artifacts') loadArtifacts();
+  if (tabId === 'tools') loadWorkspaceTools();
 }
 
 /* ── Auto-resize chat input ────────────────────────────────────────── */

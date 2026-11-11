@@ -187,6 +187,9 @@ def _timestamp(value):
 
 def _platform(data, filename):
     sample = next((item for item in data if isinstance(item, dict)), {})
+    explicit = sample.get("platform") or sample.get("provider") or sample.get("source_platform")
+    if explicit:
+        return re.sub(r"[^a-z0-9_-]+", "_", str(explicit).strip().lower()).strip("_") or "unknown"
     if "mapping" in sample:
         return "chatgpt"
     if "chat_messages" in sample:
@@ -196,8 +199,14 @@ def _platform(data, filename):
     if "rollout" in sample or "turns" in sample or sample.get("platform") == "codex":
         return "codex"
     name = filename.lower()
-    for provider in ("chatgpt", "claude", "gemini", "codex"):
-        if provider in name: return provider
+    aliases = {
+        "openai":"chatgpt", "chatgpt":"chatgpt", "claude":"claude", "anthropic":"claude",
+        "gemini":"gemini", "bard":"gemini", "codex":"codex", "deepseek":"deepseek",
+        "perplexity":"perplexity", "grok":"grok", "xai":"grok", "mistral":"mistral",
+        "qwen":"qwen", "openrouter":"openrouter", "cursor":"cursor", "copilot":"copilot",
+    }
+    for provider, normalized in aliases.items():
+        if provider in name: return normalized
     return "generic"
 
 
@@ -693,6 +702,24 @@ def archive_analysis_overview():
         pending=db.execute("SELECT COUNT(*) FROM idea_candidates WHERE status='pending'").fetchone()[0]
     return {"total":total,"mapped":mapped,"unmapped":max(total-mapped,0),"with_evidence":with_evidence,
             "no_explicit_evidence":no_evidence,"pending_candidates":pending,"method":"evidence_rules_v1"}
+
+
+def source_coverage():
+    """Return the providers actually represented in the archive.
+
+    Coverage is deliberately data-driven: new/custom providers appear without a
+    frontend release, and unidentified records remain visible for correction.
+    """
+    initialize()
+    with _connect() as db:
+        rows=db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown')) provider,
+          COUNT(DISTINCT c.import_id) imports, COUNT(*) conversations,
+          COALESCE(SUM(c.message_count),0) messages,
+          MAX(COALESCE(c.updated_at,c.created_at,i.created_at)) last_activity
+          FROM conversations c LEFT JOIN imports i ON i.id=c.import_id
+          GROUP BY LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown'))
+          ORDER BY conversations DESC,provider""").fetchall()
+    return [dict(row) for row in rows]
 
 
 def run_archive_analysis(job_id):
