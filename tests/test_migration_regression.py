@@ -466,7 +466,16 @@ class TestDatabaseMigrationAndRegression(unittest.TestCase):
 
     def test_mock_llm_provider_paths(self):
         original_urlopen = urllib.request.urlopen
-        
+        # Local credential protection is Windows DPAPI only. Off Windows, substitute an
+        # in-memory store so the provider-mapping logic under test is still exercised.
+        vault = {}
+        credential_patches = [] if os.name == "nt" else [
+            patch.object(server, "store_model_credential", lambda workspace, provider, key, mode="local": vault.__setitem__((workspace, provider), key)),
+            patch.object(server, "load_model_credential", lambda workspace, provider: vault.get((workspace, provider), "")),
+        ]
+        for credential_patch in credential_patches:
+            credential_patch.start(); self.addCleanup(credential_patch.stop)
+
         with patch("urllib.request.urlopen") as mock_urlopen:
             def side_effect(req, *args, **kwargs):
                 if isinstance(req, str):

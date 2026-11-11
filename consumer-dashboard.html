@@ -1787,7 +1787,7 @@ body{background:#050c09;color:var(--text)}
   <div class="account-grid">
     <div class="card" style="grid-column:1/-1">
       <div class="card-header"><h3>Data & portability</h3></div>
-      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button><button class="btn btn-ghost btn-sm" onclick="exportInterchangePackage()">Export package v2</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-package-input').click()">Import package v2</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"><input id="import-package-input" type="file" accept=".zip,application/zip" hidden onchange="importInterchangePackage(event)"></div>
+      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"></div>
     </div>
     
     <!-- Column 1: Usage Tracker -->
@@ -1800,10 +1800,10 @@ body{background:#050c09;color:var(--text)}
         <div class="usage-metric">
           <div class="usage-metric-label">
             <span>Reflections Ingested</span>
-            <span id="u-reflect-text">84 / 250 reflections</span>
+            <span id="u-reflect-text">Usage unavailable</span>
           </div>
           <div class="usage-metric-bar">
-            <div class="usage-metric-fill" id="u-reflect-fill" style="background:var(--accent);width:33.6%"></div>
+            <div class="usage-metric-fill" id="u-reflect-fill" style="background:var(--accent);width:0%"></div>
           </div>
         </div>
         
@@ -1930,8 +1930,7 @@ body{background:#050c09;color:var(--text)}
             <div class="plan-tier-price">$9<span style="font-size:10px;font-weight:400">/mo</span></div>
             <ul class="plan-tier-features">
               <li>✓ 250 reflections / mo</li>
-              <li>✓ Unlimited seeds</li>
-              <li>✓ Persisted database</li>
+              <li>✓ Unlimited accepted ideas</li>
             </ul>
           </div>
           
@@ -1940,8 +1939,7 @@ body{background:#050c09;color:var(--text)}
             <div class="plan-tier-price">$20<span style="font-size:10px;font-weight:400">/mo</span></div>
             <ul class="plan-tier-features">
               <li>✓ Unlimited reflections</li>
-              <li>✓ Host Platform Master</li>
-              <li>✓ Priority parsing</li>
+              <li>✓ Unlimited accepted ideas</li>
             </ul>
           </div>
         </div>
@@ -2332,6 +2330,7 @@ var activeFocusSeedId = null;
 var uploadedConversations = [];
 var SOURCE_COVERAGE = [];
 var archiveConversationTotal = 0;
+var ARCHIVE_TOTALS = null;
 var archiveConversationQuery = '';
 var selectedConvIds = new Set();
 var expandedSeedIds = new Set();
@@ -2391,8 +2390,14 @@ async function loadProductOverview() {
     var data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Overview unavailable');
     SOURCE_COVERAGE = Array.isArray(data.source_coverage) ? data.source_coverage : [];
+    // Authoritative archive totals come from the server, not from whichever tab happened to load first.
+    ARCHIVE_TOTALS = {
+      conversations: Number(data.conversations != null ? data.conversations : data.total || 0),
+      pending: Number(data.pending != null ? data.pending : data.pending_candidates || 0)
+    };
   } catch (error) {
     SOURCE_COVERAGE = [];
+    ARCHIVE_TOTALS = null;
   }
 }
 
@@ -2626,8 +2631,12 @@ async function loadCandidateQueue() {
     var data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Candidate queue unavailable');
     var candidates = data.candidates || [];
-    PENDING_CANDIDATE_COUNT = candidates.length;
-    if (count) count.textContent = candidates.length + ' pending';
+    var pendingTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : candidates.length;
+    PENDING_CANDIDATE_COUNT = pendingTotal;
+    if (ARCHIVE_TOTALS) ARCHIVE_TOTALS.pending = pendingTotal;
+    if (count) count.textContent = pendingTotal > candidates.length
+      ? 'Showing ' + candidates.length + ' of ' + pendingTotal.toLocaleString() + ' pending'
+      : pendingTotal + ' pending';
     if (!candidates.length) {
       grid.innerHTML = '<div class="review-empty"><strong>All proposed ideas are reviewed.</strong><p>Open a source conversation and map its ideas when you want to bring more work into this queue.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Browse conversations →</button></div>';
       return;
@@ -2857,11 +2866,11 @@ function renderGarden() {
   var ab = ALL_SEEDS.filter(function(s){ return s.status === 'abandoned'; }).length;
   var total = ALL_SEEDS.length || 1;
   var summary={
-    'ov-conversations': archiveConversationTotal || uploadedConversations.length,
+    'ov-conversations': ARCHIVE_TOTALS ? ARCHIVE_TOTALS.conversations : (archiveConversationTotal || uploadedConversations.length),
     'ov-sources': SOURCE_COVERAGE.length,
     'ov-ideas': ALL_SEEDS.length,
     'ov-decisions': ALL_DECISIONS.length,
-    'ov-review': PENDING_CANDIDATE_COUNT,
+    'ov-review': ARCHIVE_TOTALS ? ARCHIVE_TOTALS.pending : PENDING_CANDIDATE_COUNT,
     'ov-projects': ALL_PROJECTS.length
   };
   Object.keys(summary).forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=summary[id];});
@@ -2916,11 +2925,14 @@ function renderPlatforms() {
     html += '<span class="platform-badge" style="background:var(--green-glow);color:var(--green)">Imported</span>';
     html += '</div>';
     html += '<div class="platform-stats">';
-    html += '<div class="ps"><div class="ps-val">' + conversationCount + '</div><div class="ps-label">Conversations</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + messageCount + '</div><div class="ps-label">Messages</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + list.length + '</div><div class="ps-label">Ideas</div></div>';
-    html += '<div class="ps"><div class="ps-val">' + (act+done+ab) + '</div><div class="ps-label">Classified</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + conversationCount.toLocaleString() + '</div><div class="ps-label">Conversations</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + messageCount.toLocaleString() + '</div><div class="ps-label">Messages</div></div>';
+    var analyzed = Number(item.analyzed || 0), pendingReview = Number(item.pending || 0), unreadable = Number(item.unreadable || 0);
+    html += '<div class="ps"><div class="ps-val">' + analyzed.toLocaleString() + '</div><div class="ps-label">Analyzed</div></div>';
+    html += '<div class="ps"><div class="ps-val">' + pendingReview.toLocaleString() + '</div><div class="ps-label">Awaiting review</div></div>';
     html += '</div>';
+    if (unreadable > 0) html += '<div class="coverage-partial" style="padding:8px 14px;font-size:11px">' + unreadable.toLocaleString() + ' conversation' + (unreadable === 1 ? '' : 's') + ' had no readable messages and cannot be analyzed.</div>';
+    else if (analyzed < conversationCount) html += '<div style="padding:8px 14px;font-size:11px;color:var(--text-muted)">' + (conversationCount - analyzed).toLocaleString() + ' not yet analyzed.</div>';
     html += '<div class="platform-bar">';
     html += '<div class="platform-bar-label"><span>Share of conversations</span><span>' + pct + '%</span></div>';
     html += '<div class="platform-bar-track"><div class="platform-bar-fill" style="background:' + color + ';width:' + pct + '%"></div></div>';
@@ -4208,6 +4220,7 @@ async function loadArchiveThreads(query, append) {
     if (!response.ok) throw new Error(data.error || 'Archive unavailable');
     archiveConversationTotal = Number(data.total == null ? (data.conversations || []).length : data.total);
     archiveConversationQuery = query;
+    if (!query && ARCHIVE_TOTALS) ARCHIVE_TOTALS.conversations = archiveConversationTotal;
     uploadedConversations = append ? uploadedConversations.concat(data.conversations || []) : (data.conversations || []);
     renderShelfThreads();
     renderArchiveMap();
@@ -5320,7 +5333,7 @@ async function loadAccountSettings() {
     
     // Profile
     document.getElementById('acc-name').value = cfg.user_name || 'Seed User';
-    document.getElementById('acc-email').value = cfg.user_email || 'user@seedreflections.com';
+    document.getElementById('acc-email').value = cfg.user_email || '';
     document.getElementById('u-profile-name').textContent = cfg.user_name || 'Seed User';
     document.getElementById('u-profile-email').textContent = cfg.user_email || 'user@seedreflections.com';
     
@@ -5334,7 +5347,7 @@ async function loadAccountSettings() {
     await loadModelCatalog(cfg.preferred_model_id || '');
     
     // Billing Plan
-    var plan = cfg.user_plan || 'pro';
+    var plan = cfg.user_plan || 'free';
     highlightPlanCard(plan);
     
     // Privacy Consent Toggles
@@ -5350,7 +5363,7 @@ async function loadAccountSettings() {
   } catch(e) {}
 }
 
-function highlightPlanCard(plan) {
+function highlightPlanCard(plan, skipUsage) {
   document.querySelectorAll('.plan-tier-card').forEach(function(c){ c.classList.remove('active'); });
   var badge = document.getElementById('tier-badge');
   if (plan === 'local') {
@@ -5366,20 +5379,19 @@ function highlightPlanCard(plan) {
     badge.style.background = plan === 'free' ? 'var(--border)' : (plan === 'master' ? 'var(--purple-glow)' : 'var(--green-glow)');
     badge.style.color = plan === 'free' ? 'var(--text-muted)' : (plan === 'master' ? 'var(--purple)' : 'var(--green)');
     
-    // Update usage limits dynamically
+    // Usage is shown only from real server data; never from per-plan placeholder numbers.
     var reflectText = document.getElementById('u-reflect-text');
     var reflectFill = document.getElementById('u-reflect-fill');
-    if (reflectText && reflectFill) {
-      if (plan === 'free') {
-        reflectText.textContent = '12 / 50 reflections';
-        reflectFill.style.width = '24%';
-      } else if (plan === 'pro') {
-        reflectText.textContent = '84 / 250 reflections';
-        reflectFill.style.width = '33.6%';
-      } else {
-        reflectText.textContent = '84 / Unlimited reflections';
-        reflectFill.style.width = '100%';
-      }
+    if (!skipUsage && reflectText && reflectFill) {
+      reflectText.textContent = 'Usage unavailable';
+      reflectFill.style.width = '0%';
+      fetch('/api/v1/users/me', {headers: localStorage.getItem('seedreflections_access_token') ? {'Authorization': 'Bearer ' + localStorage.getItem('seedreflections_access_token')} : {}}).then(function(r){ return r.ok ? r.json() : null; }).then(function(me){
+        if (!me || me.reflections_used == null || me.reflections_limit == null) return;
+        if (me.plan) highlightPlanCard(String(me.plan).toLowerCase(), true); // the enforced plan is the source of truth
+        var unlimited = Number(me.reflections_limit) >= 999999;
+        reflectText.textContent = Number(me.reflections_used).toLocaleString() + ' / ' + (unlimited ? 'Unlimited' : Number(me.reflections_limit).toLocaleString()) + ' reflections this month';
+        reflectFill.style.width = unlimited ? '0%' : Math.min(100, Math.round(Number(me.reflections_used) / Number(me.reflections_limit) * 100)) + '%';
+      }).catch(function(){});
     }
   }
 }
@@ -5739,6 +5751,15 @@ function exportAllSeeds() {
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('Seeds exported!');
+}
+
+function exportSeeds() {
+  var seeds = Array.isArray(ALL_SEEDS) ? ALL_SEEDS : [];
+  if (!seeds.length) { showToast('No accepted ideas to export yet.'); return; }
+  var blob = new Blob([JSON.stringify(seeds, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'seed-reflections-ideas-' + new Date().toISOString().slice(0,10) + '.json'; a.click(); URL.revokeObjectURL(a.href);
+  showToast(seeds.length + ' accepted idea' + (seeds.length === 1 ? '' : 's') + ' exported.');
 }
 
 async function downloadArchiveBackup() {

@@ -7,6 +7,7 @@ enterprise runtimes can use the same archive contract.
 
 from __future__ import annotations
 
+import bisect
 import hashlib
 import json
 import os
@@ -475,17 +476,33 @@ def import_text(text, title="Pasted conversation", filename="pasted-conversation
     return import_json(json.dumps(payload, ensure_ascii=False), filename)
 
 
+def _search_filter(query):
+    """Return (sql_where, params) shared by list and count so they always agree.
+
+    The query is tokenised into quoted FTS terms, so punctuation such as
+    "C++", "what?" or a bare AND cannot raise an FTS syntax error. Titles are
+    matched too, so conversations without messages stay findable.
+    """
+    text = (query or "").strip()
+    if not text:
+        return "1=1", ()
+    tokens = re.findall(r"\w+", text, re.UNICODE)
+    like = f"%{text}%"
+    if not tokens:
+        return "c.title LIKE ?", (like,)
+    fts = " ".join(f'"{token}"' for token in tokens)
+    return ("(c.id IN (SELECT conversation_id FROM archive_search WHERE archive_search MATCH ?) OR c.title LIKE ?)",
+            (fts, like))
+
+
 def list_conversations(query="", limit=500, offset=0):
     initialize()
     limit = max(1, min(int(limit), 2000))
+    where, params = _search_filter(query)
     with _connect() as db:
-        if query.strip():
-            rows = db.execute("""SELECT DISTINCT c.* FROM archive_search s
-              JOIN conversations c ON c.id=s.conversation_id
-              WHERE archive_search MATCH ? ORDER BY COALESCE(c.updated_at,c.created_at) DESC LIMIT ? OFFSET ?""",
-                              (query.replace('"', ' '), limit, offset)).fetchall()
-        else:
-            rows = db.execute("SELECT * FROM conversations ORDER BY COALESCE(updated_at,created_at) DESC LIMIT ? OFFSET ?", (limit,offset)).fetchall()
+        rows = db.execute(f"SELECT c.* FROM conversations c WHERE {where} "
+                          "ORDER BY COALESCE(c.updated_at,c.created_at) DESC LIMIT ? OFFSET ?",
+                          (*params, limit, offset)).fetchall()
     return [{"id": row["id"], "source_id": row["source_id"], "title": row["title"],
              "snippet": row["snippet"], "created_at": row["created_at"] or "—",
              "depth": row["message_count"], "platform": row["platform"], "import_id": row["import_id"]}
@@ -494,11 +511,9 @@ def list_conversations(query="", limit=500, offset=0):
 
 def count_conversations(query=""):
     initialize()
+    where, params = _search_filter(query)
     with _connect() as db:
-        if query.strip():
-            return db.execute("""SELECT COUNT(DISTINCT c.id) FROM conversations c LEFT JOIN messages m ON m.conversation_id=c.id
-              WHERE c.title LIKE ? OR m.content LIKE ?""",(f"%{query.strip()}%",f"%{query.strip()}%")).fetchone()[0]
-        return db.execute("SELECT COUNT(*) FROM conversations").fetchone()[0]
+        return db.execute(f"SELECT COUNT(*) FROM conversations c WHERE {where}", params).fetchone()[0]
 
 
 def get_conversation(conversation_id):
@@ -715,11 +730,18 @@ def source_coverage():
         rows=db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown')) provider,
           COUNT(DISTINCT c.import_id) imports, COUNT(*) conversations,
           COALESCE(SUM(c.message_count),0) messages,
+          SUM(CASE WHEN c.message_count=0 THEN 1 ELSE 0 END) unreadable,
+          SUM(CASE WHEN a.conversation_id IS NOT NULL THEN 1 ELSE 0 END) analyzed,
           MAX(COALESCE(c.updated_at,c.created_at,i.created_at)) last_activity
           FROM conversations c LEFT JOIN imports i ON i.id=c.import_id
+          LEFT JOIN conversation_analysis a ON a.conversation_id=c.id
           GROUP BY LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown'))
           ORDER BY conversations DESC,provider""").fetchall()
-    return [dict(row) for row in rows]
+        pending={row[0]:row[1] for row in db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown')),COUNT(*)
+          FROM idea_candidates k JOIN conversations v ON v.id=k.conversation_id WHERE k.status='pending' GROUP BY 1""")}
+    result=[dict(row) for row in rows]
+    for item in result: item["pending"]=pending.get(item["provider"],0)
+    return result
 
 
 def run_archive_analysis(job_id):
@@ -758,6 +780,57 @@ def _link_terms(text):
             if token not in _LINK_STOPWORDS and not token.isdigit()}
 
 
+MAX_LINKS_PER_CANDIDATE = 8
+
+
+def bounded_term_pairs(term_sets, conversation_ids, min_shared=2, max_per_item=MAX_LINKS_PER_CANDIDATE):
+    """Yield (i, j, shared_terms) for likely-related candidates without all-pairs work.
+
+    An inverted index finds only candidates that share terms; for terms common to a
+    large share of the archive only a bounded window of nearby postings is
+    inspected (so work stays linear without discarding the signal); and each candidate keeps at most
+    ``max_per_item`` links, so stored links grow linearly with candidates.
+    """
+    count = len(term_sets)
+    postings = {}
+    for index, terms in enumerate(term_sets):
+        for term in terms:
+            postings.setdefault(term, []).append(index)
+    document_frequency_cap = max(50, int(count * 0.02))
+    common_window = 200
+    degree = [0] * count
+    for i, left_terms in enumerate(term_sets):
+        if len(left_terms) < min_shared or degree[i] >= max_per_item:
+            continue
+        overlap = {}
+        for term in left_terms:
+            posting = postings.get(term, ())
+            if len(posting) > document_frequency_cap:
+                # Very common term: inspect only the next ``common_window`` postings
+                # so work stays linear, without discarding the signal entirely.
+                start = bisect.bisect_right(posting, i)
+                neighbours = posting[start:start + common_window]
+            else:
+                neighbours = (j for j in posting if j > i)
+            for j in neighbours:
+                overlap[j] = overlap.get(j, 0) + 1
+        scored = []
+        for j, hits in overlap.items():
+            if hits < min_shared or conversation_ids[i] == conversation_ids[j]:
+                continue
+            shared = left_terms & term_sets[j]
+            if len(shared) >= min_shared:
+                scored.append((len(shared) / len(left_terms | term_sets[j]), -j, j, shared))
+        scored.sort(reverse=True)
+        for _, _, j, shared in scored:
+            if degree[i] >= max_per_item:
+                break
+            if degree[j] >= max_per_item:
+                continue
+            degree[i] += 1; degree[j] += 1
+            yield i, j, shared
+
+
 def generate_candidate_links(min_score=.18, min_shared=2):
     """Propose lexical overlap across conversations; never asserts semantic equivalence."""
     initialize(); created=0
@@ -765,12 +838,11 @@ def generate_candidate_links(min_score=.18, min_shared=2):
         rows=db.execute("""SELECT c.*,v.title conversation_title FROM idea_candidates c
           JOIN conversations v ON v.id=c.conversation_id WHERE c.status!='rejected' ORDER BY c.created_at,c.id""").fetchall()
         prepared=[(row,_link_terms(row["title"]+" "+row["interpretation"])) for row in rows]
-        for index,(left,left_terms) in enumerate(prepared):
-            if len(left_terms)<min_shared: continue
-            for right,right_terms in prepared[index+1:]:
-                if left["conversation_id"]==right["conversation_id"] or len(right_terms)<min_shared: continue
-                shared=sorted(left_terms & right_terms)
-                if len(shared)<min_shared: continue
+        term_sets=[terms for _,terms in prepared]; conversation_ids=[row["conversation_id"] for row,_ in prepared]
+        for left_index,right_index,shared_set in bounded_term_pairs(term_sets,conversation_ids,min_shared):
+            left,left_terms=prepared[left_index]; right,right_terms=prepared[right_index]
+            if True:
+                shared=sorted(shared_set)
                 score=len(shared)/len(left_terms | right_terms)
                 if score<min_score: continue
                 kinds={left["kind"],right["kind"]}
@@ -823,14 +895,20 @@ def review_candidate_link(link_id, action):
     return dict(row) | {"status":new_status}
 
 
-def list_candidates(status="pending", limit=250):
+def list_candidates(status="pending", limit=250, offset=0):
     initialize()
     with _connect() as db:
         rows=db.execute("""SELECT c.*,v.title conversation_title,v.platform,m.ordinal message_ordinal
           FROM idea_candidates c JOIN conversations v ON v.id=c.conversation_id
-          JOIN messages m ON m.id=c.message_id WHERE c.status=? ORDER BY c.created_at DESC LIMIT ?""",
-          (status,max(1,min(int(limit),1000)))).fetchall()
+          JOIN messages m ON m.id=c.message_id WHERE c.status=? ORDER BY c.created_at DESC,c.id LIMIT ? OFFSET ?""",
+          (status,max(1,min(int(limit),1000)),max(0,int(offset)))).fetchall()
     return [dict(row) for row in rows]
+
+
+def count_candidates(status="pending"):
+    initialize()
+    with _connect() as db:
+        return db.execute("SELECT COUNT(*) FROM idea_candidates WHERE status=?",(status,)).fetchone()[0]
 
 
 def review_candidate(candidate_id, action):
@@ -847,3 +925,41 @@ def review_candidate(candidate_id, action):
 
 
 initialize()
+
+
+def export_local_backup_archive():
+    """Build a read-only, consistent ZIP snapshot of the local archive.
+
+    Uses SQLite's online backup API, so it is safe while the server is running.
+    Stored model credentials are removed from the snapshot: a backup must never
+    carry secrets. Returns the path of a temporary ZIP the caller must delete.
+    """
+    import hashlib, tempfile, zipfile
+    initialize()
+    work = Path(tempfile.mkdtemp(prefix="seed-backup-"))
+    snapshot = work / "archive.db"
+    try:
+        source = sqlite3.connect(DB_PATH, timeout=30); target = sqlite3.connect(snapshot)
+        try:
+            source.backup(target)
+            tables = {row[0] for row in target.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if "model_credentials" in tables:
+                target.execute("DELETE FROM model_credentials")
+            target.commit(); target.execute("VACUUM")
+        finally:
+            target.close(); source.close()
+        digest = hashlib.sha256(); size = 0
+        with snapshot.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk); size += len(chunk)
+        manifest = {"format": "seedreflections-local-snapshot-v1", "created_at": _now(),
+                    "database": "archive.db", "sha256": digest.hexdigest(), "byte_count": size,
+                    "credentials_included": False}
+        fd, archive_name = tempfile.mkstemp(prefix="seed-backup-", suffix=".zip"); os.close(fd)
+        with zipfile.ZipFile(archive_name, "w", zipfile.ZIP_DEFLATED) as package:
+            package.write(snapshot, "archive.db")
+            package.writestr("manifest.json", json.dumps(manifest, indent=2))
+        return Path(archive_name)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
