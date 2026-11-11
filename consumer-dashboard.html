@@ -1333,6 +1333,8 @@ body{background:#050c09;color:var(--text)}
 @media (min-width:901px){
   .app-primary-nav .library-subnav{position:static;left:auto;top:auto;width:auto;margin:2px 0 6px;padding:2px 0 4px 29px;background:transparent;box-shadow:none;border:0}
 }
+/* Status text colours that keep 4.5:1 on the dark surfaces (the shared --cyan/--purple were tuned for light grounds) */
+:root{--status-active:#7aa2ff;--status-other:#b79dff}
 </style>
 </head>
 <body>
@@ -2924,9 +2926,9 @@ function renderGarden() {
   // Render pipeline
   var pipeline = document.getElementById('lifecycle-pipeline');
   var html = '<div class="lc-row">';
-  html += '<div class="lc-node"><div class="lc-count">' + disc + '</div><div class="lc-dot" style="border-color:var(--purple);color:var(--purple)">💡</div><div class="lc-label">Discovered</div></div>';
+  html += '<div class="lc-node"><div class="lc-count">' + disc + '</div><div class="lc-dot" style="border-color:var(--purple);color:var(--status-other)">💡</div><div class="lc-label">Discovered</div></div>';
   html += '<div class="lc-connector"></div>';
-  html += '<div class="lc-node"><div class="lc-count">' + act + '</div><div class="lc-dot" style="border-color:var(--cyan);color:var(--cyan)">⚡</div><div class="lc-label">Active</div></div>';
+  html += '<div class="lc-node"><div class="lc-count">' + act + '</div><div class="lc-dot" style="border-color:var(--cyan);color:var(--status-active)">⚡</div><div class="lc-label">Active</div></div>';
   html += '<div class="lc-connector"></div>';
   html += '<div class="lc-node"><div class="lc-count">' + comp + '</div><div class="lc-dot" style="border-color:var(--green);color:var(--green)">✓</div><div class="lc-label">Completed</div></div>';
   html += '</div>';
@@ -5209,10 +5211,10 @@ function normalizeStatus(s) {
 }
 
 function statusColor(s) {
-  if (s === 'active') return 'var(--cyan)';
+  if (s === 'active') return 'var(--status-active)';
   if (s === 'completed') return 'var(--green)';
   if (s === 'abandoned') return 'var(--amber)';
-  return 'var(--purple)';
+  return 'var(--status-other)';
 }
 
 function statusBg(s) {
