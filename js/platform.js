@@ -14,6 +14,20 @@
   const API_BASE = (location.protocol === 'file:' || location.port === '5500' || location.port === '3000')
     ? 'http://127.0.0.1:8476/api/v1'
     : '/api/v1';
+  const V2_BASE = API_BASE.replace('/api/v1', '/api/v2');
+
+  // The unified server serves /api/v2 (and blocks /api/v1 when hosted). Detect it once;
+  // older servers that only expose /api/v1 keep working through the fallback.
+  let _v2Probe = null;
+  function _usesV2() {
+    if (!_v2Probe) {
+      _v2Probe = fetch(`${V2_BASE}/capabilities`)
+        .then((r) => r.ok)
+        .catch(() => false);
+    }
+    return _v2Probe;
+  }
+  function _authError(err, fallback) { return (err && (err.error || err.detail)) || fallback; }
 
   const STORAGE = {
     ACCESS:  'seedreflections_access_token',
@@ -250,7 +264,8 @@
   async function signup(email, name, password, accountType) {
     const role = accountType || 'consumer';
     try {
-      const r = await fetch(`${API_BASE}/auth/signup`, {
+      const v2 = await _usesV2();
+      const r = await fetch(`${v2 ? V2_BASE : API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, password, role }),
@@ -258,14 +273,15 @@
       if (r.ok) {
         const data = await r.json();
         setTokens(data.access_token, data.refresh_token);
-        await fetchAndCacheUser();
+        if (v2 && data.user) localStorage.setItem(STORAGE.USER, JSON.stringify(data.user));
+        else await fetchAndCacheUser();
         _emitAuthEvent('login');
         return data;
       }
       const err = await r.json().catch(() => ({}));
       // 409 conflict = real error, surface it
-      if (r.status === 409) throw new Error(err.detail || 'An account with this email already exists.');
-      throw new Error(err.detail || 'Account creation is temporarily unavailable.');
+      if (r.status === 409) throw new Error(_authError(err, 'An account with this email already exists.'));
+      throw new Error(_authError(err, 'Account creation is temporarily unavailable.'));
     } catch (e) {
       if (DEMO_REQUESTED) {
         _enterDemoMode(name, email, role);
@@ -281,7 +297,8 @@
 
   async function login(email, password) {
     try {
-      const r = await fetch(`${API_BASE}/auth/login`, {
+      const v2 = await _usesV2();
+      const r = await fetch(`${v2 ? V2_BASE : API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -299,8 +316,8 @@
       }
       const err = await r.json().catch(() => ({}));
       // 401 = wrong password — surface it, don't fall to demo
-      if (r.status === 401) throw new Error(err.detail || 'Invalid email or password.');
-      throw new Error(err.detail || 'Sign in is temporarily unavailable.');
+      if (r.status === 401) throw new Error(_authError(err, 'Invalid email or password.'));
+      throw new Error(_authError(err, 'Sign in is temporarily unavailable.'));
     } catch (e) {
       if (DEMO_REQUESTED) {
         _enterDemoMode(null, email, 'consumer');
