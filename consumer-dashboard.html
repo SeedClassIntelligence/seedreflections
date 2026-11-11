@@ -1328,6 +1328,11 @@ body{background:#050c09;color:var(--text)}
 /* Contrast (measured on the rendered page): amber "unreadable" notice 3.8:1 and tool status 3.66:1 raised above 4.5:1 */
 .coverage-partial{color:#e3a94a}
 .tool-state{color:#a3b5ac}
+
+/* Library sub-menu: an accordion in the sidebar flow on desktop, so it pushes Tools / Prompt Engine / Settings down instead of covering them */
+@media (min-width:901px){
+  .app-primary-nav .library-subnav{position:static;left:auto;top:auto;width:auto;margin:2px 0 6px;padding:2px 0 4px 29px;background:transparent;box-shadow:none;border:0}
+}
 </style>
 </head>
 <body>
@@ -1392,6 +1397,12 @@ body{background:#050c09;color:var(--text)}
   <button class="app-primary-tab active" data-primary="workspace" onclick="switchDashTab('workspace')"><span class="nav-glyph">◫</span><span class="nav-label">Workspace</span></button>
   <button class="app-primary-tab" data-primary="review" onclick="switchDashTab('review')"><span class="nav-glyph">✓</span><span class="nav-label">Review</span></button>
   <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')"><span class="nav-glyph">≡</span><span class="nav-label">Library</span></button>
+  <div class="library-subnav" id="library-subnav" aria-label="Library views">
+  <button class="library-view-tab" data-library="map" onclick="switchDashTab('map')">Conversations</button>
+  <button class="library-view-tab" data-library="browser" onclick="switchDashTab('browser')">Ideas & decisions</button>
+  <button class="library-view-tab" data-library="intake" onclick="switchDashTab('intake')">Sources</button>
+  <button class="library-view-tab" data-library="artifacts" onclick="switchDashTab('artifacts')">Work artifacts</button>
+</div>
   <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')"><span class="nav-glyph">⌁</span><span class="nav-label">Overview</span></button>
   <button class="app-primary-tab" data-primary="tools" onclick="openToolsManager()"><span class="nav-glyph">⌘</span><span class="nav-label">Tools</span></button>
   <button class="app-primary-tab" data-primary="prompt" onclick="switchDashTab('prompt')"><span class="nav-glyph">#</span><span class="nav-label">Prompt Engine</span></button>
@@ -1417,12 +1428,7 @@ body{background:#050c09;color:var(--text)}
     <div class="tools-error" id="tools-manager-error"></div>
   </div>
 </div>
-<div class="library-subnav" id="library-subnav" aria-label="Library views">
-  <button class="library-view-tab" data-library="map" onclick="switchDashTab('map')">Conversations</button>
-  <button class="library-view-tab" data-library="browser" onclick="switchDashTab('browser')">Ideas & decisions</button>
-  <button class="library-view-tab" data-library="intake" onclick="switchDashTab('intake')">Sources</button>
-  <button class="library-view-tab" data-library="artifacts" onclick="switchDashTab('artifacts')">Work artifacts</button>
-</div>
+
 
 <!-- ── Intake: the clear beginning of the product lifecycle ─────── -->
 <div class="section" id="section-intake">
@@ -3994,7 +4000,7 @@ function renderSeedList(seeds) {
     html += '</div>';
 
     // Decisions associated
-    var seedDecisions = (ALL_DECISIONS || []).filter(function(d){ return d.related_seeds.includes(sid); });
+    var seedDecisions = (ALL_DECISIONS || []).filter(function(d){ return Array.isArray(d.related_seeds) && d.related_seeds.includes(sid); });
     if (seedDecisions.length) {
       html += '<div class="seed-detail-section"><h4>Linked Decisions</h4>';
       seedDecisions.forEach(function(d){
