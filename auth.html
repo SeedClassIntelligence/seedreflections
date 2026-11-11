@@ -39,6 +39,8 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
 .field input:focus{outline:3px solid var(--accent);outline-offset:1px}
 .forgot-link,.footer-link a,.panel .text-link{color:var(--ink);font-weight:600;text-underline-offset:3px}
 .forgot-link{font-weight:500;font-size:.9rem}
+.label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.label-row label{margin-bottom:0}
 .pw-hint{margin-top:7px;font-size:.9rem;color:var(--ink-2)}
 .btn-submit{width:100%;min-height:52px;border:2px solid var(--ink);border-radius:3px;background:var(--accent);color:var(--accent-ink);font:700 1.05rem/1 var(--body);cursor:pointer;transition:background-color .16s}
 .btn-submit:hover:not(:disabled){background:var(--accent-hi)}
@@ -90,28 +92,28 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
   <section class="panel">
     <div class="card">
       <div class="tab-row" role="tablist" aria-label="Account">
-        <button class="tab-btn" role="tab" aria-selected="false" id="tab-login" onclick="switchTab('login')">Log in</button>
-        <button class="tab-btn" role="tab" aria-selected="false" id="tab-signup" onclick="switchTab('signup')">Create account</button>
-        <button class="tab-btn" role="tab" aria-selected="false" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-login" aria-controls="form-login" onclick="switchTab('login')">Log in</button>
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-signup" aria-controls="form-signup" onclick="switchTab('signup')">Create account</button>
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-admin" aria-controls="form-admin" onclick="switchTab('admin')">Admin</button>
       </div>
 
       <div class="error-msg" id="error-msg" role="alert"></div>
       <div class="success-msg" id="success-msg" role="status"></div>
 
-      <form id="form-login" onsubmit="doLogin(event)">
+      <form id="form-login" role="tabpanel" aria-labelledby="tab-login" onsubmit="doLogin(event)">
         <div class="field">
           <label for="login-email">Email</label>
           <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" required>
         </div>
         <div class="field">
-          <label for="login-password">Password <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a></label>
+          <div class="label-row"><label for="login-password">Password</label><a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a></div>
           <input type="password" id="login-password" autocomplete="current-password" required>
         </div>
         <button type="submit" class="btn-submit" id="login-btn">Log in →</button>
         <div class="footer-link">Don't have an account? <a href="#" onclick="switchTab('signup');return false">Sign up free</a></div>
       </form>
 
-      <form id="form-admin" onsubmit="doAdminLogin(event)" style="display:none">
+      <form id="form-admin" role="tabpanel" aria-labelledby="tab-admin" onsubmit="doAdminLogin(event)" style="display:none">
         <div class="note"><strong>Platform Master Control</strong>Enter the admin password to open the Admin Dashboard.</div>
         <div class="field">
           <label for="admin-pass">Master admin password</label>
@@ -121,7 +123,7 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
         <div class="footer-link">Looking for your workspace? <a href="#" onclick="switchTab('login');return false">Log in as a user</a></div>
       </form>
 
-      <form id="form-signup" onsubmit="doSignup(event)" style="display:none">
+      <form id="form-signup" role="tabpanel" aria-labelledby="tab-signup" onsubmit="doSignup(event)" style="display:none">
         <div class="field">
           <label for="signup-name">Full name</label>
           <input type="text" id="signup-name" autocomplete="name" required>
@@ -160,7 +162,7 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
         <div class="footer-link">Already have an account? <a href="#" onclick="switchTab('login');return false">Log in</a></div>
       </form>
 
-      <div id="form-forgot" style="display:none">
+      <div id="form-forgot" role="tabpanel" aria-labelledby="tab-login" style="display:none">
         <div class="note"><strong>Password reset by email isn't available yet.</strong>If you can't sign in, ask your administrator to reset your password.</div>
         <div class="footer-link"><a href="#" onclick="switchTab('login');return false">← Back to log in</a></div>
       </div>
@@ -233,6 +235,22 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
     }
   })();
 
+  // ── Tabs: arrow keys, Home and End move between tabs (ARIA tabs pattern) ──
+  (function () {
+    var row = document.querySelector('.tab-row'); if (!row) return;
+    row.addEventListener('keydown', function (e) {
+      var tabs = Array.prototype.slice.call(row.querySelectorAll('[role="tab"]'));
+      var i = tabs.indexOf(document.activeElement); if (i < 0) return;
+      var n = null;
+      if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') n = tabs[0];
+      else if (e.key === 'End') n = tabs[tabs.length - 1];
+      if (!n) return;
+      e.preventDefault(); n.click(); n.focus();
+    });
+  })();
+
   // ── Tab switching ────────────────────────────────────────────────────────────
   function switchTab(tab) {
     document.getElementById('form-login').style.display   = tab === 'login'   ? '' : 'none';
@@ -248,7 +266,10 @@ main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
     clearMessages();
 
     if (tab === 'admin') {
-      setTimeout(() => { const p = document.getElementById('admin-pass'); if(p) p.focus(); }, 50);
+      setTimeout(() => {
+        if (document.activeElement && document.activeElement.getAttribute('role') === 'tab') return;  // keep focus on the tab while arrowing through tabs
+        const p = document.getElementById('admin-pass'); if(p) p.focus();
+      }, 50);
     }
 
     // Show plan selector on signup tab if plan param present

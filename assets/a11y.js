@@ -16,7 +16,19 @@
     return t ? t.textContent.trim() : '';
   }
 
-  function sync(el) { el.setAttribute('aria-checked', ON.test(el.className) ? 'true' : 'false'); }
+  function items(el) {
+    var g = el.parentElement;
+    return g ? Array.prototype.filter.call(g.children, function (c) { return c.matches(CHOICE) && c.__a11y; }) : [];
+  }
+
+  // Only the selected option (or the first, when none is selected) is a Tab stop; arrows move between options.
+  function rove(el) {
+    var list = items(el);
+    var on = list.filter(function (c) { return ON.test(c.className); })[0] || list[0];
+    list.forEach(function (c) { c.setAttribute('tabindex', c === on ? '0' : '-1'); });
+  }
+
+  function sync(el) { el.setAttribute('aria-checked', ON.test(el.className) ? 'true' : 'false'); rove(el); }
 
   function upgrade(el) {
     if (el.__a11y || NATIVE.test(el.tagName) || el.classList.contains('modal-overlay')) return;
@@ -27,6 +39,13 @@
     if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     if (choice) {
       sync(el);
+      el.addEventListener('keydown', function (e) {
+        var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (!step || e.target !== el) return;
+        var list = items(el), n = list[(list.indexOf(el) + step + list.length) % list.length];
+        if (!n || n === el) return;
+        e.preventDefault(); n.click(); n.focus();
+      });
       new MutationObserver(function () { sync(el); }).observe(el, { attributes: true, attributeFilter: ['class'] });
       var g = el.parentElement;
       if (g && !g.hasAttribute('role')) {
