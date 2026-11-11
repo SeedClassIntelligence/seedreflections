@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from tests.test_unified_runtime import UnifiedRuntime
@@ -8,8 +9,13 @@ class ReleaseReadinessTests(unittest.TestCase):
         runtime=UnifiedRuntime("local")
         try:
             status,result=runtime.request("GET","/api/v2/readiness")
-            self.assertEqual(status,200); self.assertTrue(result["ready"])
-            self.assertTrue(all(item["passed"] for item in result["checks"]))
+            failing={item["name"] for item in result["checks"] if not item["passed"]}
+            self.assertEqual(status,200); self.assertTrue(result["ready"]); self.assertEqual(failing,set())
+            detail=next(item["detail"] for item in result["checks"] if item["name"]=="credential_storage")
+            if os.name!="nt":
+                # Without an OS keychain, saved keys are disabled and readiness must say so plainly.
+                import secret_store
+                self.assertEqual(detail,secret_store.local_backend_status()["detail"])
         finally: runtime.close()
 
     def test_hosted_runtime_fails_closed_without_https_origin(self):

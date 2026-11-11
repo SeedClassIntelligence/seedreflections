@@ -34,6 +34,7 @@ from archive_store import get_conversation as get_archive_conversation
 from archive_store import raw_conversations as get_raw_archive_conversations
 from archive_store import list_imports as list_archive_imports
 from archive_store import create_import_job, update_import_job, get_import_job, list_import_jobs
+from archive_store import count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
 from archive_store import (analyze_conversation, list_candidates, review_candidate,
                            create_analysis_job, get_analysis_job, run_archive_analysis,
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
@@ -48,7 +49,7 @@ from auth_store import (signup as auth_signup, login as auth_login, authenticate
     remove_member as auth_remove_member)
 from tenant_archive_store import (import_json as tenant_import_json, overview as tenant_archive_overview,
     list_conversations as tenant_list_conversations, get_conversation as tenant_get_conversation,
-    analyze as tenant_analyze, list_candidates as tenant_list_candidates, review as tenant_review,
+    analyze as tenant_analyze, list_candidates as tenant_list_candidates, count_candidates as tenant_count_candidates, review as tenant_review,
     create_import_job as tenant_create_import_job, update_import_job as tenant_update_import_job,
     get_import_job as tenant_get_import_job, list_import_jobs as tenant_list_import_jobs,
     import_document_path as tenant_import_document_path, create_analysis_job as tenant_create_analysis_job,
@@ -68,7 +69,7 @@ from integration_store import (create_integration as create_api_integration, lis
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
-from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential
+from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential, local_backend_status as model_key_backend_status
 from tool_store import list_tools as list_workspace_tools, get_tool as get_workspace_tool, disconnect_tool as disconnect_workspace_tool
 
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
@@ -132,10 +133,13 @@ def production_readiness():
     billing=stripe_billing_enabled(); cfg=load_config()
     credential_master=os.environ.get("SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY","").strip()
     legacy_model_key=bool(cfg.get("llm_api_key"))
+    local_status=model_key_backend_status()
+    # Local mode without an OS keychain is an accepted, honestly reported state: saved keys are
+    # disabled and only explicit session-only keys exist. It is never a silent plaintext fallback.
     credential_ready=(not legacy_model_key) and (DEPLOYMENT_MODE=="local" or bool(credential_master))
     check("credential_storage",credential_ready,
         ("legacy plaintext model key must be rotated through encrypted storage" if legacy_model_key else
-         ("local OS credential boundary" if DEPLOYMENT_MODE=="local" else
+         (local_status["detail"] if DEPLOYMENT_MODE=="local" else
           ("encrypted credential backend configured" if credential_master else "hosted BYOK requires a deployment-secret master key"))))
     billing_values=[stripe_setting(cfg,"STRIPE_SECRET_KEY","stripe_secret_key"),stripe_setting(cfg,"STRIPE_WEBHOOK_SECRET","stripe_webhook_secret"),
         stripe_setting(cfg,"STRIPE_PRICE_PRO","stripe_price_pro"),stripe_setting(cfg,"STRIPE_PRICE_MASTER","stripe_price_master")]
@@ -146,6 +150,10 @@ def production_readiness():
         except Exception as exc: check("teams",False,"membership storage unavailable: "+str(exc))
     else: check("teams",True,"disabled")
     check("upload_boundary",MAX_UPLOAD_BYTES>0 and HOSTED_STORAGE_BYTES>0,"positive upload and storage limits")
+    admin_password=CONFIG.get("ADMIN_PASSWORD") or os.environ.get("ADMIN_PASSWORD","changeme")
+    admin_ok=DEPLOYMENT_MODE=="local" or (admin_password!="changeme" and len(admin_password)>=12)
+    check("admin_password",admin_ok,"local runtime" if DEPLOYMENT_MODE=="local" else
+          ("admin password configured" if admin_ok else "ADMIN_PASSWORD is unset, default, or shorter than 12 characters"))
     return {"ready":all(item["passed"] for item in checks),"mode":DEPLOYMENT_MODE,"checks":checks,"time":datetime.now().isoformat()}
 
 
@@ -1038,6 +1046,44 @@ def materialize_tenant_relationships(workspace_id):
     return created
 
 
+STATIC_ROOT_FILES_BLOCKED = {"admin-dashboard.html"}
+STATIC_ALLOWED_EXTENSIONS = {".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp", ".woff", ".woff2", ".txt", ".map"}
+STATIC_ALLOWED_DIRECTORIES = {"assets", "js", "sdk"}
+
+
+def static_file_path(relative, internal=False):
+    """Resolve a request path to a servable public file, or None.
+
+    Allows only whitelisted extensions, only top-level pages or the public asset
+    directories, no dotfiles, and verifies containment with real paths.
+    """
+    root = Path(os.getcwd()).resolve()
+    parts = [part for part in str(relative).replace("\\", "/").split("/") if part not in ("", ".")]
+    if not parts or any(part == ".." or part.startswith(".") or "\x00" in part for part in parts):
+        return None
+    if not internal:
+        if len(parts) == 1:
+            if parts[0] in STATIC_ROOT_FILES_BLOCKED or Path(parts[0]).suffix.lower() != ".html":
+                return None
+        elif parts[0] not in STATIC_ALLOWED_DIRECTORIES:
+            return None
+    if Path(parts[-1]).suffix.lower() not in STATIC_ALLOWED_EXTENSIONS:
+        return None
+    candidate = (root.joinpath(*parts)).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return None
+    if not internal and len(parts) > 1 and parts[0] in STATIC_ALLOWED_DIRECTORIES:
+        try:
+            candidate.relative_to((root / parts[0]).resolve())
+        except ValueError:
+            return None
+    return str(candidate)
+
+
+
+
 class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
     def _local_request_allowed(self):
@@ -1164,7 +1210,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if user["workspace_id"] == "local":
                 workspace=load_db(); archive=archive_analysis_overview()
                 self._send_json({"imports":len(list_archive_imports()),"conversations":archive["total"],
-                    "messages":sum(item.get("message_count",item.get("depth",0)) for item in list_archive_conversations()),
+                    "messages":sum(int(item.get("messages") or 0) for item in archive_source_coverage()),
                     "pending":archive["pending_candidates"],"seeds":len(workspace.get("seeds",[])),
                     "projects":len(workspace.get("projects",[])),"recovered":sum(1 for item in workspace.get("seeds",[]) if str(item.get("continuity_status","")).lower()=="recovered"),
                     "source_coverage":archive_source_coverage()})
@@ -1226,6 +1272,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings.setdefault("privacy_ai_training",False); settings.setdefault("privacy_marketing_emails",False)
             settings.pop("llm_api_key",None)
             settings["model_credential"]=model_credential_status(user["workspace_id"],settings.get("llm_provider","ollama"))
+            settings["model_key_storage"]=model_key_backend_status() if DEPLOYMENT_MODE=="local" else {"saved_keys":True,"backend":"aes256gcm_envelope","session_only_keys":False,"detail":"Saved keys are encrypted with per-credential data keys wrapped by the deployment master key."}
             self._send_json(settings)
             return
         if path == "/api/v2/models":
@@ -1250,9 +1297,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not user: self._send_json({"error":"Authentication required"},401); return
             query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             status=(query.get("status") or ["pending"])[0]
-            candidates=(list_candidates(status) if user["workspace_id"] == "local"
-                        else tenant_list_candidates(user["workspace_id"],status))
-            self._send_json({"candidates":candidates})
+            try:
+                limit=max(1,min(int((query.get("limit") or ["250"])[0]),1000)); offset=max(0,int((query.get("offset") or ["0"])[0]))
+            except ValueError: self._send_json({"error":"limit and offset must be integers"},400); return
+            if user["workspace_id"] == "local":
+                candidates=list_candidates(status,limit,offset); total=count_archive_candidates(status)
+            else:
+                candidates=tenant_list_candidates(user["workspace_id"],status,limit,offset); total=tenant_count_candidates(user["workspace_id"],status)
+            self._send_json({"candidates":candidates,"total":total,"limit":limit,"offset":offset,"has_more":offset+len(candidates)<total})
             return
         if path == "/api/v2/imports/jobs":
             user=self._runtime_user()
@@ -1289,8 +1341,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if path == "/api/v2/backup/download":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
-            if user["workspace_id"]=="local": self._send_json({"error":"Hosted tenant backup is unavailable in local mode."},409); return
-            backup_path=tenant_export_backup_archive(user["workspace_id"])
+            backup_path=(export_local_backup_archive() if user["workspace_id"]=="local" else tenant_export_backup_archive(user["workspace_id"]))
             try:
                 self.send_response(200); self.send_header("Content-Type","application/zip")
                 self.send_header("Content-Disposition",'attachment; filename="seed-reflections-backup.zip"')
@@ -1426,7 +1477,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if path == "/api/v1/archive/candidates":
             query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             status = (query.get("status") or ["pending"])[0]
-            self._send_json({"candidates": list_candidates(status)})
+            self._send_json({"candidates": list_candidates(status),"total":count_archive_candidates(status)})
             return
 
         if path == "/api/v1/archive/analysis":
@@ -2716,12 +2767,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 return
             filename = "admin-dashboard.html"
         else:
-            filename = path.lstrip("/")
+            filename = urllib.parse.unquote(path).lstrip("/")
 
-        # Prevent directory traversal
-        safe_path = os.path.abspath(os.path.join(os.getcwd(), filename))
-        if not safe_path.startswith(os.getcwd()):
-            self.send_error(403, "Access Denied")
+        # Strict allowlist: only public web assets are ever served. Source code,
+        # databases, configuration, VCS metadata and the admin page (which is only
+        # reachable through the authenticated /admin route) are never static files.
+        safe_path = static_file_path(filename, internal=filename in ("index.html", "consumer-dashboard.html", "admin-dashboard.html") and path in ("/", "/index.html", "/consumer", "/dashboard", "/admin"))
+        if safe_path is None:
+            self.send_error(404, "File Not Found")
             return
 
         if os.path.exists(safe_path) and os.path.isfile(safe_path):
@@ -2760,10 +2813,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error":"Viewer access is read-only","code":"insufficient_role"},403); return
         content_length = int(self.headers.get("Content-Length", 0))
         content_type = self.headers.get("Content-Type", "")
+        if path == "/api/v2/restore/preview":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user["workspace_id"]!="local": self._send_json({"error":"Hosted workspaces restore through /api/v2/restore/upload."},409); return
+            if content_length<=0 or content_length>MAX_UPLOAD_BYTES:
+                self._send_json({"error":"Backup is empty or exceeds the configured size limit","limit_bytes":MAX_UPLOAD_BYTES},400 if content_length<=0 else 413); return
+            if "multipart/form-data" not in content_type: self._send_json({"error":"Expected multipart/form-data"},400); return
+            staged_path=None
+            try:
+                filename,staged_path=stream_multipart_upload(self.rfile,content_length,content_type)
+                self._send_json(preview_local_restore(staged_path))
+            except (ValueError,RestoreError) as exc: self._send_json({"error":str(exc)},400)
+            finally:
+                if staged_path: Path(staged_path).unlink(missing_ok=True)
+            return
         if path == "/api/v2/restore/upload":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
-            if user["workspace_id"]=="local": self._send_json({"error":"Hosted tenant restore is unavailable in local mode."},409); return
+            if user["workspace_id"]=="local": self._send_json({"error":"Local restore uses /api/v2/restore/preview and /api/v2/restore/confirm."},409); return
             if content_length<=0 or content_length>MAX_UPLOAD_BYTES:
                 self._send_json({"error":"Backup is empty or exceeds the configured size limit","limit_bytes":MAX_UPLOAD_BYTES},400 if content_length<=0 else 413); return
             if "multipart/form-data" not in content_type: self._send_json({"error":"Expected multipart/form-data"},400); return
@@ -3006,10 +3074,19 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(result,201)
             except (ValueError,json.JSONDecodeError) as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/restore/confirm":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user["workspace_id"]!="local": self._send_json({"error":"Hosted workspaces restore through /api/v2/restore/upload."},409); return
+            if str(body.get("confirm") or "")!="REPLACE":
+                self._send_json({"error":"Type REPLACE to confirm that your current archive will be replaced."},400); return
+            try: self._send_json(apply_local_restore(body.get("token")))
+            except RestoreError as exc: self._send_json({"error":str(exc)},409)
+            return
         if path == "/api/v2/restore":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
-            if user["workspace_id"]=="local": self._send_json({"error":"Hosted tenant restore is unavailable in local mode."},409); return
+            if user["workspace_id"]=="local": self._send_json({"error":"Local restore uses /api/v2/restore/preview and /api/v2/restore/confirm."},409); return
             try: self._send_json(tenant_restore_backup(user["workspace_id"],body.get("backup")))
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
@@ -3034,10 +3111,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             provider=str(body.get("llm_provider") or settings.get("llm_provider") or "ollama")
             supplied_key=str(body.get("llm_api_key") or "").strip()
             if supplied_key:
-                try: store_model_credential(user["workspace_id"],provider,supplied_key,DEPLOYMENT_MODE)
+                try: store_model_credential(user["workspace_id"],provider,supplied_key,DEPLOYMENT_MODE,temporary=bool(body.get("llm_api_key_temporary")))
                 except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
             if body.get("clear_llm_api_key"): delete_model_credential(user["workspace_id"],provider)
-            settings.update({key:value for key,value in body.items() if key in allowed and key not in {"llm_api_key","clear_llm_api_key"}})
+            settings.update({key:value for key,value in body.items() if key in allowed and key not in {"llm_api_key","clear_llm_api_key","llm_api_key_temporary"}})
             settings.pop("llm_api_key",None)
             workspace["settings"]=settings; save_workspace(workspace,user["workspace_id"],"settings_updated")
             self._send_json({"status":"success"})
@@ -5085,9 +5162,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         elif path in ("/api/v1/settings", "/api/v1/admin/config"):
             cfg = load_config()
             supplied_key=str(body.pop("llm_api_key","") or "").strip()
+            temporary_key=bool(body.pop("llm_api_key_temporary",False))
             provider=str(body.get("llm_provider") or cfg.get("llm_provider") or "ollama")
             if supplied_key:
-                try: store_model_credential("local",provider,supplied_key,DEPLOYMENT_MODE)
+                try: store_model_credential("local",provider,supplied_key,DEPLOYMENT_MODE,temporary=temporary_key)
                 except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
                 cfg.pop("llm_api_key",None)
             clear_key=body.pop("clear_llm_api_key",False)

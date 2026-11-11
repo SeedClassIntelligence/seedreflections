@@ -52,7 +52,7 @@ SeedReflections maintains a capability catalog for available models and can rout
 
 Model selection does not itself grant tools. Browsing, filesystem access, code execution, deployment, and external actions require separately implemented and authorized SeedReflections tools. A model API credential supplies inference and does not grant access to a provider's private conversation history.
 
-Model credentials are write-only through the settings API. Local Windows deployments protect them with the current user's DPAPI boundary. Hosted and enterprise deployments use per-credential AES-256-GCM data keys wrapped by a 32-byte master key injected through the deployment secret manager. The database stores only ciphertext, wrapped keys, key hints, and lifecycle metadata; settings responses never return a credential. Hosted BYOK fails closed when the master key is absent or invalid.
+Model credentials are write-only through the settings API. Local deployments protect saved keys with the operating system: Windows DPAPI, or the macOS Keychain / Linux Secret Service through `keyring`. The database holds no key material for keychain-backed keys, and keys are never included in backups. Where no OS keychain exists, saved keys are disabled and a key may be used for the current session only (held in memory, forgotten on restart); there is no plaintext fallback. Hosted and enterprise deployments use per-credential AES-256-GCM data keys wrapped by a 32-byte master key injected through the deployment secret manager. The database stores only ciphertext, wrapped keys, key hints, and lifecycle metadata; settings responses never return a credential. Hosted BYOK fails closed when the master key is absent or invalid.
 
 ## 4. Source ingestion and connectivity
 
