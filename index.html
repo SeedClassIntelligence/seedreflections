@@ -47,9 +47,8 @@
 
 /* ───────────────────────── screenshots ───────────────────────── */
 .shot{margin:0}
-.shot-side{grid-column:7/span 6;margin-top:8px}
-.shot-frame{display:block}
-.shot img{border-radius:6px;border:1px solid rgba(233,243,229,.28);box-shadow:0 28px 50px -20px rgba(0,0,0,.65)}
+.shot-side{grid-column:5/span 8;margin-top:8px}
+.shot img{display:block;max-width:100%;height:auto;border-radius:6px;border:1px solid rgba(233,243,229,.28);box-shadow:0 28px 50px -20px rgba(0,0,0,.65)}
 .sheet .shot img{border-color:var(--ink);box-shadow:0 24px 44px -22px rgba(16,38,28,.55)}
 .shot figcaption{margin-top:12px;font-size:.88rem;color:var(--on-field-2)}
 .sheet .shot figcaption{color:var(--ink-2)}
@@ -60,6 +59,10 @@
 .surface.flip .txt{grid-column:9/span 4;grid-row:1}
 .surface.flip .shot{grid-column:1/span 8;grid-row:1}
 .surface h3{font-size:1.75rem;margin-bottom:12px}
+.surface.wide .txt{grid-column:1/-1}
+.surface.wide .shot{grid-column:1/-1;grid-row:2}
+.surface.wide .txt p{max-width:62ch}
+#ev-title{font-size:clamp(1.9rem,2.9vw,2.6rem)}
 .surface p{color:var(--on-field-2)}
 
 /* ───────────────────────── artifacts ───────────────────────── */
@@ -110,9 +113,7 @@
   .plan.pro+.plan{border-top-color:transparent}
 }
 @media (max-width:760px){.reg-rows>div{grid-template-columns:1fr;gap:2px}
-  .shot-frame{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px}
-  .shot-frame:focus-visible{outline:3px solid var(--seed,#3fb950);outline-offset:3px}
-  .shot-frame img{width:720px;max-width:none;height:auto}}
+}
 @media (max-width:359px){.price{font-size:3rem}}
 @media (max-width:480px){.reg-body{padding:18px 16px}.cta-row .link-arrow{width:auto}}
 
@@ -234,7 +235,7 @@
 <!-- ═════════ evidence ═════════ -->
 <section aria-labelledby="ev-title">
   <div class="wrap split">
-    <div class="stick" style="grid-column:1/span 5">
+    <div class="stick" style="grid-column:1/span 4">
       <h2 id="ev-title">An interpretation is only useful when you can inspect its source.</h2>
       <p class="lede" style="margin-top:22px">SeedReflections preserves the evidence behind its findings. You can inspect the original conversation or document, review how a finding was interpreted, and decide whether it belongs in your project memory.</p>
       <dl class="defs on-field-defs" style="margin-top:32px">
@@ -245,8 +246,8 @@
       <p class="small" style="margin-top:22px">What this means for you: human review, evidence lineage, verified backup and restore.</p>
     </div>
     <figure class="shot shot-side">
-      <div class="shot-frame" tabindex="0" role="group" aria-label="Screenshot (scrolls sideways on narrow screens)"><img src="assets/app-review.jpg" width="736" height="540" loading="lazy" decoding="async" alt="The Review queue: two suggested findings, each showing the source conversation and message it came from, with Accept as Idea, Defer and Reject buttons."></div>
-      <figcaption>Review. Each finding names its source conversation and message. Nothing is accepted until you decide. Sample archive.</figcaption>
+      <picture><source media="(max-width:760px)" srcset="assets/app-review-m.jpg" width="350" height="470"><img src="assets/app-review.jpg" width="676" height="460" loading="lazy" decoding="async" alt="The Review queue: two suggested findings, each showing the source conversation and message it came from, with Accept as Idea, Defer and Dismiss buttons."></picture>
+      <figcaption>Review. Read the line under each finding: it names the source conversation and message. Nothing is accepted until you decide. Sample archive.</figcaption>
     </figure>
   </div>
 </section>
@@ -257,15 +258,15 @@
     <h2 id="sf-title" style="max-width:18ch;margin-bottom:clamp(32px,4vw,56px)">Three surfaces. One continuous way of working.</h2>
     <div class="surface">
       <div class="txt"><h3>Workspace</h3><p>Add or connect sources, ask questions, focus a project, and continue work as plans, briefs, reports, task sets, and notes.</p></div>
-      <figure class="shot"><div class="shot-frame" tabindex="0" role="group" aria-label="Screenshot (scrolls sideways on narrow screens)"><img src="assets/app-workspace.jpg" width="876" height="600" loading="lazy" decoding="async" alt="The Workspace: project memory with accepted ideas and conversation threads beside the working area."></div><figcaption>The Workspace, with accepted ideas in project memory. Sample archive.</figcaption></figure>
+      <figure class="shot"><picture><source media="(max-width:760px)" srcset="assets/app-workspace-m.jpg" width="350" height="481"><img src="assets/app-workspace.jpg" width="740" height="610" loading="lazy" decoding="async" alt="The Workspace: project memory with accepted ideas and conversation threads beside the working area."></picture><figcaption>The Workspace, with accepted ideas in project memory. Sample archive.</figcaption></figure>
     </div>
-    <div class="surface flip">
+    <div class="surface wide">
       <div class="txt"><h3>Library</h3><p>Read and search conversations, review ideas and decisions, inspect sources, and keep every interpretation tied to evidence.</p></div>
-      <figure class="shot"><div class="shot-frame" tabindex="0" role="group" aria-label="Screenshot (scrolls sideways on narrow screens)"><img src="assets/app-library.jpg" width="960" height="640" loading="lazy" decoding="async" alt="The Library: a list of source conversations labelled Claude or ChatGPT, with one conversation opened to show its original messages."></div><figcaption>A source conversation opened beside the list, with its original messages. Sample archive.</figcaption></figure>
+      <figure class="shot"><picture><source media="(max-width:900px)" srcset="assets/app-library-m.jpg" width="350" height="430"><img src="assets/app-library.jpg" width="1144" height="357" loading="lazy" decoding="async" alt="The Library: a list of source conversations labelled Claude or ChatGPT, with one conversation opened to show its original messages."></picture><figcaption>A source conversation opened beside the list, with its original messages. Sample archive.</figcaption></figure>
     </div>
     <div class="surface">
       <div class="txt"><h3>Overview</h3><p>Understand archive size, recovery progress, source coverage, represented platforms, synchronization, and account status.</p><p style="margin-top:14px">Overview reports the sources actually present in your workspace.</p></div>
-      <figure class="shot"><div class="shot-frame" tabindex="0" role="group" aria-label="Screenshot (scrolls sideways on narrow screens)"><img src="assets/app-overview.jpg" width="960" height="640" loading="lazy" decoding="async" alt="The Overview: conversation, source, idea, decision and awaiting-review counts for the archive."></div><figcaption>Overview of the same sample archive.</figcaption></figure>
+      <figure class="shot"><picture><source media="(max-width:760px)" srcset="assets/app-overview-m.jpg" width="350" height="440"><img src="assets/app-overview.jpg" width="740" height="460" loading="lazy" decoding="async" alt="The Overview: conversation, source, idea, decision and awaiting-review counts for the archive."></picture><figcaption>Overview of the same sample archive.</figcaption></figure>
     </div>
     <p style="margin-top:20px"><a class="btn btn-primary" href="/consumer">Open the Workspace</a></p>
   </div>
