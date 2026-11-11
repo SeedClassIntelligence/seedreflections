@@ -1,122 +1,570 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prompt tools — SeedReflections</title>
-<meta name="description" content="Prepare recovery prompts, starter prompts and handoff instructions for the AI assistant you choose. A secondary utility; the Workspace is the product center.">
-<meta name="theme-color" content="#0c3626">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Zilla+Slab:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="assets/site.css">
-<style>
-#section-generator{--bg:#07251a;--bg-card:#0c3626;--bg-surface:#0f402d;--bg-raised:#124a34;--border:#2a6a4f;--border-light:#2f7a5a;--border-hi:#3d9a72;
---text:#e9f3e5;--text2:#c2e3cf;--text3:#9fd6b6;--green:#58cb69;--green-dim:rgba(88,203,105,.14);--amber:#e3a94a;--font-mono:'JetBrains Mono',ui-monospace,monospace}
-#section-generator .console-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden}
-#section-generator h3{font-family:var(--body)}
-#section-generator .btn{display:inline-flex;align-items:center;gap:7px;padding:13px 24px;border-radius:4px;
+<!-- saved from url=(0066).index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Engine — SeedReflections</title>
+  <meta name="description" content="Bring AI conversations, documents, and project history into one evidence-backed workspace. Find what matters, verify the source, and continue the work.">
+  <meta property="og:title" content="Organize and Continue Your AI Work — SeedReflections">
+  <meta property="og:description" content="Turn scattered AI conversations and documents into a searchable Library, reviewable project memory, and usable work artifacts.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#06080f;--bg-card:#0d1117;--bg-surface:#161b22;--bg-raised:#1c2128;
+      --border:#21262d;--border-light:#30363d;
+      --text:#f0f6fc;--text2:#c9d1d9;--text3:#8b949e;
+      --blue:#58a6ff;--cyan:#39d0d8;--teal:#2dd4bf;
+      --green:#3fb950;--green-dim:rgba(63,185,80,.1);
+      --amber:#d29922;--red:#f85149;--purple:#bc8cff;
+      --font-head:'Inter',sans-serif;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+    a{color:var(--blue);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* ── NAV ── */
+    nav{position:sticky;top:0;z-index:100;background:rgba(6,8,15,.92);backdrop-filter:blur(20px);
+        border-bottom:1px solid var(--border);padding:0 5%;height:58px;
+        display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .nav-logo{font-weight:900;font-size:17px;color:var(--green);letter-spacing:-.5px;white-space:nowrap;display:inline-flex;align-items:center}
+    .nav-logo em{color:inherit;font-style:normal}
+    .nav-links{display:flex;gap:24px;font-size:13px}
+    .nav-links a{color:var(--text3);font-weight:500}
+    .nav-links a:hover{color:var(--text);text-decoration:none}
+    .nav-links a.hi{color:var(--green);font-weight:600}
+    .nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .btn-nav-ghost{border:1px solid var(--border-light);color:var(--text2);padding:6px 14px;
+                   border-radius:6px;font-weight:600;font-size:13px;display:inline-block}
+    .btn-nav-ghost:hover{border-color:var(--blue);color:var(--blue);text-decoration:none}
+    .btn-nav-cta{background:var(--green);color:#000;padding:7px 16px;border-radius:6px;font-weight:700;font-size:13px;display:inline-block}
+    .btn-nav-cta:hover{background:#4ade80;text-decoration:none}
+    @media(max-width:640px){.nav-links{display:none}}
+
+    /* ── BUTTONS ── */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:13px 24px;border-radius:9px;
          font-weight:700;font-size:15px;cursor:pointer;border:none;font-family:inherit;
          text-decoration:none;transition:filter .15s,background .15s,border-color .15s;white-space:nowrap}
-#section-generator .btn:hover{text-decoration:none;filter:brightness(1.1)}
-#section-generator .btn-sm{padding:8px 16px;font-size:13px}
-#section-generator .snippet-card.active{border-color:var(--green);background:rgba(63,185,80,.05)}
-#section-generator .wiz-progress-bar{ background: var(--border); height: 6px; border-radius:3px; overflow: hidden; margin-top: 8px; }
-#section-generator .wiz-progress-fill{ background: var(--green); height: 100%; width: 25%; transition: width .3s ease; }
-#section-generator .wiz-step{ display: none; margin-top: 20px; animation: wizFadeIn .3s ease; }
-#section-generator .wiz-step.active{ display: block; }
-#section-generator .wiz-cards{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
-@media (max-width: 800px){#section-generator .wiz-cards{ grid-template-columns: repeat(2, 1fr); }}
-@media (max-width: 500px){#section-generator .wiz-cards{ grid-template-columns: 1fr; }}
-#section-generator .wiz-card{ background: var(--bg); border: 1.5px solid var(--border); border-radius:4px; padding: 20px; cursor: pointer; transition: all .2s; position: relative; }
-#section-generator .wiz-card:hover{ border-color: var(--border-hi); }
-#section-generator .wiz-card.active{ border-color: var(--green); background: var(--green-dim); }
-#section-generator .wiz-card-icon{ font-size:28px; margin-bottom: 12px; }
-#section-generator .wiz-card-title{ font-size:14px; font-weight: 700; color: var(--text); }
-#section-generator .wiz-card-desc{ font-size:13px; color: var(--text3); margin-top: 4px; line-height: 1.4; }
-#section-generator .snippets-subgrid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; grid-column: 1 / -1; }
-@media (max-width: 768px){#section-generator .snippets-subgrid{ grid-template-columns: repeat(2, 1fr); }}
-@media (max-width: 480px){#section-generator .snippets-subgrid{ grid-template-columns: 1fr; }}
-#section-generator .snippet-select-card{ background: var(--bg); border: 1px solid var(--border); border-radius:4px; padding: 12px 14px; cursor: pointer; transition: all .15s; }
-#section-generator .snippet-select-card:hover{ border-color: var(--border-hi); }
-#section-generator .snippet-select-card.active{ border-color: var(--green); background: var(--green-dim); }
-#section-generator .snippet-select-title{ font-size:13px; font-weight: 700; color: var(--text); }
-#section-generator .snippet-select-desc{ font-size:13px; color: var(--text3); margin-top: 2px; }
-#section-generator .wiz-footer{ display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1.5px solid var(--border); }
-#section-generator .output-console{ background: #03070b; border: 1px solid var(--border); border-radius:4px; font-family: var(--font-mono); font-size:13px; color: var(--text2); line-height: 1.7; overflow: hidden; margin-top: 14px; }
-#section-generator .output-console-header{ background: #070d14; border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
-#section-generator .output-console-body{ padding: 16px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
-#section-generator .form-section{ background: var(--bg-card); border: 1px solid var(--border); border-radius:4px; padding: 20px; }
-#section-generator .form-section-title{ font-size:13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-#section-generator .form-section-title span{ font-size:16px; }
-#section-generator .intent-input{ width: 100%; min-height: 80px; resize: vertical; font-size:14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius:4px; padding: 10px 12px; outline: none; font-family: inherit; }
-#section-generator .intent-input:focus{ border-color: var(--green); }
-#section-generator .intent-hint{ font-size:13px; color: var(--text3); margin-top: 6px; }
-#section-generator .platform-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-@media (max-width: 500px){#section-generator .platform-grid{ grid-template-columns: repeat(2, 1fr); }}
-#section-generator .platform-option{ display: none; }
-#section-generator .platform-option + label{ display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius:4px; padding: 10px 6px; cursor: pointer; font-size:13px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
-#section-generator .platform-option + label:hover{ border-color: var(--border-hi); color: var(--text); }
-#section-generator .platform-option:checked + label{ border-color: var(--green); color: var(--green); background: var(--green-dim); }
-#section-generator .length-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-@media (max-width: 500px){#section-generator .length-grid{ grid-template-columns: repeat(2, 1fr); }}
-#section-generator .length-option{ display: none; }
-#section-generator .length-option + label{ display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius:4px; padding: 10px 6px; cursor: pointer; font-size:13px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
-#section-generator .length-option + label .len-icon{ font-size:16px; }
-#section-generator .length-option + label .len-sub{ font-size:13px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-#section-generator .length-option + label:hover{ border-color: var(--border-hi); color: var(--text); }
-#section-generator .length-option:checked + label{ border-color: var(--green); color: var(--green); background: var(--green-dim); }
-#section-generator .chunking-note{ background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius:4px; padding: 12px; margin-top: 10px; font-size:13px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
-#section-generator .chunking-note.visible{ display: flex; }
-#section-generator .focus-grid{ display: grid; grid-template-columns: 1fr; gap: 8px; }
-#section-generator .focus-item{ display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius:4px; cursor: pointer; transition: all .15s; font-size:13px; }
-#section-generator .focus-item input[type="checkbox"]{ width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
-#section-generator .focus-item:hover{ border-color: var(--border-hi); }
-#section-generator .focus-item.checked{ border-color: var(--green); background: var(--green-dim); }
-#section-generator .focus-text{ flex: 1; color: var(--text2); }
-#section-generator .focus-item.checked .focus-text{ color: var(--green); font-weight: 600; }
-#section-generator .console-card{ background: var(--bg-card); border: 1.5px solid var(--border); border-radius:4px; overflow: hidden; max-width: 1040px; margin: 32px auto 0;  text-align: left; }
-#section-generator .console-tab.active{ color: var(--green); border-bottom-color: var(--green); }
-#section-generator .console-body{ padding: 24px; }
-#section-generator .console-panel.active{ display: block; }
-@keyframes wizFadeIn{ from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-#section-generator .console-card .btn{min-height:0}
-.page-title{font-family:var(--display);font-weight:600;font-size:clamp(1.9rem,3.6vw,2.6rem);line-height:1.15;margin:0}
-.site-header .nav a[aria-current="page"]{box-shadow:inset 0 -2px 0 #58cb69}
+    .btn:hover{text-decoration:none;filter:brightness(1.1)}
+    .btn-green{background:var(--green);color:#000}
+    .btn-blue{background:var(--blue);color:#000}
+    .btn-outline{border:1px solid var(--border-light);background:transparent;color:var(--text2)}
+    .btn-outline:hover{border-color:var(--green);color:var(--green);filter:none}
+    .btn-outline-blue{border:1px solid var(--border-light);background:transparent;color:var(--text2)}
+    .btn-outline-blue:hover{border-color:var(--blue);color:var(--blue);filter:none}
+    .btn-sm{padding:8px 16px;font-size:13px}
+    .btn-ghost-sm{background:transparent;border:1px solid var(--border);color:var(--text3);
+                  padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+    .btn-ghost-sm:hover{border-color:var(--border-light);color:var(--text)}
+
+    /* ── HERO ── */
+    .hero{padding:96px 5% 80px;text-align:center;
+          background:radial-gradient(ellipse at 50% -10%,rgba(63,185,80,.10) 0%,transparent 55%),
+                      radial-gradient(ellipse at 80% 60%,rgba(88,166,255,.05) 0%,transparent 40%)}
+    .hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--green-dim);
+                border:1px solid rgba(63,185,80,.3);color:var(--green);padding:5px 14px;
+                border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:28px}
+    .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+                    animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+    .hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:900;line-height:1.08;
+             letter-spacing:-2.5px;margin-bottom:24px;max-width:900px;margin-left:auto;margin-right:auto}
+    .hero h1 .hl{background:linear-gradient(135deg,var(--green) 0%,var(--cyan) 100%);
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-sub{font-size:clamp(16px,2vw,20px);color:var(--text2);max-width:640px;
+              margin:0 auto 44px;line-height:1.65;font-weight:400}
+    .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+    .hero-footnote{font-size:13px;color:var(--text3)}
+    .hero-footnote a{color:var(--text3);text-decoration:underline}
+
+    /* ── PLATFORMS ROW ── */
+    .platforms{padding:36px 5%;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+               text-align:center}
+    .platforms-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;
+                     font-weight:600;margin-bottom:20px}
+    .platforms-row{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap}
+    .platform-item{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+                   color:var(--text3);opacity:.7}
+    .platform-item:hover{opacity:1}
+    .platform-icon{font-size:20px}
+
+    /* ── PROOF STRIP ── */
+    .proof{display:flex;justify-content:center;gap:0;border-bottom:1px solid var(--border);overflow:hidden}
+    .proof-item{flex:1;max-width:200px;text-align:center;padding:28px 16px;border-right:1px solid var(--border)}
+    .proof-item:last-child{border-right:none}
+    .proof-num{font-size:30px;font-weight:900;color:var(--green);line-height:1}
+    .proof-label{font-size:12px;color:var(--text3);margin-top:5px}
+
+    /* ── SECTION COMMON ── */
+    .section{padding:96px 5%}
+    .section-inner{max-width:1100px;margin:0 auto}
+    .eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.15em;
+             text-transform:uppercase;color:var(--green);margin-bottom:14px}
+    .section-h2{font-size:clamp(28px,4vw,46px);font-weight:900;letter-spacing:-1.5px;
+                line-height:1.12;margin-bottom:16px}
+    .section-h2 .hl{color:var(--green)}
+    .section-h2 .hlb{color:var(--blue)}
+    .section-p{font-size:17px;color:var(--text2);line-height:1.7;max-width:580px}
+
+    /* ── FEATURE SPLIT ── */
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+    .split.flip{direction:rtl}
+    .split.flip > *{direction:ltr}
+    @media(max-width:768px){.split,.split.flip{grid-template-columns:1fr;gap:40px}}
+
+    /* ── FEATURE CARDS ── */
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:48px}
+    .fcard{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:28px;
+           transition:border-color .2s,transform .2s}
+    .fcard:hover{border-color:var(--border-light);transform:translateY(-2px)}
+    .fcard-icon{font-size:28px;margin-bottom:16px}
+    .fcard h3{font-size:15px;font-weight:700;margin-bottom:8px;line-height:1.3}
+    .fcard p{font-size:13px;color:var(--text3);line-height:1.65}
+    .fcard-accent-green{border-top:2px solid var(--green)}
+    .fcard-accent-blue{border-top:2px solid var(--blue)}
+    .fcard-accent-purple{border-top:2px solid var(--purple)}
+    .fcard-accent-amber{border-top:2px solid var(--amber)}
+
+    /* ── DEMO SCREEN ── */
+    .demo-wrap{position:relative}
+    .demo-screen{background:var(--bg-card);border:1px solid var(--border-light);border-radius:14px;
+                 overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+    .demo-bar{background:var(--bg-surface);border-bottom:1px solid var(--border);padding:10px 16px;
+              display:flex;align-items:center;gap:8px}
+    .demo-dot{width:10px;height:10px;border-radius:50%}
+    .demo-url{margin-left:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+    .demo-body{padding:20px;display:flex;flex-direction:column;gap:12px}
+    .demo-row{display:grid;gap:10px}
+
+    /* Conversation Recovery mock */
+    .conv-msg{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+    .conv-role{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+    .conv-text{font-size:12px;color:var(--text2);line-height:1.55}
+    .seed-found{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:10px;
+                padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+    .seed-found .seed-icon{font-size:16px;flex-shrink:0}
+    .seed-title{font-size:12px;font-weight:700;color:var(--green);margin-bottom:2px}
+    .seed-desc{font-size:11px;color:var(--text3)}
+
+    /* Snippets mock */
+    .snippet-item{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .snip-label{font-size:12px;font-weight:600;color:var(--text2)}
+    .snip-platforms{font-size:10px;color:var(--text3);margin-top:2px}
+    .snip-copy{font-size:10px;font-weight:600;color:var(--blue);background:rgba(88,166,255,.1);
+               border:1px solid rgba(88,166,255,.2);padding:4px 8px;border-radius:4px;cursor:pointer;
+               white-space:nowrap;flex-shrink:0}
+    .snip-copy:hover{background:rgba(88,166,255,.2)}
+
+    /* Mobile seed mock */
+    .phone-mock{background:var(--bg-card);border:2px solid var(--border-light);border-radius:20px;
+                padding:16px;max-width:240px;margin:0 auto}
+    .phone-time{font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+    .phone-rec{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:12px;
+               padding:16px;text-align:center;margin-bottom:12px}
+    .phone-rec-icon{font-size:24px;margin-bottom:6px}
+    .phone-rec-label{font-size:11px;color:var(--green);font-weight:700}
+    .phone-rec-wave{height:24px;display:flex;align-items:center;justify-content:center;gap:2px;margin:8px 0}
+    .wave-bar{width:3px;border-radius:2px;background:var(--green);animation:wave .8s ease-in-out infinite}
+    @keyframes wave{0%,100%{height:4px}50%{height:20px}}
+    .phone-seed{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2)}
+    .phone-seed-title{font-weight:700;color:var(--text);margin-bottom:3px}
+    .phone-seed-status{font-size:10px;color:var(--green)}
+
+    /* Cross-platform mock */
+    .platform-row{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 14px;display:flex;align-items:center;gap:10px}
+    .platform-avatar{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;
+                     justify-content:center;font-size:14px;flex-shrink:0}
+    .plat-info{flex:1}
+    .plat-name{font-size:11px;font-weight:700;color:var(--text)}
+    .plat-meta{font-size:10px;color:var(--text3)}
+    .plat-seeds{font-size:12px;font-weight:700;color:var(--cyan)}
+
+    /* ── SNIPPETS SECTION ── */
+    .snippets-showcase{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+                       padding:32px;margin-top:48px}
+    .snippet-grid{display:flex;flex-direction:column;gap:10px}
+    .snippet-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;
+                  padding:14px 18px;display:flex;align-items:center;gap:16px;cursor:pointer;
+                  transition:border-color .15s}
+    .snippet-card:hover{border-color:var(--border-light)}
+    .snippet-card.active{border-color:var(--green);background:rgba(63,185,80,.05)}
+    .snippet-num{width:26px;height:26px;border-radius:50%;background:rgba(63,185,80,.1);
+                 border:1px solid rgba(63,185,80,.3);color:var(--green);font-size:11px;font-weight:700;
+                 display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .snippet-info{flex:1}
+    .snippet-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+    .snippet-desc{font-size:12px;color:var(--text3)}
+    .snippet-badge-row{display:flex;gap:5px;flex-wrap:wrap}
+    .plat-badge{background:var(--bg-raised);border:1px solid var(--border);color:var(--text3);
+                font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600}
+    .snippet-cta{flex-shrink:0}
+
+    /* ── DEVELOPER GATEWAY ── */
+    .dev-gateway{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 5%;
+                 background:linear-gradient(180deg,var(--bg-card) 0%,rgba(88,166,255,.03) 50%,var(--bg-card) 100%)}
+    .dev-gateway-inner{max-width:1100px;margin:0 auto}
+    .dev-gateway-top{text-align:center;margin-bottom:52px}
+    .dev-gateway-label{display:inline-flex;align-items:center;gap:7px;background:rgba(88,166,255,.1);
+                       border:1px solid rgba(88,166,255,.25);color:var(--blue);font-size:11px;font-weight:700;
+                       letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:20px}
+    .dev-gateway-h2{font-size:clamp(26px,4vw,44px);font-weight:900;letter-spacing:-1.5px;
+                    line-height:1.12;margin-bottom:16px}
+    .dev-gateway-h2 .hlb{color:var(--blue)}
+    .dev-gateway-hook{font-size:17px;color:var(--text2);max-width:640px;margin:0 auto;line-height:1.7}
+    /* comparison grid */
+    .dev-compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;margin-bottom:40px}
+    @media(max-width:768px){.dev-compare{grid-template-columns:1fr;gap:12px}}
+    .dev-col-without{background:rgba(248,81,73,.05);border:1px solid rgba(248,81,73,.2);border-radius:14px;padding:24px}
+    .dev-col-with{background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.2);border-radius:14px;padding:24px}
+    .dev-col-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:16px 8px}
+    @media(max-width:768px){.dev-col-mid{flex-direction:row;padding:0 0 4px}}
+    .dev-col-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+    .dev-col-without .dev-col-title{color:var(--red)}
+    .dev-col-with .dev-col-title{color:var(--green)}
+    .dev-compare-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);
+                     padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .dev-compare-row:last-child{border-bottom:none;padding-bottom:0}
+    .dev-compare-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+    .dev-vs{font-size:20px;font-weight:900;color:var(--text3);opacity:.5}
+    /* stat callout */
+    .dev-stat-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;
+                  margin-bottom:36px;padding:24px;background:var(--bg-surface);
+                  border:1px solid var(--border);border-radius:12px}
+    .dev-stat-item{text-align:center}
+    .dev-stat-num{font-size:28px;font-weight:900;color:var(--blue);line-height:1;font-family:'JetBrains Mono',monospace}
+    .dev-stat-lbl{font-size:12px;color:var(--text3);margin-top:4px}
+    /* bullets */
+    .dev-bullets-row{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;margin-bottom:32px}
+    .dev-bullet-item{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--text2);max-width:280px}
+    .dev-bullet-item::before{content:'→';color:var(--blue);font-weight:800;flex-shrink:0;margin-top:1px}
+    /* CTA box */
+    .dev-cta-box{background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.25);border-radius:14px;
+                 padding:28px 32px;display:flex;align-items:center;justify-content:space-between;
+                 gap:24px;flex-wrap:wrap}
+    .dev-cta-copy h4{font-size:17px;font-weight:800;margin-bottom:4px}
+    .dev-cta-copy p{font-size:13px;color:var(--text3)}
+    .dev-cta-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+    @media(max-width:600px){.dev-cta-right{align-items:flex-start}}
+    .dev-positioning{margin-top:20px;text-align:center;font-size:13px;color:var(--text3);font-style:italic}
+    .dev-positioning strong{color:var(--blue);font-style:normal}
+
+    /* ── CONSUMER PRICING ── */
+    .pricing-section{padding:96px 5%;text-align:center;
+                     background:radial-gradient(ellipse at 50% 100%,rgba(63,185,80,.05) 0%,transparent 60%)}
+    .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+                  gap:20px;margin-top:56px;max-width:900px;margin-left:auto;margin-right:auto}
+    .pcard{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+           padding:36px 28px;text-align:left;position:relative}
+    .pcard.featured{border-color:var(--green);
+                    background:linear-gradient(180deg,rgba(63,185,80,.07) 0%,var(--bg-card) 100%)}
+    .pcard-label{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+                 color:var(--text3);margin-bottom:14px}
+    .pcard.featured .pcard-label{color:var(--green)}
+    .pcard-popular{position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+                   background:var(--green);color:#000;font-size:11px;font-weight:700;
+                   padding:4px 12px;border-radius:20px;white-space:nowrap}
+    .pcard-price{font-size:44px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+    .pcard-price sub{font-size:16px;font-weight:400;color:var(--text3);letter-spacing:0;vertical-align:middle}
+    .pcard-tagline{font-size:13px;color:var(--text3);margin-bottom:24px}
+    .pcard-features{list-style:none;margin-bottom:28px}
+    .pcard-features li{font-size:13px;color:var(--text2);padding:7px 0;border-bottom:1px solid var(--border);
+                       display:flex;align-items:center;gap:9px}
+    .pcard-features li:last-child{border-bottom:none}
+    .pcard-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+    .pcard-features li.dim{color:var(--text3)}
+    .pcard-features li.dim::before{content:'—';color:var(--border-light)}
+    .pcard-btn{display:block;text-align:center;padding:13px;border-radius:9px;font-weight:700;
+               font-size:14px;border:1px solid var(--border-light);color:var(--text2);
+               cursor:pointer;background:none;font-family:inherit;width:100%;transition:all .15s}
+    .pcard-btn:hover{border-color:var(--green);color:var(--green)}
+    .pcard-btn.primary{background:var(--green);color:#000;border-color:var(--green)}
+    .pcard-btn.primary:hover{background:#4ade80;filter:none}
+    .pricing-note{margin-top:24px;font-size:13px;color:var(--text3)}
+    .pricing-note a{color:var(--text3);text-decoration:underline}
+
+    /* ── TESTIMONIAL / SOCIAL PROOF ── */
+    .social-section{padding:80px 5%;border-top:1px solid var(--border)}
+    .testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:48px}
+    .tcard{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px}
+    .tcard-quote{font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+    .tcard-author{display:flex;align-items:center;gap:12px}
+    .tcard-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg-surface);
+                  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px}
+    .tcard-name{font-size:14px;font-weight:600}
+    .tcard-meta{font-size:12px;color:var(--text3)}
+
+    /* ── HOW IT WORKS ── */
+    .how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:56px}
+    .how-step{text-align:center;padding:8px}
+    .how-num{width:48px;height:48px;border-radius:50%;background:rgba(63,185,80,.1);
+             border:2px solid rgba(63,185,80,.3);display:flex;align-items:center;justify-content:center;
+             font-weight:900;font-size:15px;color:var(--green);margin:0 auto 16px}
+    .how-step h3{font-size:14px;font-weight:700;margin-bottom:6px}
+    .how-step p{font-size:13px;color:var(--text3);line-height:1.6}
+    .how-connector{height:2px;background:linear-gradient(90deg,var(--green),transparent);
+                   margin-top:-32px;margin-bottom:24px;display:none}
+    @media(min-width:769px){.how-connector{display:block}}
+
+    /* ── FOOTER ── */
+    footer{padding:48px 5% 32px;border-top:1px solid var(--border)}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+    @media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr;gap:32px}}
+    @media(max-width:480px){.footer-grid{grid-template-columns:1fr}}
+    .footer-brand p{font-size:13px;color:var(--text3);line-height:1.7;margin-top:10px;max-width:280px}
+    .footer-col-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                      color:var(--text3);margin-bottom:14px}
+    .footer-links{display:flex;flex-direction:column;gap:8px}
+    .footer-links a{font-size:13px;color:var(--text3)}
+    .footer-links a:hover{color:var(--text);text-decoration:none}
+    .footer-bottom{display:flex;justify-content:space-between;align-items:center;
+                   flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid var(--border);
+                   font-size:12px;color:var(--text3)}
+  
+    /* ── PROMPT WIZARD WORKSPACE ── */
+    .wiz-progress-bar { background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .wiz-progress-fill { background: var(--green); height: 100%; width: 25%; transition: width .3s ease; }
+    .wiz-step { display: none; margin-top: 20px; animation: wizFadeIn .3s ease; }
+    .wiz-step.active { display: block; }
+    @keyframes wizFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .wiz-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+    @media (max-width: 800px) { .wiz-cards { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .wiz-cards { grid-template-columns: 1fr; } }
+    
+    .wiz-card { background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all .2s; position: relative; }
+    .wiz-card:hover { border-color: var(--border-hi); }
+    .wiz-card.active { border-color: var(--green); background: var(--green-dim); }
+    .wiz-card-icon { font-size: 28px; margin-bottom: 12px; }
+    .wiz-card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .wiz-card-desc { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.4; }
+    
+    /* Snippet specific grid sub-selection */
+    .snippets-subgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; grid-column: 1 / -1; }
+    @media (max-width: 768px) { .snippets-subgrid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .snippets-subgrid { grid-template-columns: 1fr; } }
+    
+    .snippet-select-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all .15s; }
+    .snippet-select-card:hover { border-color: var(--border-hi); }
+    .snippet-select-card.active { border-color: var(--green); background: var(--green-dim); }
+    .snippet-select-title { font-size: 12px; font-weight: 700; color: var(--text); }
+    .snippet-select-desc { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    
+    .wiz-footer { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1.5px solid var(--border); }
+    
+    /* Output Console styling */
+    .output-console { background: #03070b; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text2); line-height: 1.7; overflow: hidden; margin-top: 14px; }
+    .output-console-header { background: #070d14; border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .output-console-body { padding: 16px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+
+    /* ── PROMPT GENERATOR INCORPORATION ── */
+    .gen-layout { display: flex; gap: 32px; max-width: 1100px; margin: 24px auto 0; align-items: flex-start; text-align: left; }
+    .gen-form-col { flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 100px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .form-section-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title span { font-size: 16px; }
+    .intent-input { width: 100%; min-height: 80px; resize: vertical; font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px 12px; outline: none; font-family: inherit; }
+    .intent-input:focus { border-color: var(--green); }
+    .intent-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .length-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .length-option + label .len-icon { font-size: 16px; }
+    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
+    .chunking-note.visible { display: flex; }
+    .focus-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .focus-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 12px; }
+    .focus-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item.checked { border-color: var(--green); background: var(--green-dim); }
+    .focus-text { flex: 1; color: var(--text2); }
+    .focus-item.checked .focus-text { color: var(--green); font-weight: 600; }
+    .generate-btn-wrap { margin-top: 12px; }
+    .generate-btn { width: 100%; padding: 12px 24px; font-size: 15px; font-weight: 700; background: var(--green); color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .generate-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px var(--green-dim); }
+    .output-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .output-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .output-prompt { padding: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); white-space: pre-wrap; line-height: 1.7; max-height: 480px; overflow-y: auto; min-height: 180px; }
+    .output-placeholder { padding: 48px 20px; text-align: center; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .output-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .output-placeholder p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .sig-block { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg); font-family: var(--font-mono); font-size: 11px; color: var(--text3); line-height: 1.7; }
+    .sig-block .sig-label { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── UNIFIED CONSOLE CARD ── */
+    .console-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1040px; margin: 32px auto 0; box-shadow: 0 16px 48px rgba(0,0,0,.4); text-align: left; }
+    .console-tabs { display: flex; background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 0 16px; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .console-tab { background: transparent; border: none; border-bottom: 2.5px solid transparent; color: var(--text3); padding: 14px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; outline: none; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .console-tab:hover { color: var(--text); }
+    .console-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .console-body { padding: 24px; }
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    /* ── SEED SIGNATURE RECEIPT VISUAL ── */
+    .sig-receipt-card { background: #070d14; border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-mono); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.5); border-left: 3px solid var(--green); position: relative; overflow: hidden; }
+    .sig-receipt-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle, rgba(63,185,80,0.08) 0%, transparent 70%); pointer-events: none; }
+    .sig-receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 12px; margin-bottom: 16px; font-size: 11px; letter-spacing: .5px; }
+    .sig-receipt-title { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sig-receipt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: sigPulse 2s infinite; }
+    @keyframes sigPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .sig-receipt-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.03); font-size: 12px; }
+    .sig-receipt-row:last-of-type { border-bottom: none; }
+    .sig-receipt-label { color: var(--text3); }
+    .sig-receipt-val { color: var(--text2); text-align: right; }
+    .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
 </style>
+  <!-- PWA restricted to Developer + Enterprise tiers -->
+  <meta name="theme-color" content="#06080f">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
 
+<!-- ── NAV ── -->
+<style>
+/* ── Two-Row Nav ── */
+.site-header { position:sticky; top:0; z-index:100; background:rgba(6,8,15,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+.nav-top { display:flex; align-items:center; justify-content:space-between; padding:0 5%; height:50px; border-bottom:1px solid rgba(33,38,45,.5); }
+.nav-logo { font-weight:900; font-size:17px; color:var(--green); letter-spacing:-.5px; text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; }
+.nav-logo em { color:var(--text,#f0f6fc); font-style:normal; }
+.nav-top-right { display:flex; align-items:center; gap:12px; }
+.nav-top-right a { font-size:13px; font-weight:600; text-decoration:none; }
+.nav-top-right .signin { color:var(--text3,#8b949e); }
+.nav-top-right .signin:hover { color:var(--text,#f0f6fc); }
+.nav-top-right .signup { background:var(--green,#3fb950); color:#000; padding:6px 14px; border-radius:6px; font-weight:700; }
+.nav-top-right .signup:hover { filter:brightness(1.1); }
+.nav-bottom { display:flex; align-items:center; justify-content:center; gap:6px; padding:0 5%; height:38px; overflow-x:auto; white-space:nowrap; }
+.nav-bottom a { font-size:12px; font-weight:600; color:var(--text3,#8b949e); text-decoration:none; padding:4px 10px; border-radius:4px; transition:color .15s, background .15s; flex-shrink:0; }
+.nav-bottom a:hover { color:var(--text,#f0f6fc); background:rgba(255,255,255,.05); text-decoration:none; }
+.nav-bottom a.active { color:var(--cyan,#39d0d8); }
+.nav-bottom .sep { width:1px; height:16px; background:var(--border,#21262d); flex-shrink:0; margin:0 4px; }
+@media(max-width:640px) { .nav-bottom { justify-content:flex-start; } .nav-bottom a { font-size:11px; padding:4px 7px; } }
+
+    /* ── PROMPT GENERATOR INCORPORATION ── */
+    .gen-layout { display: flex; gap: 32px; max-width: 1100px; margin: 24px auto 0; align-items: flex-start; text-align: left; }
+    .gen-form-col { flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .gen-output-col { flex: 1; min-width: 0; position: sticky; top: 100px; }
+    @media (max-width: 900px) {
+      .gen-layout { flex-direction: column; }
+      .gen-output-col { position: static; }
+    }
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .form-section-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title span { font-size: 16px; }
+    .intent-input { width: 100%; min-height: 80px; resize: vertical; font-size: 14px; line-height: 1.5; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 10px 12px; outline: none; font-family: inherit; }
+    .intent-input:focus { border-color: var(--green); }
+    .intent-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+    .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .platform-grid { grid-template-columns: repeat(2, 1fr); } }
+    .platform-option { display: none; }
+    .platform-option + label { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .platform-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .platform-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .length-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .length-grid { grid-template-columns: repeat(2, 1fr); } }
+    .length-option { display: none; }
+    .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
+    .length-option + label .len-icon { font-size: 16px; }
+    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
+    .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
+    .chunking-note.visible { display: flex; }
+    .focus-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .focus-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 12px; }
+    .focus-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+    .focus-item:hover { border-color: var(--border-hi); }
+    .focus-item.checked { border-color: var(--green); background: var(--green-dim); }
+    .focus-text { flex: 1; color: var(--text2); }
+    .focus-item.checked .focus-text { color: var(--green); font-weight: 600; }
+    .generate-btn-wrap { margin-top: 12px; }
+    .generate-btn { width: 100%; padding: 12px 24px; font-size: 15px; font-weight: 700; background: var(--green); color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .generate-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 16px var(--green-dim); }
+    .output-shell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .output-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .output-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .output-prompt { padding: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text2); white-space: pre-wrap; line-height: 1.7; max-height: 480px; overflow-y: auto; min-height: 180px; }
+    .output-placeholder { padding: 48px 20px; text-align: center; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .output-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .output-placeholder p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .sig-block { padding: 14px 18px; border-top: 1px solid var(--border); background: var(--bg); font-family: var(--font-mono); font-size: 11px; color: var(--text3); line-height: 1.7; }
+    .sig-block .sig-label { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+    /* ── UNIFIED CONSOLE CARD ── */
+    .console-card { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1040px; margin: 32px auto 0; box-shadow: 0 16px 48px rgba(0,0,0,.4); text-align: left; }
+    .console-tabs { display: flex; background: var(--bg-raised); border-bottom: 1.5px solid var(--border); padding: 0 16px; gap: 8px; overflow-x: auto; white-space: nowrap; }
+    .console-tab { background: transparent; border: none; border-bottom: 2.5px solid transparent; color: var(--text3); padding: 14px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; outline: none; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .console-tab:hover { color: var(--text); }
+    .console-tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .console-body { padding: 24px; }
+    .console-panel { display: none; }
+    .console-panel.active { display: block; }
+
+    /* ── SEED SIGNATURE RECEIPT VISUAL ── */
+    .sig-receipt-card { background: #070d14; border: 1.5px solid var(--border); border-radius: 12px; font-family: var(--font-mono); padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,.5); border-left: 3px solid var(--green); position: relative; overflow: hidden; }
+    .sig-receipt-card::before { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; background: radial-gradient(circle, rgba(63,185,80,0.08) 0%, transparent 70%); pointer-events: none; }
+    .sig-receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 12px; margin-bottom: 16px; font-size: 11px; letter-spacing: .5px; }
+    .sig-receipt-title { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sig-receipt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: sigPulse 2s infinite; }
+    @keyframes sigPulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .sig-receipt-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.03); font-size: 12px; }
+    .sig-receipt-row:last-of-type { border-bottom: none; }
+    .sig-receipt-label { color: var(--text3); }
+    .sig-receipt-val { color: var(--text2); text-align: right; }
+    .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
+</style>
 <header class="site-header">
-  <div class="wrap bar">
-    <a class="brand" href="index.html" aria-label="SeedReflections home"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
-    <nav class="nav" aria-label="Primary">
-      <a href="index.html#how">How it works</a>
-      <a href="index.html#review">Review</a>
-      <a href="index.html#pricing">Pricing</a>
-      <a href="comparison.html">Compare</a>
-      <a href="prompts.html" aria-current="page">Prompt tools</a>
-    </nav>
-    <div class="bar-actions">
-      <a class="signin" href="auth.html?mode=login">Sign in</a><a class="btn btn-primary" href="auth.html?mode=signup">Start free</a>
+  <div class="nav-top">
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">Seed<em>Reflections</em></a>
+    <div class="nav-top-right" id="nav-auth">
+      <a href="auth.html?mode=login" class="signin">Sign In</a>
+      <a href="auth.html?mode=signup" class="signup">Sign Up</a>
     </div>
+  </div>
+  <div class="nav-bottom">
+    <a href="index.html">Home</a>
+    <a href="/consumer">Go to Dashboard</a>
+    <a href="prompts.html" class="active" aria-current="page">📋 Prompt Engine</a>
+    <a href="comparison.html">⚔️ Compare</a>
+    <a href="auth.html?mode=admin">🛡️ Admin</a>
   </div>
 </header>
 
-<main id="main">
 
-<section class="band-3" id="section-generator" aria-labelledby="pt-title">
-  <div class="wrap" style="max-width:1040px">
-    <div style="margin-bottom:36px;max-width:68ch">
-      <h1 id="pt-title" class="page-title">Carry focused instructions into the AI assistant you choose.</h1>
-      <p class="lede" style="margin-top:20px">The Workspace is the product center. The Prompt Engine is a secondary utility for preparing recovery prompts, intent starters, coherence checks, and handoff instructions outside the platform.</p>
-      <p class="small" style="margin-top:12px">It does not replace the Library or claim direct access to another provider's private history.</p>
+<main id="main">
+<section class="section" id="section-generator" style="background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-inner" style="max-width:1040px;">
+    <div style="text-align:center;margin-bottom:28px">
+      <div class="eyebrow">Portable Prompt Tools</div>
+      <h2 class="section-h2">Carry focused instructions into<br><span class="hl">the AI assistant you choose.</span></h2>
+      <p class="section-p" style="margin:16px auto 0;text-align:center;max-width:800px;font-size:17.5px;line-height:1.65;color:var(--text);font-weight:500;">
+        The Workspace is the product center. The Prompt Engine is a secondary utility for preparing recovery prompts, intent starters, coherence checks, and handoff instructions outside the platform.
+      </p>
+      <p class="section-p" style="margin:12px auto 0;text-align:center;max-width:680px;font-size:13.5px;color:var(--text3);line-height:1.5;">
+        It does not replace the Library or claim direct access to another provider's private history.
+      </p>
     </div>
+    
     <div class="console-card">
       <!-- Wizard Progress Header -->
       <div style="padding:20px 24px 12px;border-bottom:1.5px solid var(--border);background:var(--bg-raised)">
-        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">
           <span>SCIA Prompt Wizard</span>
           <span id="wiz-step-indicator">Step 1 of 4</span>
         </div>
@@ -130,25 +578,29 @@
         <!-- STEP 1: Choose Prompt Type -->
         <div class="wiz-step active" id="wiz-step-1">
           <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Select prompt type:</h3>
-          <p style="font-size:13px;color:var(--text3);margin-bottom:18px">Choose what type of seed-reflection prompt you'd like to construct.</p>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:18px">Choose what type of seed-reflection prompt you'd like to construct.</p>
           
           <div class="wiz-cards">
             <div class="wiz-card active" id="card-type-recovery" onclick="selectPromptType('recovery')">
+              <div class="wiz-card-icon">🔍</div>
               <div class="wiz-card-title">Recovery Prompt</div>
               <div class="wiz-card-desc">Scan an existing chat log to extract forgotten seeds &amp; drift points.</div>
             </div>
             
             <div class="wiz-card" id="card-type-system" onclick="selectPromptType('system')">
+              <div class="wiz-card-icon">🧠</div>
               <div class="wiz-card-title">System Prompt</div>
               <div class="wiz-card-desc">Configure custom system instructions to make chats seed-aware automatically.</div>
             </div>
 
             <div class="wiz-card" id="card-type-new_thread" onclick="selectPromptType('new_thread')">
+              <div class="wiz-card-icon">💬</div>
               <div class="wiz-card-title font-mono">New Thread</div>
               <div class="wiz-card-desc">Create a starter prompt to begin a clean, context-contained chat.</div>
             </div>
 
             <div class="wiz-card" id="card-type-snippet" onclick="selectPromptType('snippet')">
+              <div class="wiz-card-icon">📋</div>
               <div class="wiz-card-title">Pre-made Snippet</div>
               <div class="wiz-card-desc">Select one of the 7 universal pre-made SCIA utility prompts.</div>
             </div>
@@ -161,27 +613,27 @@
               <div class="snippet-select-desc">Lock in intent before starting.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-2" onclick="selectSnippetCard(2)">
-              <div class="snippet-select-title">2. Recover Ideas</div>
+              <div class="snippet-select-title">🔍 2. Recover Ideas</div>
               <div class="snippet-select-desc">Scan thread for lost threads.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-3" onclick="selectSnippetCard(3)">
-              <div class="snippet-select-title">3. Coherence Check</div>
+              <div class="snippet-select-title">📊 3. Coherence Check</div>
               <div class="snippet-select-desc">Audit alignment mid-session.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-4" onclick="selectSnippetCard(4)">
-              <div class="snippet-select-title">4. Handoff Summary</div>
+              <div class="snippet-select-title">📋 4. Handoff Summary</div>
               <div class="snippet-select-desc">Handoff summary for new chat.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-5" onclick="selectSnippetCard(5)">
-              <div class="snippet-select-title">5. Priority Recovery</div>
+              <div class="snippet-select-title">🎯 5. Priority Recovery</div>
               <div class="snippet-select-desc">Score seeds by effort/impact.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-6" onclick="selectSnippetCard(6)">
-              <div class="snippet-select-title">6. Provenance Stamp</div>
+              <div class="snippet-select-title">✍️ 6. Provenance Stamp</div>
               <div class="snippet-select-desc">Append validation signature.</div>
             </div>
             <div class="snippet-select-card" id="scard-snip-7" onclick="selectSnippetCard(7)">
-              <div class="snippet-select-title">7. Project Bootstrap</div>
+              <div class="snippet-select-title">🚀 7. Project Bootstrap</div>
               <div class="snippet-select-desc">Generate starting milestones.</div>
             </div>
           </div>
@@ -192,48 +644,49 @@
           <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configure platform &amp; parameters:</h3>
           
           <div class="form-section">
-            <div class="form-section-title">Target AI Platform</div>
+            <div class="form-section-title"><span>🤖</span> Target AI Platform</div>
             <div class="platform-grid">
               <div>
                 <input type="radio" name="wiz-platform" id="wplat-chatgpt" value="ChatGPT" class="platform-option" checked onchange="selectPlatformVal('ChatGPT')">
-                <label for="wplat-chatgpt">ChatGPT</label>
+                <label for="wplat-chatgpt"><span class="plat-icon">💬</span>ChatGPT</label>
               </div>
               <div>
                 <input type="radio" name="wiz-platform" id="wplat-claude" value="Claude" class="platform-option" onchange="selectPlatformVal('Claude')">
-                <label for="wplat-claude">Claude</label>
+                <label for="wplat-claude"><span class="plat-icon">🔮</span>Claude</label>
               </div>
               <div>
                 <input type="radio" name="wiz-platform" id="wplat-gemini" value="Gemini" class="platform-option" onchange="selectPlatformVal('Gemini')">
-                <label for="wplat-gemini">Gemini</label>
+                <label for="wplat-gemini"><span class="plat-icon">♊</span>Gemini</label>
               </div>
               <div>
                 <input type="radio" name="wiz-platform" id="wplat-other" value="AI assistant" class="platform-option" onchange="selectPlatformVal('AI assistant')">
-                <label for="wplat-other">Other</label>
+                <label for="wplat-other"><span class="plat-icon">🌐</span>Other</label>
               </div>
             </div>
           </div>
           
           <div class="form-section" id="wiz-length-block" style="margin-top:16px;">
-            <div class="form-section-title">Conversation Size (For Context Allocation)</div>
+            <div class="form-section-title"><span>📏</span> Conversation Size (For Context Allocation)</div>
             <div class="length-grid">
               <div>
                 <input type="radio" name="wiz-length" id="wlen-short" value="short" class="length-option" checked onchange="selectLengthVal('short')">
-                <label for="wlen-short">Short<span class="len-sub">&lt;10K tokens</span></label>
+                <label for="wlen-short"><span class="len-icon">📄</span>Short<span class="len-sub">&lt;10K tokens</span></label>
               </div>
               <div>
                 <input type="radio" name="wiz-length" id="wlen-medium" value="medium" class="length-option" onchange="selectLengthVal('medium')">
-                <label for="wlen-medium">Medium<span class="len-sub">10K–50K</span></label>
+                <label for="wlen-medium"><span class="len-icon">📋</span>Medium<span class="len-sub">10K–50K</span></label>
               </div>
               <div>
                 <input type="radio" name="wiz-length" id="wlen-long" value="long" class="length-option" onchange="selectLengthVal('long')">
-                <label for="wlen-long">Long<span class="len-sub">50K–200K</span></label>
+                <label for="wlen-long"><span class="len-icon">📚</span>Long<span class="len-sub">50K–200K</span></label>
               </div>
               <div>
                 <input type="radio" name="wiz-length" id="wlen-xlarge" value="xlarge" class="length-option" onchange="selectLengthVal('xlarge')">
-                <label for="wlen-xlarge">V. Long<span class="len-sub">500K+</span></label>
+                <label for="wlen-xlarge"><span class="len-icon">🌊</span>V. Long<span class="len-sub">500K+</span></label>
               </div>
             </div>
             <div class="chunking-note" id="wchunking-note">
+              <span>⚠️</span>
               <div><strong>Large conversation context.</strong> Wizard will inject specialized context-chunking and rolling-state prompts.</div>
             </div>
           </div>
@@ -244,36 +697,42 @@
           <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Describe your goal &amp; focus areas:</h3>
           
           <div class="form-section">
-            <div class="form-section-title">Describe your goal or seed (optional context)</div>
-            <textarea class="intent-input" id="wiz-intent" placeholder="What are you trying to recover, outline, or build? (e.g. 'Plan next steps for the habit tracker UI' or 'Identify why we stalled on authentication development')" aria-label="Your goal or context (optional)"></textarea>
+            <div class="form-section-title"><span>🎯</span> Describe your goal or seed (optional context)</div>
+            <textarea class="intent-input" id="wiz-intent" placeholder="What are you trying to recover, outline, or build? (e.g. 'Plan next steps for the habit tracker UI' or 'Identify why we stalled on authentication development')"></textarea>
             <div class="intent-hint">Adds specific parameters and constraints to focus model outputs.</div>
           </div>
           
           <div class="form-section" id="wiz-focus-block" style="margin-top:16px;">
-            <div class="form-section-title">Select target focus areas (What matters most)</div>
+            <div class="form-section-title"><span>🔍</span> Select target focus areas (What matters most)</div>
             <div class="focus-grid">
               <label class="focus-item checked" id="wfocus-stuck-label">
                 <input type="checkbox" id="wfocus-stuck" value="stuck" checked onchange="toggleFocusStyle('wfocus-stuck-label', this)">
+                <span class="focus-icon">🧱</span>
                 <span class="focus-text">Find where we got stuck and why</span>
               </label>
               <label class="focus-item checked" id="wfocus-code-label">
                 <input type="checkbox" id="wfocus-code" value="code" checked onchange="toggleFocusStyle('wfocus-code-label', this)">
+                <span class="focus-icon">💾</span>
                 <span class="focus-text">Recover code &amp; content we built</span>
               </label>
               <label class="focus-item checked" id="wfocus-ideas-label">
                 <input type="checkbox" id="wfocus-ideas" value="ideas" checked onchange="toggleFocusStyle('wfocus-ideas-label', this)">
+                <span class="focus-icon">💡</span>
                 <span class="focus-text">Find other ideas mentioned but forgotten</span>
               </label>
               <label class="focus-item checked" id="wfocus-next-label">
                 <input type="checkbox" id="wfocus-next" value="next" checked onchange="toggleFocusStyle('wfocus-next-label', this)">
+                <span class="focus-icon">🎯</span>
                 <span class="focus-text">Get actionable next steps</span>
               </label>
               <label class="focus-item checked" id="wfocus-drift-label">
                 <input type="checkbox" id="wfocus-drift" value="drift" checked onchange="toggleFocusStyle('wfocus-drift-label', this)">
+                <span class="focus-icon">🌊</span>
                 <span class="focus-text">Identify drift points and causes</span>
               </label>
               <label class="focus-item" id="wfocus-decisions-label">
                 <input type="checkbox" id="wfocus-decisions" value="decisions" onchange="toggleFocusStyle('wfocus-decisions-label', this)">
+                <span class="focus-icon">⚖️</span>
                 <span class="focus-text">List decisions made and rationale</span>
               </label>
             </div>
@@ -283,7 +742,7 @@
         <!-- STEP 4: Output Custom Prompt Terminal -->
         <div class="wiz-step" id="wiz-step-4">
           <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Your custom prompt is ready!</h3>
-          <p style="font-size:13px;color:var(--text3);margin-bottom:14px">Copy the compiled instructions block below and paste it directly into your AI chat window.</p>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px">Copy the compiled instructions block below and paste it directly into your AI chat window.</p>
           
           <div class="output-console">
             <div class="output-console-header">
@@ -291,17 +750,17 @@
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57"></span>
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e"></span>
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840"></span>
-                <span style="margin-left:8px;font-size:13px;color:var(--text3)" id="wiz-console-title">Prompt Compiler</span>
+                <span style="margin-left:8px;font-size:11px;color:var(--text3)" id="wiz-console-title">Prompt Compiler</span>
               </div>
-              <button class="btn btn-primary btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()" style="padding:4px 12px;font-size:13px">Copy prompt</button>
+              <button class="btn btn-primary btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()" style="padding:4px 12px;font-size:11.5px">📋 Copy Prompt</button>
             </div>
             
             <div class="output-console-body" id="wiz-console-output">Compiling...</div>
           </div>
           
           <div class="card" style="margin-top:16px;padding:16px;">
-            <h4 style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Usage guidance:</h4>
-            <ul style="font-size:13px;color:var(--text2);line-height:1.6;margin-left:18px;list-style:disc;" id="wiz-usage-guidelines">
+            <h4 style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">💡 Usage Guidance:</h4>
+            <ul style="font-size:12px;color:var(--text2);line-height:1.6;margin-left:18px;list-style:disc;" id="wiz-usage-guidelines">
               <li>Open a new conversation thread on the target AI assistant.</li>
               <li>Paste the full compiled prompt first.</li>
               <li>Then paste your conversation transcript history after it.</li>
@@ -312,35 +771,58 @@
         <!-- Wizard Navigation Footer -->
         <div class="wiz-footer">
           <button class="btn btn-ghost btn-sm" id="btn-wiz-prev" onclick="prevWizStep()" style="visibility:hidden">← Back</button>
-          <button class="btn btn-primary btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details →</button>
+          <button class="btn btn-primary btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details ➔</button>
         </div>
         
       </div>
     </div>
   </div>
 </section>
-
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <div class="foot">
-      <div>
-        <a class="brand" href="index.html"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
-        <p>Seed-Class Intelligence Architecture. Never lose another idea in an AI conversation.</p>
-      </div>
-      <div><h2>Recovery</h2><ul>
-        <li><a href="index.html">Conversation Recovery</a></li><li><a href="prompts.html">Universal Snippets</a></li><li><a href="/consumer">Import AI Export</a></li><li><a href="/consumer">My Dashboard</a></li><li><a href="comparison.html">Product Comparison</a></li></ul></div>
-      <div><h2>Platform</h2><ul>
-        <li><a href="auth.html?mode=signup">Sign Up Free</a></li><li><a href="auth.html?mode=login">Log In</a></li><li><a href="auth.html?mode=admin">Admin Portal</a></li></ul></div>
-      <div><h2>Company</h2><ul>
-        <li><a href="https://github.com/SeedClassIntelligence/seedreflections">GitHub</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="https://github.com/SeedClassIntelligence/seedreflections">Open Source</a></li></ul></div>
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div style="font-weight:900;font-size:18px;letter-spacing:-.5px;color:var(--green)">Seed<em style="color:var(--text);font-style:normal">Reflections</em></div>
+      <p>Seed-Class Intelligence Architecture. Never lose another idea in an AI conversation.</p>
     </div>
-    <div class="legal"><span>© 2026 Seed Reflections — Seed-Class Intelligence Architecture</span></div>
+    <div>
+      <div class="footer-col-title">Recovery</div>
+      <div class="footer-links">
+        <a href="index.html">Conversation Recovery</a>
+        <a href="/consumer">Universal Snippets</a>
+        <a href="/consumer">Import AI Export</a>
+        <a href="/consumer">My Dashboard</a>
+        <a href="comparison.html">Product Comparison</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Platform</div>
+      <div class="footer-links">
+        <a href="auth.html?mode=signup">Sign Up Free</a>
+        <a href="auth.html?mode=login">Log In</a>
+        <a href="auth.html?mode=admin">Admin Portal</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Company</div>
+      <div class="footer-links">
+        <a href="https://github.com/SeedClassIntelligence/seedreflections">GitHub</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Seed Reflections — Seed-Class Intelligence Architecture</div>
+    <div style="display:flex;gap:16px">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="https://github.com/SeedClassIntelligence/seedreflections">Open Source</a>
+    </div>
   </div>
 </footer>
-<script>
 
+<script src="js/platform.js"></script>
+<script>
 // ── UNIFIED PROMPT ENGINE CONSOLE LOGIC ──
 var wizCurrentStep = 1;
 var selectedPromptType = 'recovery'; // recovery, system, new_thread, snippet
@@ -363,9 +845,9 @@ function selectPromptType(type) {
   // Update footer button name
   var nextBtn = document.getElementById('btn-wiz-next');
   if (type === 'snippet') {
-    nextBtn.textContent = 'Next: Choose Snippet →';
+    nextBtn.textContent = 'Next: Choose Snippet ➔';
   } else {
-    nextBtn.textContent = 'Next: Platform Details →';
+    nextBtn.textContent = 'Next: Platform Details ➔';
   }
 }
 
@@ -402,11 +884,11 @@ function switchWizPanel(step) {
   if (step === 4) {
     nextBtn.textContent = 'Reset Engine ↺';
   } else if (step === 3) {
-    nextBtn.textContent = 'Generate Custom Prompt';
+    nextBtn.textContent = 'Generate Custom Prompt ✨';
   } else if (step === 1) {
-    nextBtn.textContent = (selectedPromptType === 'snippet') ? 'Next: Choose Snippet →' : 'Next: Platform Details →';
+    nextBtn.textContent = (selectedPromptType === 'snippet') ? 'Next: Choose Snippet ➔' : 'Next: Platform Details ➔';
   } else {
-    nextBtn.textContent = (selectedPromptType === 'system') ? 'Generate Instructions' : 'Next: Setup Focus →';
+    nextBtn.textContent = (selectedPromptType === 'system') ? 'Generate Instructions ✨' : 'Next: Setup Focus ➔';
   }
 }
 
@@ -936,7 +1418,19 @@ function copyFullPrompt() {
   });
 }
 
+</script>
+<script>
+// Auth-reactive nav
+(function() {
+  const el = document.getElementById('nav-auth');
+  if (SeedReflectionsPlatform.isLoggedIn()) {
+    el.innerHTML = `
+      <a href="/consumer" class="signin" style="margin-right:8px;">Dashboard</a>
+      <button class="btn-nav-cta" onclick="SeedReflectionsPlatform.logout(); location.reload();" style="background:transparent;border:1px solid var(--border-light);color:var(--text3);">Log out</button>`;
+  }
+})();
 
+// Checkout — direct Stripe payment links (no backend required)
 </script>
 <script src="assets/a11y.js"></script>
 </body>
