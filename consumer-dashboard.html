@@ -1335,6 +1335,28 @@ body{background:#050c09;color:var(--text)}
 }
 /* Status text colours that keep 4.5:1 on the dark surfaces (the shared --cyan/--purple were tuned for light grounds) */
 :root{--status-active:#7aa2ff;--status-other:#b79dff}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  /* keep colour and opacity feedback, drop movement */
+  *,*::before,*::after{transition-property:color,background-color,border-color,opacity!important}
+  .pulse,.live-dot{animation:none!important}
+  .spinner{animation:none!important;border-color:var(--accent)!important}
+}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* touch targets: 44px for the controls people press most (WCAG 2.5.8 is met by spacing; 44px is the comfort size) */
+.candidate-actions .btn,.library-view-tab,.shelf-mode-tab,.source-method,.overview-stat button,select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]){min-height:44px}
+.rail-toggle-btn{min-width:44px;min-height:44px}
+.app-primary-tab{min-height:44px}
+.nav-brand{min-height:44px;display:inline-flex;align-items:center}
+.navbar .nav-btn{min-width:44px}
+.chip{min-height:44px}
+.navbar .nav-btn,.navbar #project-filter{min-height:44px!important}
+.nav-btn-labeled{font-size:12px}
+.overview-stat button{padding-block:10px}
+label:has(input[type=checkbox]),label:has(input[type=radio]){display:inline-flex;align-items:center;gap:10px;min-height:44px}
+.btn,.btn-sm{min-height:44px;min-width:44px}
+input[type=checkbox],input[type=radio]{width:24px;height:24px}
+textarea.chat-input{min-height:44px!important}
 /* Form fields keep a 3:1 boundary against their surround (WCAG 1.4.11) and every control shows a focus ring (2.4.7).
    !important because earlier theme layers and inline styles set outline:none and 1:1 borders. */
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]),select,textarea{border-color:#6f8c7c!important}
@@ -1399,33 +1421,34 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 </div>
 
 <!-- ── Persistent product navigation ── -->
-<div class="app-primary-nav" aria-label="Primary navigation">
-  <button class="app-primary-tab active" data-primary="workspace" onclick="switchDashTab('workspace')"><span class="nav-glyph">◫</span><span class="nav-label">Workspace</span></button>
-  <button class="app-primary-tab" data-primary="review" onclick="switchDashTab('review')"><span class="nav-glyph">✓</span><span class="nav-label">Review</span></button>
-  <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')"><span class="nav-glyph">≡</span><span class="nav-label">Library</span></button>
+<div class="app-primary-nav" role="navigation" aria-label="Primary navigation">
+  <button class="app-primary-tab active" aria-current="page" data-primary="workspace" onclick="switchDashTab('workspace')"><span class="nav-glyph" aria-hidden="true">◫</span><span class="nav-label">Workspace</span></button>
+  <button class="app-primary-tab" data-primary="review" onclick="switchDashTab('review')"><span class="nav-glyph" aria-hidden="true">✓</span><span class="nav-label">Review</span></button>
+  <button class="app-primary-tab" data-primary="library" onclick="switchDashTab('map')"><span class="nav-glyph" aria-hidden="true">≡</span><span class="nav-label">Library</span></button>
   <div class="library-subnav" id="library-subnav" aria-label="Library views">
   <button class="library-view-tab" data-library="map" onclick="switchDashTab('map')">Conversations</button>
   <button class="library-view-tab" data-library="browser" onclick="switchDashTab('browser')">Ideas & decisions</button>
   <button class="library-view-tab" data-library="intake" onclick="switchDashTab('intake')">Sources</button>
   <button class="library-view-tab" data-library="artifacts" onclick="switchDashTab('artifacts')">Work artifacts</button>
 </div>
-  <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')"><span class="nav-glyph">⌁</span><span class="nav-label">Overview</span></button>
-  <button class="app-primary-tab" data-primary="tools" onclick="openToolsManager()"><span class="nav-glyph">⌘</span><span class="nav-label">Tools</span></button>
-  <button class="app-primary-tab" data-primary="prompt" onclick="switchDashTab('prompt')"><span class="nav-glyph">#</span><span class="nav-label">Prompt Engine</span></button>
-  <button class="app-primary-tab" data-primary="settings" onclick="switchDashTab('account')"><span class="nav-glyph">⚙</span><span class="nav-label">Settings</span></button>
-  <a class="app-primary-tab" href="/admin" style="text-decoration:none"><span class="nav-glyph">⌂</span><span class="nav-label">Admin Portal</span></a>
-  <button class="app-primary-tab app-more-tab" id="app-more-btn" aria-expanded="false" aria-controls="app-more-sheet" onclick="toggleMoreNav()"><span class="nav-glyph">⋯</span><span class="nav-label">More</span></button>
+  <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')"><span class="nav-glyph" aria-hidden="true">⌁</span><span class="nav-label">Overview</span></button>
+  <button class="app-primary-tab" data-primary="tools" onclick="openToolsManager()"><span class="nav-glyph" aria-hidden="true">⌘</span><span class="nav-label">Tools</span></button>
+  <button class="app-primary-tab" data-primary="prompt" onclick="switchDashTab('prompt')"><span class="nav-glyph" aria-hidden="true">#</span><span class="nav-label">Prompt Engine</span></button>
+  <button class="app-primary-tab" data-primary="settings" onclick="switchDashTab('account')"><span class="nav-glyph" aria-hidden="true">⚙</span><span class="nav-label">Settings</span></button>
+  <a class="app-primary-tab" href="/admin" style="text-decoration:none"><span class="nav-glyph" aria-hidden="true">⌂</span><span class="nav-label">Admin Portal</span></a>
+  <button class="app-primary-tab app-more-tab" id="app-more-btn" aria-expanded="false" aria-controls="app-more-sheet" onclick="toggleMoreNav()"><span class="nav-glyph" aria-hidden="true">⋯</span><span class="nav-label">More</span></button>
   <div class="nav-divider"></div>
 <div class="nav-caption">Workspace</div>
 </div>
 
 <div id="app-more-sheet" class="app-more-sheet" role="menu" aria-label="More destinations" hidden>
-  <button role="menuitem" onclick="moreNavGo(function(){openToolsManager()})"><span class="nav-glyph">⌘</span>Tools</button>
-  <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('prompt')})"><span class="nav-glyph">#</span>Prompt Engine</button>
-  <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('account')})"><span class="nav-glyph">⚙</span>Settings</button>
-  <a role="menuitem" href="/admin"><span class="nav-glyph">⌂</span>Admin Portal</a>
+  <button role="menuitem" onclick="moreNavGo(function(){openToolsManager()})"><span class="nav-glyph" aria-hidden="true">⌘</span>Tools</button>
+  <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('prompt')})"><span class="nav-glyph" aria-hidden="true">#</span>Prompt Engine</button>
+  <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('account')})"><span class="nav-glyph" aria-hidden="true">⚙</span>Settings</button>
+  <a role="menuitem" href="/admin"><span class="nav-glyph" aria-hidden="true">⌂</span>Admin Portal</a>
 </div>
 
+<h1 class="sr-only" id="page-heading" tabindex="-1">Workspace</h1>
 <div class="section" id="section-tools" style="display:none">
   <div class="tools-manager" style="width:100%;max-height:none">
     <div class="tools-manager-head"><div><div class="journey-kicker">Workspace tools</div><h2>Bring the services you already use.</h2><p>Connect a tool once, review what it can access, and use it inside the project where it belongs. Tool states below come from the server.</p></div></div>
@@ -1441,7 +1464,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   <div class="journey-shell">
     <button class="btn btn-ghost workspace-source-close" style="display:none;float:right" onclick="closeWorkspaceSources()">Close</button>
     <div class="journey-kicker">Sources</div>
-    <h1 class="journey-title">Bring your history home.</h1>
+    <h2 class="journey-title">Bring your history home.</h2>
     <p class="journey-copy">Import your conversation archive or paste material directly. Seed Reflections keeps the original source, maps the ideas inside it, and gives you a place to continue—not another pile of disconnected chats.</p>
     <div class="journey-progress">
       <div class="journey-step active"><strong>1</strong> Bring in history</div>
@@ -1449,7 +1472,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
       <div class="journey-step"><strong>3</strong> Choose what matters</div>
       <div class="journey-step"><strong>4</strong> Continue the work</div>
     </div>
-    <div class="source-methods" role="tablist" aria-label="Add source method">
+    <div class="source-methods" role="group" aria-label="Add source method">
       <button class="source-method active" data-source-method="upload" onclick="showSourceMethod('upload')">Upload export</button>
       <button class="source-method" data-source-method="paste" onclick="showSourceMethod('paste')">Paste conversation</button>
       <button class="source-method" data-source-method="folder" onclick="showSourceMethod('folder')">SeedBridge</button>
@@ -1519,7 +1542,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <div class="section" id="section-map" style="display:none">
   <div class="journey-shell">
     <div class="journey-kicker">Library · Conversations</div>
-    <h1 class="journey-title" style="font-size:34px">See what you have before deciding what to do with it.</h1>
+    <h2 class="journey-title" style="font-size:34px">See what you have before deciding what to do with it.</h2>
     <p class="journey-copy">Every card is a source conversation—not an invented summary. Open one to inspect the original exchange, then continue it, plan from it, explore it, or map its ideas.</p>
     <div class="archive-toolbar">
       <div class="search-wrap">
@@ -1742,7 +1765,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   </div>
   <div class="garden-grid overview-lifecycle">
     <div class="card">
-      <div class="card-header"><h3>Idea progression</h3><span style="font-size:12px;color:var(--text-muted)">Accepted ideas only</span></div>
+      <div class="card-header"><h3 aria-level="2">Idea progression</h3><span style="font-size:12px;color:var(--text-muted)">Accepted ideas only</span></div>
       <div class="card-body">
         <div class="garden-lifecycle" id="lifecycle-pipeline"></div>
         <div id="continuity-overview" style="margin-top:20px"></div>
@@ -1836,14 +1859,14 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   
   <div class="account-grid">
     <div class="card" style="grid-column:1/-1">
-      <div class="card-header"><h3>Data & portability</h3></div>
+      <div class="card-header"><h3 aria-level="2">Data & portability</h3></div>
       <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)" aria-label="Restore ideas backup file"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
     </div>
     
     <!-- Column 1: Usage Tracker -->
     <div class="card">
       <div class="card-header">
-        <h3>Usage Statistics</h3>
+        <h3 aria-level="2">Usage Statistics</h3>
         <span id="tier-badge" class="mode-badge" style="background:var(--green-glow);color:var(--green)">Pro Tier</span>
       </div>
       <div class="card-body">
@@ -1882,7 +1905,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     
     <!-- Column 2: Profile Settings -->
     <div class="card">
-      <div class="card-header"><h3>Account Settings</h3></div>
+      <div class="card-header"><h3 aria-level="2">Account Settings</h3></div>
       <div class="card-body">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
           <div class="nav-avatar" style="width:52px;height:52px;font-size:20px">SR</div>
@@ -1911,7 +1934,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     <!-- Row 2, Column 1: API Configuration (Self-Hosted Key Control) -->
     <div class="card">
       <div class="card-header">
-        <h3>LLM Key Management</h3>
+        <h3 aria-level="2">LLM Key Management</h3>
         <span id="api-mode-badge" class="mode-badge" style="background:var(--cyan-glow);color:var(--cyan)">Self-Hosted</span>
       </div>
       <div class="card-body">
@@ -1962,13 +1985,13 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 
     <!-- Row 2, Column 2: Plans & Subscriptions -->
     <div class="card">
-      <div class="card-header"><h3>Billing Plans & Subscriptions</h3></div>
+      <div class="card-header"><h3 aria-level="2">Billing Plans & Subscriptions</h3></div>
       <div class="card-body">
         <p style="font-size:12.5px;color:var(--text-muted)">Configure your platform tier plan. Self-hosted key users bypass reflection limits entirely.</p>
         
         <div class="plan-selection">
           <div class="plan-tier-card" id="plan-tier-free" onclick="selectBillingPlan('free')">
-            <h4>Free Plan</h4>
+            <h4 aria-level="3">Free Plan</h4>
             <div class="plan-tier-price">$0</div>
             <ul class="plan-tier-features">
               <li>✓ 50 reflections / mo</li>
@@ -1978,7 +2001,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
           </div>
           
           <div class="plan-tier-card" id="plan-tier-pro" onclick="selectBillingPlan('pro')">
-            <h4>Pro Tier</h4>
+            <h4 aria-level="3">Pro Tier</h4>
             <div class="plan-tier-price">$9<span style="font-size:12px;font-weight:400">/mo</span></div>
             <ul class="plan-tier-features">
               <li>✓ 250 reflections / mo</li>
@@ -1987,7 +2010,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
           </div>
           
           <div class="plan-tier-card" id="plan-tier-master" onclick="selectBillingPlan('master')">
-            <h4>Master Tier</h4>
+            <h4 aria-level="3">Master Tier</h4>
             <div class="plan-tier-price">$20<span style="font-size:12px;font-weight:400">/mo</span></div>
             <ul class="plan-tier-features">
               <li>✓ Unlimited reflections</li>
@@ -2004,7 +2027,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     </div>
 
     <div class="card account-grid-full" id="team-settings-card">
-      <div class="card-header"><h3>Workspace Team</h3><span id="team-role-badge" class="mode-badge">Owner</span></div>
+      <div class="card-header"><h3 aria-level="2">Workspace Team</h3><span id="team-role-badge" class="mode-badge">Owner</span></div>
       <div class="card-body">
         <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Invite collaborators into this workspace. Editors can work with sources, ideas, and decisions; viewers have read-only access.</p>
         <div id="team-invite-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
@@ -2019,7 +2042,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 
     <!-- Row 3: Full Width Privacy Data Management -->
     <div class="card account-grid-full">
-      <div class="card-header"><h3>Privacy & Consent Control Center</h3></div>
+      <div class="card-header"><h3 aria-level="2">Privacy & Consent Control Center</h3></div>
       <div class="card-body">
         <div class="privacy-toggle-list">
           <div class="privacy-toggle-item">
@@ -2174,7 +2197,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   <div class="journey-shell">
     <div class="section-head"><div><div class="journey-kicker">Prompt Engine</div><div class="section-title">Carry intent between AI platforms.</div><p class="workspace-intro">Build recovery prompts, system instructions, new-thread handoffs, or use the complete set of seven universal continuity snippets.</p></div><a class="btn btn-primary" href="index.html#section-generator">Open guided prompt builder</a></div>
     <div class="source-methods" style="margin-bottom:22px"><span class="source-method active">Recovery Prompt</span><span class="source-method">System Prompt</span><span class="source-method">New Thread</span><span class="source-method">Pre-made Snippets</span></div>
-    <h3 style="margin-bottom:5px">Seven universal SCIA utility prompts</h3>
+    <h3 aria-level="2" style="margin-bottom:5px">Seven universal SCIA utility prompts</h3>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">The same canonical prompt set presented by the public Prompt Engine—available inside your workspace.</p>
     <div class="snippets-grid" id="snippets-grid">
       <!-- rendered by JS -->
@@ -2698,7 +2721,7 @@ async function loadCandidateQueue() {
       var acceptLabel = item.kind === 'decision' ? 'Accept Decision' : item.kind === 'abandoned' ? 'Confirm History' : 'Accept as Idea';
       return '<article class="candidate-card">' +
         '<div class="candidate-meta"><span class="candidate-kind">' + escHtml(item.kind) + '</span><span>Phrase match · review source</span></div>' +
-        '<h4>' + escHtml(item.title) + '</h4>' +
+        '<h4 aria-level="2">' + escHtml(item.title) + '</h4>' +
         '<div class="candidate-source">' + escHtml(item.conversation_title) + ' · message ' + (Number(item.message_ordinal || 0) + 1) + '</div>' +
         '<blockquote>' + escHtml(item.excerpt) + '</blockquote>' +
         '<p>' + escHtml(item.rationale) + '</p>' +
@@ -2727,7 +2750,7 @@ async function loadCandidateLinkQueue() {
     grid.innerHTML = links.map(function(item) {
       return '<article class="candidate-card">' +
         '<div class="candidate-meta"><span class="candidate-kind">' + escHtml(String(item.relation_type || 'possible_overlap').replace(/_/g,' ')) + '</span><span>' + Math.round(Number(item.score || 0) * 100) + '% lexical overlap</span></div>' +
-        '<h4>' + escHtml(item.left_title) + ' ↔ ' + escHtml(item.right_title) + '</h4>' +
+        '<h4 aria-level="2">' + escHtml(item.left_title) + ' ↔ ' + escHtml(item.right_title) + '</h4>' +
         '<div class="candidate-source">' + escHtml(item.left_conversation) + ' ↔ ' + escHtml(item.right_conversation) + '</div>' +
         '<blockquote>Shared terms: ' + escHtml((item.shared_terms || []).join(', ')) + '</blockquote>' +
         '<p>' + escHtml(item.rationale) + '</p>' +
@@ -5953,7 +5976,7 @@ function copySnippet(index) {
 }
 
 function showSourceMethod(method) {
-  document.querySelectorAll('.source-method').forEach(function(button){ button.classList.toggle('active',button.dataset.sourceMethod===method); });
+  document.querySelectorAll('.source-method').forEach(function(button){ button.classList.toggle('active',button.dataset.sourceMethod===method); button.setAttribute('aria-pressed',button.dataset.sourceMethod===method?'true':'false'); });
   document.querySelectorAll('.source-method-panel').forEach(function(panel){ panel.classList.toggle('active',panel.dataset.sourcePanel===method); });
 }
 
@@ -5983,10 +6006,11 @@ function switchDashTab(tabId) {
   if (tabId === 'intelligence') tabId='workspace';
   var libraryViews=['intake','map','browser','artifacts'];
   var primary=tabId==='review' ? 'review' : (libraryViews.indexOf(tabId)>=0 ? 'library' : (tabId==='overview' ? 'overview' : (tabId==='workspace' ? 'workspace' : (tabId==='tools' ? 'tools' : (tabId==='prompt' ? 'prompt' : 'settings')))));
-  document.querySelectorAll('.app-primary-tab').forEach(function(tab){ tab.classList.toggle('active',tab.dataset.primary===primary); });
+  document.querySelectorAll('.app-primary-tab').forEach(function(tab){ tab.classList.toggle('active',tab.dataset.primary===primary); if(tab.dataset.primary===primary)tab.setAttribute('aria-current','page'); else tab.removeAttribute('aria-current'); });
+  var ph=document.getElementById('page-heading'); if(ph) ph.textContent=({workspace:'Workspace',review:'Review',map:'Library',intake:'Library: sources',browser:'Library: conversations',artifacts:'Library: artifacts',overview:'Overview',tools:'Tools',prompt:'Prompt Engine',account:'Settings'})[tabId]||'SeedReflections';
   var librarySubnav=document.getElementById('library-subnav');
   librarySubnav.classList.toggle('visible',primary==='library');
-  document.querySelectorAll('.library-view-tab').forEach(function(tab){ tab.classList.toggle('active',tab.dataset.library===tabId); });
+  document.querySelectorAll('.library-view-tab').forEach(function(tab){ tab.classList.toggle('active',tab.dataset.library===tabId); if(tab.dataset.library===tabId)tab.setAttribute('aria-current','page'); else tab.removeAttribute('aria-current'); });
 
   document.getElementById('section-intake').style.display = (tabId === 'intake') ? 'block' : 'none';
   document.getElementById('section-map').style.display = (tabId === 'map') ? 'block' : 'none';
