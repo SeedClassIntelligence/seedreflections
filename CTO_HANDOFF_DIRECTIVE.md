@@ -51,6 +51,10 @@ Apply it to the **existing SeedReflections interface**, beginning with the real 
 - The latest staged change passed `git diff --cached --check`, and a targeted staged secret-pattern check found no matching newly added credentials. This is not a full historical secret audit. Previously exposed credentials, if any, still require rotation.
 - The untracked local `workroom-prototype.html` was excluded from the push. It must not be treated as a second production UI without an explicit disposition decision.
 
+### Evidence correction: do not equate implementation with consumer capability
+
+The 137-test run does **not** establish that a person can complete the full journey on a real export. The principal dashboard browser workflow in `tests/test_browser_automation.py` checks that navigation and several controls appear; it does not perform a complete import, review, continuation, and return visit. `tests/test_product_v2.py` exercises an API path with a small synthetic conversation. `tests/acceptance_year_scale.py` defines a separate 2,500-conversation synthetic acceptance run, but that script was **not** included in the 137-test `unittest discover` result. The existence of routes, UI labels, and product documentation establishes implementation intent, not live usability, whole-document processing, universal cloud access, or production activation. Independently verify those claims before representing them as available to consumers.
+
 ## Required CTO review and completion work
 
 1. **Trace one real end-to-end journey:** import a representative large export and mixed documents; verify counts, processing coverage, readable conversations, review decisions, opening an idea in Workspace, persistent artifacts, evidence links, export, backup, and restore. Record what is proven and what fails.
