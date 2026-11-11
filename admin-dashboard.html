@@ -52,7 +52,8 @@
         }
 
         .header-left { display: flex; align-items: center; gap: 14px; }
-        .header-right { display: flex; align-items: center; gap: 14px; }
+        .header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        @media (max-width: 720px) { .header-right { gap: 8px; } }
 
         .logo-mark {
             width: 32px; height: 32px;
@@ -547,6 +548,10 @@
 </div>
 
 <script>
+// Escape anything that came from a user or the server before it is placed in HTML.
+function adminEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+// A value passed to an inline handler: a JSON string literal, then HTML-escaped for the attribute.
+function adminArg(v) { return adminEsc(JSON.stringify(String(v == null ? '' : v))); }
 let currentConfig = {};
 
 function toggleKeyVisibility(id) {
@@ -656,7 +661,7 @@ async function fetchOverview() {
                 const planKey = (ev.plan || '').toLowerCase();
                 const planBadge = planKey.includes('master') ? '<span class="badge badge-purple">Master</span>' : (planKey.includes('pro') ? '<span class="badge badge-amber">Pro</span>' : '<span class="badge badge-blue">Free</span>');
                 return '<div style="padding:4px 0; border-bottom:1px dashed rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">' +
-                       '<span>[' + timeStr + '] <strong>' + ev.event_type + '</strong> &middot; ' + (ev.customer_email || 'n/a') + '</span>' +
+                       '<span>[' + adminEsc(timeStr) + '] <strong>' + adminEsc(ev.event_type) + '</strong> &middot; ' + adminEsc(ev.customer_email || 'n/a') + '</span>' +
                        '<span>' + planBadge + '</span>' +
                        '</div>';
             }).join('');
@@ -716,7 +721,7 @@ async function fetchOverview() {
                 logs.push('[' + new Date(t.timestamp).toLocaleTimeString() + '] LLM ' + t.caller + ' · ' + t.model + ' · ' + t.total_tokens + ' tokens · $' + t.estimated_cost_usd);
             });
         }
-        logBody.innerHTML = logs.map(l => '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03);">' + l + '</div>').join('');
+        logBody.innerHTML = logs.map(l => '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03);">' + adminEsc(l) + '</div>').join('');
 
     } catch (e) {
         console.error('Failed to load admin overview:', e);
@@ -860,19 +865,19 @@ function renderUsersList(users) {
         const seedLimitStr = (u.seeds_limit && u.seeds_limit < 1000) ? (u.seeds_count + ' / ' + u.seeds_limit) : (u.seeds_count + ' / ∞');
         const refLimitStr = (u.reflections_limit && u.reflections_limit < 1000) ? ((u.reflections_count || 0) + ' / ' + u.reflections_limit) : ((u.reflections_count || 0) + ' / ∞');
         return '<tr>' +
-            '<td><strong>' + u.name + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + u.email + '</span></td>' +
-            '<td><span class="badge ' + roleClass + '">' + u.role.toUpperCase() + '</span></td>' +
-            '<td><span class="badge ' + planClass + '">' + u.plan + '</span></td>' +
+            '<td><strong>' + adminEsc(u.name) + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + adminEsc(u.email) + '</span></td>' +
+            '<td><span class="badge ' + roleClass + '">' + adminEsc(String(u.role || '').toUpperCase()) + '</span></td>' +
+            '<td><span class="badge ' + planClass + '">' + adminEsc(u.plan) + '</span></td>' +
             '<td style="font-family:monospace;font-size:12px;">' + seedLimitStr + '</td>' +
             '<td style="font-family:monospace;font-size:12px;">' + refLimitStr + '<br><span style="font-size:11px;color:var(--text-muted);">' + (u.tokens_consumed || 0).toLocaleString() + ' tok</span></td>' +
-            '<td><span class="badge ' + statusClass + '">' + u.status + '</span></td>' +
-            '<td>' + u.last_active + '</td>' +
+            '<td><span class="badge ' + statusClass + '">' + adminEsc(u.status) + '</span></td>' +
+            '<td>' + adminEsc(u.last_active) + '</td>' +
             '<td>' +
                 '<div style="display:flex; gap:4px; flex-wrap:wrap;">' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptUserPlanChange('' + u.id + '', '' + u.name + '')">Plan</button>' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="toggleUserStatus('' + u.id + '', '' + u.status + '')">' + (u.status === 'Active' ? 'Suspend' : 'Activate') + '</button>' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptResetPassword('' + u.id + '', '' + u.email + '')">Password</button>' +
-                    '<button class="btn btn-red" style="padding:3px 7px;font-size:11px;" onclick="promptDeleteUser('' + u.id + '', '' + u.name + '', '' + u.role + '')">Delete</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptUserPlanChange(' + adminArg(u.id) + ', ' + adminArg(u.name) + ')">Plan</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="toggleUserStatus(' + adminArg(u.id) + ', ' + adminArg(u.status) + ')">' + (u.status === 'Active' ? 'Suspend' : 'Activate') + '</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptResetPassword(' + adminArg(u.id) + ', ' + adminArg(u.email) + ')">Password</button>' +
+                    '<button class="btn btn-red" style="padding:3px 7px;font-size:11px;" onclick="promptDeleteUser(' + adminArg(u.id) + ', ' + adminArg(u.name) + ', ' + adminArg(u.role) + ')">Delete</button>' +
                 '</div>' +
             '</td>' +
         '</tr>';
