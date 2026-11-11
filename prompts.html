@@ -84,8 +84,8 @@
                      font-weight:600;margin-bottom:20px}
     .platforms-row{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap}
     .platform-item{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
-                   color:var(--text3);opacity:.7}
-    .platform-item:hover{opacity:1}
+                   color:var(--text3)}
+    .platform-item:hover{color:var(--text2)}
     .platform-icon{font-size:20px}
 
     /* ── PROOF STRIP ── */
@@ -383,7 +383,7 @@
     .length-option { display: none; }
     .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
     .length-option + label .len-icon { font-size: 16px; }
-    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label .len-sub { font-size: 11px; font-weight: 400; margin-top: 2px; }
     .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
     .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
     .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
@@ -465,7 +465,7 @@
     .length-option { display: none; }
     .length-option + label { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text3); transition: all .15s; text-align: center; }
     .length-option + label .len-icon { font-size: 16px; }
-    .length-option + label .len-sub { font-size: 8px; opacity: .7; font-weight: 400; margin-top: 2px; }
+    .length-option + label .len-sub { font-size: 11px; font-weight: 400; margin-top: 2px; }
     .length-option + label:hover { border-color: var(--border-hi); color: var(--text); }
     .length-option:checked + label { border-color: var(--green); color: var(--green); background: var(--green-dim); }
     .chunking-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--amber); display: none; gap: 8px; align-items: flex-start; }
@@ -736,7 +736,7 @@
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840"></span>
                 <span style="margin-left:8px;font-size:11px;color:var(--text3)" id="wiz-console-title">Prompt Compiler</span>
               </div>
-              <button class="btn btn-primary btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()" style="padding:4px 12px;font-size:11.5px">📋 Copy Prompt</button>
+              <button class="btn btn-green btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()">📋 Copy Prompt</button>
             </div>
             
             <div class="output-console-body" id="wiz-console-output">Compiling...</div>
@@ -754,8 +754,8 @@
         
         <!-- Wizard Navigation Footer -->
         <div class="wiz-footer">
-          <button class="btn btn-ghost btn-sm" id="btn-wiz-prev" onclick="prevWizStep()" style="visibility:hidden">← Back</button>
-          <button class="btn btn-primary btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details ➔</button>
+          <button class="btn btn-outline btn-sm" id="btn-wiz-prev" onclick="prevWizStep()" style="visibility:hidden">← Back</button>
+          <button class="btn btn-green btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details ➔</button>
         </div>
         
       </div>

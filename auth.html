@@ -27,7 +27,7 @@
     .auth-card{width:100%;max-width:420px;background:var(--bg-card);border:1px solid var(--border);
                border-radius:16px;padding:40px}
     .auth-logo{text-align:center;font-size:28px;font-weight:900;margin-bottom:8px}
-    .auth-logo{color:var(--green)}
+    .auth-logo{color:var(--green);margin-top:0}
     .auth-logo span{color:var(--text)}
     .auth-tagline{text-align:center;color:var(--text3);font-size:14px;margin-bottom:32px}
     .tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:28px}
@@ -47,7 +47,7 @@
     .btn-submit{width:100%;padding:13px;border:none;border-radius:8px;
                 background:var(--green);color:#000;font-size:15px;font-weight:700;
                 cursor:pointer;font-family:inherit;transition:background .15s;margin-top:4px}
-    .btn-submit:hover:not(:disabled){background:#79b8ff}
+    .btn-submit:hover:not(:disabled){background:#4ade80}
     .btn-submit:disabled{opacity:.6;cursor:not-allowed}
 
     .error-msg{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
@@ -110,9 +110,9 @@
   </div>
 </header>
 
-<div class="auth-wrap">
+<main class="auth-wrap">
   <div class="auth-card">
-    <div class="auth-logo">Seed<span>Reflections</span></div>
+    <h1 class="auth-logo">Seed<span>Reflections</span></h1>
     <div class="auth-tagline">Never lose another AI conversation.</div>
 
     <!-- Tabs -->
@@ -123,8 +123,8 @@
     </div>
 
     <!-- Shared messages -->
-    <div class="error-msg" id="error-msg"></div>
-    <div class="success-msg" id="success-msg"></div>
+    <div class="error-msg" id="error-msg" role="alert"></div>
+    <div class="success-msg" id="success-msg" role="status"></div>
 
     <!-- ── LOGIN FORM ── -->
     <form id="form-login" role="tabpanel" aria-labelledby="tab-login" onsubmit="doLogin(event)">
@@ -212,7 +212,7 @@
       </div>
     </form>
   </div>
-</div>
+</main>
 
 <script src="js/platform.js"></script>
 <script>
