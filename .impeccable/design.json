@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T12:19:19Z",
+  "title": "Design System: SeedReflections public site",
+  "extensions": {
+    "colorMeta": {
+      "field": {
+        "role": "neutral",
+        "displayName": "Deep Forest Field",
+        "canonical": "#0c3626",
+        "tonalRamp": [
+          "#0c3626"
+        ]
+      },
+      "field-deep": {
+        "role": "neutral",
+        "displayName": "Deeper Forest",
+        "canonical": "#0a2f21",
+        "tonalRamp": [
+          "#0a2f21"
+        ]
+      },
+      "field-deepest": {
+        "role": "neutral",
+        "displayName": "Deepest Forest",
+        "canonical": "#07251a",
+        "tonalRamp": [
+          "#07251a"
+        ]
+      },
+      "on-field": {
+        "role": "neutral",
+        "displayName": "Pale Leaf",
+        "canonical": "#e9f3e5",
+        "tonalRamp": [
+          "#e9f3e5"
+        ]
+      },
+      "on-field-muted": {
+        "role": "neutral",
+        "displayName": "Tinted Leaf Muted",
+        "canonical": "#a8d6bb",
+        "tonalRamp": [
+          "#a8d6bb"
+        ]
+      },
+      "ledger-sheet": {
+        "role": "neutral",
+        "displayName": "Ledger-Green Sheet",
+        "canonical": "#dfead9",
+        "tonalRamp": [
+          "#dfead9"
+        ]
+      },
+      "ledger-sheet-shade": {
+        "role": "neutral",
+        "displayName": "Shaded Sheet",
+        "canonical": "#d2e1cb",
+        "tonalRamp": [
+          "#d2e1cb"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Green Ink",
+        "canonical": "#10261c",
+        "tonalRamp": [
+          "#10261c"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#3b5748",
+        "tonalRamp": [
+          "#3b5748"
+        ]
+      },
+      "ledger-rule": {
+        "role": "neutral",
+        "displayName": "Ledger Rule",
+        "canonical": "#a9c0a0",
+        "tonalRamp": [
+          "#a9c0a0"
+        ]
+      },
+      "seed-green": {
+        "role": "primary",
+        "displayName": "Seed Green",
+        "canonical": "#3fb950",
+        "tonalRamp": [
+          "#3fb950"
+        ]
+      },
+      "seed-green-hover": {
+        "role": "primary",
+        "displayName": "Seed Green Hover",
+        "canonical": "#58cb69",
+        "tonalRamp": [
+          "#58cb69"
+        ]
+      },
+      "seed-green-ink": {
+        "role": "primary",
+        "displayName": "Ink on Green",
+        "canonical": "#06210f",
+        "tonalRamp": [
+          "#06210f"
+        ]
+      },
+      "stamp-vermilion": {
+        "role": "secondary",
+        "displayName": "Stamp Vermilion",
+        "canonical": "#b8391f",
+        "tonalRamp": [
+          "#b8391f"
+        ]
+      },
+      "highlighter": {
+        "role": "accent",
+        "displayName": "Highlighter",
+        "canonical": "#f2e08a",
+        "tonalRamp": [
+          "#f2e08a"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Row terms, plan names."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Copy, max 62ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Table heads, register field names, stamps."
+      }
+    },
+    "shadows": [
+      {
+        "name": "register-object",
+        "value": "0 26px 48px -18px rgba(0,0,0,.6)",
+        "purpose": "Hero register entry on the field."
+      },
+      {
+        "name": "screenshot-on-field",
+        "value": "0 28px 50px -20px rgba(0,0,0,.65)",
+        "purpose": "Product screenshots on green."
+      },
+      {
+        "name": "screenshot-on-sheet",
+        "value": "0 24px 44px -22px rgba(16,38,28,.55)",
+        "purpose": "Product screenshots on a sheet."
+      }
+    ],
+    "motion": [
+      {
+        "name": "stamp-in",
+        "value": "340ms cubic-bezier(.2,.9,.25,1.15)",
+        "purpose": "The single authored moment: a stamp landing. Removed under prefers-reduced-motion; the state still changes."
+      },
+      {
+        "name": "hover",
+        "value": "160-180ms ease",
+        "purpose": "Button and link colour changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "1080px"
+      },
+      {
+        "name": "single-column",
+        "value": "860px"
+      },
+      {
+        "name": "phone-nav",
+        "value": "760px"
+      },
+      {
+        "name": "small",
+        "value": "480px"
+      },
+      {
+        "name": "tiny",
+        "value": "359px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action per view.",
+      "html": "<a class=\"btn btn-primary\" href=\"#\">Bring in my AI history</a>",
+      "css": ".btn{display:inline-flex;align-items:center;min-height:48px;padding:12px 22px;border:2px solid transparent;border-radius:4px;font:700 1rem var(--body)}.btn-primary{background:#3fb950;color:#06210f}"
+    },
+    {
+      "name": "Stamp",
+      "kind": "custom",
+      "refersTo": "register-entry",
+      "description": "A decided or pending state, inked.",
+      "html": "<span class=\"stamp\" data-state=\"accepted\">Accepted by you</span>",
+      "css": ".stamp{display:inline-block;border:2px solid currentColor;padding:3px 10px;font:600 .8rem var(--mono);text-transform:uppercase;letter-spacing:.08em;transform:rotate(-2deg)}.stamp[data-state=accepted]{color:#b8391f}"
+    },
+    {
+      "name": "Register entry",
+      "kind": "card",
+      "refersTo": "register-entry",
+      "description": "Signature component: a sourced finding awaiting a person's decision.",
+      "html": "<figure class=\"reg\"><div class=\"reg-bar\"><span>Accession register</span><span>Example entry</span></div></figure>",
+      "css": ".reg{background:#dfead9;color:#10261c;border-radius:6px;box-shadow:0 26px 48px -18px rgba(0,0,0,.6);overflow:hidden}.reg-bar{background:#10261c;color:#dfead9;padding:12px 20px;font:500 .78rem var(--mono);text-transform:uppercase}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Accession Register",
+    "overview": "Every recovered finding is entered in a register: where it came from, what was found, who found it, and whether a person has decided. Deep-green field, pale ledger sheets, one stamp ink.",
+    "keyCharacteristics": [
+      "Drenched deep-green ground",
+      "Ruled tables instead of cards",
+      "Hard edges, flat surfaces, no glow",
+      "One authored moment: the stamp",
+      "Real, labelled product screenshots"
+    ],
+    "rules": [
+      {
+        "name": "The One Stamp Rule",
+        "body": "Vermilion appears only as a stamp or an error.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tinted Neutral Rule",
+        "body": "There is no grey; every neutral is a shade of the green or the ledger sheet.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Kicker Rule",
+        "body": "A heading carries its own weight.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Sections, tables and buttons carry no shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do show the mechanism as an object before explaining it.",
+      "Do tint every neutral from the field green or the ledger sheet.",
+      "Do label sample data as sample data and report gaps.",
+      "Do make every choice control a real button or radio input."
+    ],
+    "donts": [
+      "Don't put a kicker above a heading.",
+      "Don't use gradient text, glows or glass.",
+      "Don't use emoji as icons.",
+      "Don't build equal icon-card grids or cards inside cards.",
+      "Don't use a cream page ground.",
+      "Don't invent testimonials, counts or integrations."
+    ]
+  }
+}
