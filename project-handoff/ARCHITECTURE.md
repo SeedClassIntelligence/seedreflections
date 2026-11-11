@@ -1,3 +1,5 @@
+> **⚠ Historical document — not current product truth.** Written before the SQLite/v2 runtime; it describes `seeds.json` as the database and earlier UI. Current behaviour: see `PRODUCT_CAPABILITIES_AND_TIERS.md`, `README.md`, `DEPLOYMENT.md` and `CTO_REVIEW_FINDINGS.md`.
+
 # Architecture Specification
 
 ```mermaid

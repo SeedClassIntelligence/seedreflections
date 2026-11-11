@@ -141,13 +141,20 @@ def source_coverage(workspace_id):
         rows=db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown')) provider,
           COUNT(DISTINCT c.import_id) imports, COUNT(*) conversations,
           COALESCE(SUM(c.message_count),0) messages,
+          SUM(CASE WHEN c.message_count=0 THEN 1 ELSE 0 END) unreadable,
+          SUM(CASE WHEN c.analysis_status='analyzed' THEN 1 ELSE 0 END) analyzed,
           MAX(COALESCE(c.updated_at,c.created_at,i.created_at)) last_activity
           FROM tenant_conversations c LEFT JOIN tenant_imports i
             ON i.id=c.import_id AND i.workspace_id=c.workspace_id
           WHERE c.workspace_id=?
           GROUP BY LOWER(COALESCE(NULLIF(TRIM(c.platform),''),'unknown'))
           ORDER BY conversations DESC,provider""",(workspace_id,)).fetchall()
-    return [dict(row) for row in rows]
+        pending={row[0]:row[1] for row in db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown')),COUNT(*)
+          FROM tenant_candidates k JOIN tenant_conversations v ON v.id=k.conversation_id AND v.workspace_id=k.workspace_id
+          WHERE k.workspace_id=? AND k.status='pending' GROUP BY 1""",(workspace_id,))}
+    result=[dict(row) for row in rows]
+    for item in result: item["pending"]=pending.get(item["provider"],0)
+    return result
 
 
 def usage(workspace_id):
@@ -219,14 +226,23 @@ def analyze(workspace_id, conversation_id):
     return {"conversation_id": conversation_id, "candidates_created": created, "abstained": created == 0}
 
 
-def list_candidates(workspace_id, status="pending"):
+def list_candidates(workspace_id, status="pending", limit=250, offset=0):
+    """Page through candidates; ``limit=None`` returns all (internal callers only)."""
     initialize()
+    paging = "" if limit is None else " LIMIT ? OFFSET ?"
+    arguments = (workspace_id, status) if limit is None else (workspace_id, status, max(1,min(int(limit),1000)), max(0,int(offset)))
     with _connect() as db:
         rows = db.execute("""SELECT c.*,m.content excerpt,v.title conversation_title,v.platform
           FROM tenant_candidates c JOIN tenant_messages m ON m.id=c.message_id AND m.workspace_id=c.workspace_id
           JOIN tenant_conversations v ON v.id=c.conversation_id AND v.workspace_id=c.workspace_id
-          WHERE c.workspace_id=? AND c.status=? ORDER BY c.created_at DESC""", (workspace_id, status)).fetchall()
+          WHERE c.workspace_id=? AND c.status=? ORDER BY c.created_at DESC,c.id""" + paging, arguments).fetchall()
     return [dict(row) for row in rows]
+
+
+def count_candidates(workspace_id, status="pending"):
+    initialize()
+    with _connect() as db:
+        return db.execute("SELECT COUNT(*) FROM tenant_candidates WHERE workspace_id=? AND status=?",(workspace_id,status)).fetchone()[0]
 
 
 def review(workspace_id, candidate_id, action):
@@ -281,7 +297,10 @@ def import_document_path(workspace_id, path, filename):
     source=Path(path)
     if Path(filename).suffix.lower()==".json":
         result=import_json_path(workspace_id,source,filename)
-        result["coverage"]={"unit":"archive","detected":result["conversations"],"processed":result["conversations"],"unreadable":[],"status":"complete"}
+        from document_ingest import archive_coverage
+        result["coverage"]=archive_coverage(result.get("items") or [])
+        if not result["coverage"]["detected"]:
+            result["coverage"]={"unit":"archive","detected":result["conversations"],"processed":result["conversations"],"unreadable":[],"status":"complete"}
         return result
     from document_ingest import extract_document
     extracted=extract_document(source.read_bytes(),filename)
@@ -537,18 +556,18 @@ def _terms(text): return {word for word in re.findall(r"[a-z0-9]{4,}",str(text).
 
 
 def generate_links(workspace_id):
-    candidates=list_candidates(workspace_id,"pending"); created=0
+    """Propose lexical overlap between candidates with bounded work and storage."""
+    from archive_store import bounded_term_pairs
+    candidates=list_candidates(workspace_id,"pending",limit=None); created=0
+    term_sets=[_terms(item["interpretation"]) for item in candidates]
+    conversation_ids=[item["conversation_id"] for item in candidates]
     with _connect() as db:
-        for index,left in enumerate(candidates):
-            for right in candidates[index+1:]:
-                if left["conversation_id"]==right["conversation_id"]: continue
-                shared=sorted(_terms(left["interpretation"]) & _terms(right["interpretation"]))
-                if len(shared)<2: continue
-                pair=sorted([left["id"],right["id"]])
-                exists=db.execute("SELECT 1 FROM tenant_candidate_links WHERE workspace_id=? AND left_candidate_id=? AND right_candidate_id=?",(workspace_id,pair[0],pair[1])).fetchone()
-                if exists: continue
-                score=min(.95,len(shared)/10)
-                db.execute("INSERT INTO tenant_candidate_links VALUES(?,?,?,?,?,?,?,?,?)",(uuid.uuid4().hex,workspace_id,pair[0],pair[1],json.dumps(shared),score,"pending",_now(),None)); created+=1
+        existing={(row[0],row[1]) for row in db.execute("SELECT left_candidate_id,right_candidate_id FROM tenant_candidate_links WHERE workspace_id=?",(workspace_id,))}
+        for left_index,right_index,shared in bounded_term_pairs(term_sets,conversation_ids,2):
+            pair=tuple(sorted([candidates[left_index]["id"],candidates[right_index]["id"]]))
+            if pair in existing: continue
+            score=min(.95,len(shared)/10)
+            db.execute("INSERT INTO tenant_candidate_links VALUES(?,?,?,?,?,?,?,?,?)",(uuid.uuid4().hex,workspace_id,pair[0],pair[1],json.dumps(sorted(shared)),score,"pending",_now(),None)); created+=1; existing.add(pair)
     return {"links_created":created}
 
 

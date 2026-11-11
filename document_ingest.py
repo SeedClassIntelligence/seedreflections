@@ -132,6 +132,24 @@ def extract_document(content, filename, allow_zip=True):
     return {"text": text, "coverage": coverage}
 
 
+def archive_coverage(conversations):
+    """Derive coverage from what was actually normalized, never from a constant.
+
+    A conversation that normalized to zero messages is reported as unreadable
+    instead of being counted as processed.
+    """
+    items = list(conversations or [])
+    unreadable = [f"{item.get('title') or 'Untitled'} ({item.get('source_id') or item.get('id')})"
+                  for item in items if not item.get("depth", item.get("message_count", 0))]
+    shown = unreadable[:200]
+    coverage = {"unit": "archive", "detected": len(items), "processed": len(items) - len(unreadable),
+                "unreadable": shown, "status": "complete" if not unreadable else "partial"}
+    if unreadable:
+        coverage["unreadable_count"] = len(unreadable)
+        coverage["reason"] = "Some conversations contained no readable messages and were not processed."
+    return coverage
+
+
 def import_document(content, filename):
     existing = find_source_import(content)
     if existing:
@@ -139,8 +157,7 @@ def import_document(content, filename):
     extension = Path(filename).suffix.lower()
     if extension == ".json":
         result = import_json(content, filename)
-        coverage = {"unit":"archive", "detected":len(result["conversations"]), "processed":len(result["conversations"]),
-                    "unreadable":[], "status":"complete"}
+        coverage = archive_coverage(result["conversations"])
     else:
         extracted = extract_document(content, filename)
         coverage = extracted["coverage"]
@@ -154,8 +171,7 @@ def import_document_path(path, filename):
     source = Path(path)
     if source.suffix.lower() == ".json" or Path(filename).suffix.lower() == ".json":
         result = import_json_path(source, filename)
-        coverage = {"unit":"archive", "detected":len(result["conversations"]), "processed":len(result["conversations"]),
-                    "unreadable":[], "status":"complete"}
+        coverage = archive_coverage(result["conversations"])
         preserve_source_path(result["import_id"], filename, "application/json", source, coverage)
         return {**result, "coverage":coverage, "filename":Path(filename).name}
     return import_document(source.read_bytes(), filename)
