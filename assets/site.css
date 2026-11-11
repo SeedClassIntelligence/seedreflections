@@ -76,7 +76,7 @@ section{padding-block:clamp(72px,9vw,132px)}
 /* ───────────────────────── ledger tables ───────────────────────── */
 .ledger{width:100%;border-collapse:collapse}
 .ledger th,.ledger td{text-align:left;vertical-align:top;padding:16px 18px 16px 0;border-bottom:1px solid var(--hair)}
-.ledger thead th{font:500 .78rem/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--on-field-2);padding-bottom:12px;border-bottom:2px solid var(--on-field)}
+.ledger thead th{font:500 .82rem/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--on-field-2);padding-bottom:12px;border-bottom:2px solid var(--on-field)}
 .ledger tbody th{font:600 1.04rem/1.4 var(--body);width:44%}
 .ledger td:last-child{padding-right:0;color:var(--on-field-2)}
 .ledger .how{font:600 .95rem var(--mono);color:var(--on-field);white-space:nowrap}
@@ -100,7 +100,7 @@ section{padding-block:clamp(72px,9vw,132px)}
 .site-footer{background:var(--field-3);border-top:1px solid var(--hair);padding-block:64px 40px}
 .foot{display:grid;grid-template-columns:minmax(0,5fr) repeat(3,minmax(0,2fr));gap:36px}
 .foot p{color:var(--on-field-2);max-width:34ch;margin-top:14px}
-.foot h2{font:500 .78rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--on-field-2);margin-bottom:16px}
+.foot h2{font:500 .82rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--on-field-2);margin-bottom:16px}
 .foot ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .foot a{text-decoration:none;color:var(--on-field)}
 .foot a:hover{text-decoration:underline}

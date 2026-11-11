@@ -2702,7 +2702,7 @@ async function loadCandidateQueue() {
         '<div class="candidate-source">' + escHtml(item.conversation_title) + ' · message ' + (Number(item.message_ordinal || 0) + 1) + '</div>' +
         '<blockquote>' + escHtml(item.excerpt) + '</blockquote>' +
         '<p>' + escHtml(item.rationale) + '</p>' +
-        '<div class="candidate-actions"><button class="btn btn-primary btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'accept\')">' + acceptLabel + '</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'defer\')">Defer</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'reject\')">Reject</button></div>' +
+        '<div class="candidate-actions"><button class="btn btn-primary btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'accept\')">' + acceptLabel + '</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'defer\')">Defer</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidate(\'' + escHtml(item.id) + '\',\'reject\')">Dismiss</button></div>' +
       '</article>';
     }).join('');
   } catch (error) {
@@ -2731,7 +2731,7 @@ async function loadCandidateLinkQueue() {
         '<div class="candidate-source">' + escHtml(item.left_conversation) + ' ↔ ' + escHtml(item.right_conversation) + '</div>' +
         '<blockquote>Shared terms: ' + escHtml((item.shared_terms || []).join(', ')) + '</blockquote>' +
         '<p>' + escHtml(item.rationale) + '</p>' +
-        '<div class="candidate-actions"><button class="btn btn-primary btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'accept\')">Confirm Relationship</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'defer\')">Defer</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'reject\')">Reject</button></div>' +
+        '<div class="candidate-actions"><button class="btn btn-primary btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'accept\')">Confirm Relationship</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'defer\')">Defer</button><button class="btn btn-ghost btn-sm" onclick="reviewCandidateLink(\'' + escHtml(item.id) + '\',\'reject\')">Dismiss</button></div>' +
       '</article>';
     }).join('');
   } catch (error) {
@@ -2754,7 +2754,7 @@ async function reviewCandidateLink(linkId, action) {
       showToast('Relationship confirmed. It will enter lineage when both ideas are accepted.');
     }
     else if (action === 'defer') showToast('Relationship suggestion deferred.');
-    else showToast('Relationship suggestion rejected.');
+    else showToast('Relationship suggestion dismissed.');
   } catch (error) {
     showToast(error.message || 'Relationship review failed.');
   }
@@ -2775,7 +2775,7 @@ async function reviewCandidate(candidateId, action) {
     } else if (action === 'defer') {
       showToast('Candidate deferred without changing your ideas.');
     } else {
-      showToast('Candidate rejected. The source conversation remains unchanged.');
+      showToast('Candidate dismissed. The source conversation remains unchanged.');
     }
   } catch (error) {
     showToast(error.message || 'Candidate review failed.');
