@@ -1344,7 +1344,7 @@ body{background:#050c09;color:var(--text)}
     <span class="nav-brand-sub">Idea Intelligence</span>
   </a>
   <div class="nav-right">
-    <select id="project-filter" onchange="filterByProject()" style="background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;outline:none;margin-right:12px;">
+    <select id="project-filter" onchange="filterByProject()" style="background:var(--bg-elevated);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;outline:none;margin-right:12px;" aria-label="Filter by project">
       <option value="">All Projects</option>
       <option value="default_project">Default Project</option>
     </select>
@@ -1464,8 +1464,8 @@ body{background:#050c09;color:var(--text)}
       <div class="intake-card source-method-panel" data-source-panel="paste">
         <h3>Or paste a conversation</h3>
         <p>Use role labels such as User: and Assistant: when available. Unlabelled text is preserved as one source message.</p>
-        <input id="paste-conversation-title" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" placeholder="Give this conversation a title">
-        <textarea id="paste-conversation-text" class="intake-textarea" placeholder="Paste the conversation or working notes here..."></textarea>
+        <input id="paste-conversation-title" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" placeholder="Give this conversation a title" aria-label="Conversation title">
+        <textarea id="paste-conversation-text" class="intake-textarea" placeholder="Paste the conversation or working notes here..." aria-label="Conversation text"></textarea>
         <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="importPastedConversation()">Map this conversation →</button>
       </div>
       <div class="intake-card source-method-panel" data-source-panel="folder">
@@ -1478,7 +1478,7 @@ body{background:#050c09;color:var(--text)}
           <select id="connector-provider" class="filter-select" aria-label="AI application">
             <option value="codex">Codex</option><option value="claude_code">Claude Code</option><option value="claude_cowork">Claude Cowork</option><option value="cursor">Cursor</option><option value="folder">Other AI or work folder</option>
           </select>
-          <input id="connector-root-path" class="chat-input" style="width:100%;box-sizing:border-box" placeholder="Paste the specific local conversation folder path">
+          <input id="connector-root-path" class="chat-input" style="width:100%;box-sizing:border-box" placeholder="Paste the specific local conversation folder path" aria-label="Conversation folder path">
           <button class="btn btn-primary" onclick="connectConversationSource()">Preview source</button>
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);margin-top:10px"><input type="checkbox" id="connector-consent"> I authorize SeedReflections to read supported conversation files in this folder. It will not modify or delete the source.</label>
@@ -1495,7 +1495,7 @@ body{background:#050c09;color:var(--text)}
           <select id="api-integration-provider" class="filter-select" aria-label="API source platform">
             <option value="chatgpt">ChatGPT / OpenAI</option><option value="claude">Claude</option><option value="gemini">Gemini</option><option value="copilot">Copilot</option><option value="grok">Grok</option><option value="other_ai">Other AI platform</option><option value="automation">Automation or agent</option>
           </select>
-          <input id="api-integration-name" class="chat-input" style="width:100%;box-sizing:border-box" placeholder="Connection name, e.g. My research agent">
+          <input id="api-integration-name" class="chat-input" style="width:100%;box-sizing:border-box" placeholder="Connection name, e.g. My research agent" aria-label="Connection name">
           <button class="btn btn-primary" onclick="createApiIntegration()">Create connection</button>
         </div>
         <div id="api-integration-secret" style="display:none;margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg-elevated)"></div>
@@ -1518,7 +1518,7 @@ body{background:#050c09;color:var(--text)}
     <div class="archive-toolbar">
       <div class="search-wrap">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10 10l4.5 4.5"/></svg>
-        <input type="text" id="archive-map-search" placeholder="Search across every imported message..." onkeydown="if(event.key==='Enter'){searchArchiveMap()}">
+        <input type="text" id="archive-map-search" placeholder="Search across every imported message..." onkeydown="if(event.key==='Enter'){searchArchiveMap()}" aria-label="Search imported messages">
       </div>
       <button class="btn btn-ghost" onclick="searchArchiveMap()">Search archive</button>
       <button class="btn btn-ghost" id="map-entire-archive-btn" onclick="mapEntireArchive()">Map entire archive</button>
@@ -1571,9 +1571,9 @@ body{background:#050c09;color:var(--text)}
       <!-- Mode 1: Ideas Shelf Container -->
       <div id="shelf-seeds-container" style="display:flex; flex-direction:column; flex:1; min-height:0;">
         <div class="cockpit-shelf-search">
-          <input type="text" id="shelf-search" placeholder="Filter ideas in shelf..." oninput="filterShelfSeeds()">
+          <input type="text" id="shelf-search" placeholder="Filter ideas in shelf..." oninput="filterShelfSeeds()" aria-label="Filter ideas in the shelf">
           <div style="display:flex; gap:4px;">
-            <select id="shelf-status-filter" onchange="filterShelfSeeds()" style="flex:1; background:var(--bg-elevated); border:1px solid var(--border); color:var(--text); border-radius:4px; font-size:12px; padding:3px 6px; outline:none;">
+            <select id="shelf-status-filter" onchange="filterShelfSeeds()" style="flex:1; background:var(--bg-elevated); border:1px solid var(--border); color:var(--text); border-radius:4px; font-size:12px; padding:3px 6px; outline:none;" aria-label="Filter shelf by status">
               <option value="">All Statuses</option>
               <option value="active">Active</option>
               <option value="planted">Planted</option>
@@ -1591,7 +1591,7 @@ body{background:#050c09;color:var(--text)}
       <!-- Mode 2: Threads Rail Container -->
       <div id="shelf-threads-container" style="display:none; flex-direction:column; flex:1; min-height:0;">
         <div class="cockpit-shelf-search">
-          <input type="text" id="archive-search" placeholder="Search every imported conversation..." onkeydown="if(event.key==='Enter'){searchArchiveThreads()}">
+          <input type="text" id="archive-search" placeholder="Search every imported conversation..." onkeydown="if(event.key==='Enter'){searchArchiveThreads()}" aria-label="Search imported conversations">
           <button class="btn btn-ghost" style="font-size:12px; padding:2px 7px;" onclick="searchArchiveThreads()">Search</button>
         </div>
         <div class="shelf-batch-actions" style="padding:8px 10px; background:var(--bg-deep); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
@@ -1636,8 +1636,8 @@ body{background:#050c09;color:var(--text)}
           <button class="btn btn-ghost btn-attach" title="Import conversation archive" onclick="document.getElementById('ws-file-input').click()">
             📎
           </button>
-          <input type="file" id="ws-file-input" accept=".json,.pdf,.docx,.xlsx,.xlsm,.html,.htm,.txt,.md,.rtf,.csv,.tsv,.zip,.xml,.log" style="display:none" onchange="handleFileUpload(event)">
-          <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask a question, paste a transcript, or upload a JSON export..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatInput()}"></textarea>
+          <input type="file" id="ws-file-input" accept=".json,.pdf,.docx,.xlsx,.xlsm,.html,.htm,.txt,.md,.rtf,.csv,.tsv,.zip,.xml,.log" style="display:none" onchange="handleFileUpload(event)" aria-label="Attach a file">
+          <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask a question, paste a transcript, or upload a JSON export..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatInput()}" aria-label="Message"></textarea>
           <button class="chat-send btn btn-primary" id="chat-send" onclick="sendChatInput()">Ask ↑</button>
         </div>
       </div>
@@ -1710,11 +1710,11 @@ body{background:#050c09;color:var(--text)}
       <div>
         <input type="hidden" id="artifact-id">
         <div class="artifact-meta">
-          <select id="artifact-type"><option value="plan">Plan</option><option value="brief">Brief</option><option value="report">Report</option><option value="task_set">Task set</option><option value="note">Note</option></select>
-          <input id="artifact-title" placeholder="Artifact title">
-          <select id="artifact-status"><option value="draft">Draft</option><option value="active">Active</option><option value="complete">Complete</option><option value="archived">Archived</option></select>
+          <select id="artifact-type" aria-label="Artifact type"><option value="plan">Plan</option><option value="brief">Brief</option><option value="report">Report</option><option value="task_set">Task set</option><option value="note">Note</option></select>
+          <input id="artifact-title" placeholder="Artifact title" aria-label="Artifact title">
+          <select id="artifact-status" aria-label="Artifact status"><option value="draft">Draft</option><option value="active">Active</option><option value="complete">Complete</option><option value="archived">Archived</option></select>
         </div>
-        <textarea id="artifact-content" rows="17" style="width:100%;box-sizing:border-box;margin-top:10px;font-family:inherit" placeholder="Write the durable work product here…"></textarea>
+        <textarea id="artifact-content" rows="17" style="width:100%;box-sizing:border-box;margin-top:10px;font-family:inherit" placeholder="Write the durable work product here…" aria-label="Artifact content"></textarea>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="exportCurrentArtifact()">Export Markdown</button><button class="btn btn-primary btn-sm" onclick="saveCurrentArtifact()">Save artifact</button></div>
       </div>
     </div>
@@ -1758,7 +1758,7 @@ body{background:#050c09;color:var(--text)}
 <!-- ── Retired Standalone Lineage Tab (Consolidated directly into Cockpit Right Inspector) ── -->
 <div class="section" id="section-intel" style="display:none !important;">
   <div style="display:none;">
-    <select id="lineage-center-seed"></select>
+    <select id="lineage-center-seed" aria-label="Centre idea"></select>
     <div id="intel-lost-seeds-count"></div>
     <div id="intel-lost-seeds-sub"></div>
     <div id="intel-health-desc"></div>
@@ -1791,27 +1791,27 @@ body{background:#050c09;color:var(--text)}
   <div class="browser-controls">
     <div class="search-wrap">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10 10l4.5 4.5"/></svg>
-      <input type="text" id="seed-search" placeholder="Search ideas…" oninput="filterSeeds()">
+      <input type="text" id="seed-search" placeholder="Search ideas…" oninput="filterSeeds()" aria-label="Search ideas">
     </div>
-    <select class="filter-select" id="filter-project" onchange="filterSeeds()">
+    <select class="filter-select" id="filter-project" onchange="filterSeeds()" aria-label="Project">
       <option value="">All Projects</option>
       <option value="default_project">Default Project</option>
     </select>
-    <select class="filter-select" id="filter-platform" onchange="filterSeeds()">
+    <select class="filter-select" id="filter-platform" onchange="filterSeeds()" aria-label="Platform">
       <option value="">All Platforms</option>
       <option value="chatgpt">ChatGPT</option>
       <option value="claude">Claude</option>
       <option value="gemini">Gemini</option>
       <option value="unknown">Other</option>
     </select>
-    <select class="filter-select" id="filter-status" onchange="filterSeeds()">
+    <select class="filter-select" id="filter-status" onchange="filterSeeds()" aria-label="Status">
       <option value="">All Status</option>
       <option value="active">Active</option>
       <option value="discovered">Discovered</option>
       <option value="completed">Completed</option>
       <option value="abandoned">Abandoned</option>
     </select>
-    <select class="filter-select" id="filter-sort" onchange="filterSeeds()">
+    <select class="filter-select" id="filter-sort" onchange="filterSeeds()" aria-label="Sort order">
       <option value="confidence">Sort: Confidence</option>
       <option value="date">Sort: Date</option>
       <option value="platform">Sort: Platform</option>
@@ -1831,7 +1831,7 @@ body{background:#050c09;color:var(--text)}
   <div class="account-grid">
     <div class="card" style="grid-column:1/-1">
       <div class="card-header"><h3>Data & portability</h3></div>
-      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
+      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)" aria-label="Restore ideas backup file"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
     </div>
     
     <!-- Column 1: Usage Tracker -->
@@ -2002,8 +2002,8 @@ body{background:#050c09;color:var(--text)}
       <div class="card-body">
         <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Invite collaborators into this workspace. Editors can work with sources, ideas, and decisions; viewers have read-only access.</p>
         <div id="team-invite-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-          <input id="team-invite-email" type="email" placeholder="collaborator@example.com" style="flex:1;min-width:220px">
-          <select id="team-invite-role" style="width:130px"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
+          <input id="team-invite-email" type="email" placeholder="collaborator@example.com" style="flex:1;min-width:220px" aria-label="Collaborator email">
+          <select id="team-invite-role" style="width:130px" aria-label="Collaborator role"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
           <button class="btn btn-primary btn-sm" onclick="inviteTeamMember()">Create Invite</button>
         </div>
         <div id="team-invite-result" style="display:none;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:12px"></div>
@@ -2017,7 +2017,7 @@ body{background:#050c09;color:var(--text)}
       <div class="card-body">
         <div class="privacy-toggle-list">
           <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-analytics">
+            <input type="checkbox" id="priv-analytics" aria-label="Anonymized analytics reporting">
             <div class="privacy-toggle-info">
               <div class="privacy-toggle-title">Anonymized analytics reporting</div>
               <div class="privacy-toggle-desc">Allow sharing of anonymous usage statistics (reflections speeds, error rates) to help improve platform indexing stability.</div>
@@ -2025,7 +2025,7 @@ body{background:#050c09;color:var(--text)}
           </div>
 
           <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-store-transcripts">
+            <input type="checkbox" id="priv-store-transcripts" aria-label="Persist conversation transcripts on the server">
             <div class="privacy-toggle-info">
               <div class="privacy-toggle-title">Persist conversation transcripts on the server</div>
               <div class="privacy-toggle-desc">Store complete chat histories on the server database to enable cross-platform recall, session continuity checks, and drift diagnostics later.</div>
@@ -2033,7 +2033,7 @@ body{background:#050c09;color:var(--text)}
           </div>
 
           <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-sign-seeds">
+            <input type="checkbox" id="priv-sign-seeds" aria-label="Trust-state signing for seed extraction">
             <div class="privacy-toggle-info">
               <div class="privacy-toggle-title">Trust-state signing for seed extraction</div>
               <div class="privacy-toggle-desc">Automatically sign generated seeds with localized keys, verifying code-lineage parameters when exported to external developer environments.</div>
@@ -2041,7 +2041,7 @@ body{background:#050c09;color:var(--text)}
           </div>
 
           <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-ai-training">
+            <input type="checkbox" id="priv-ai-training" aria-label="Allow AI model training data usage">
             <div class="privacy-toggle-info">
               <div class="privacy-toggle-title">Allow AI model training data usage</div>
               <div class="privacy-toggle-desc">Allow the system to use your ingested transcripts to train local offline fine-tuned models for smarter feature extraction. Turn off to opt out.</div>
@@ -2049,7 +2049,7 @@ body{background:#050c09;color:var(--text)}
           </div>
 
           <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-marketing">
+            <input type="checkbox" id="priv-marketing" aria-label="Receive marketing and product updates">
             <div class="privacy-toggle-info">
               <div class="privacy-toggle-title">Receive marketing and product updates</div>
               <div class="privacy-toggle-desc">Subscribe to receiving occasional announcements regarding new features, platform templates, and integration capabilities.</div>
@@ -2091,7 +2091,7 @@ body{background:#050c09;color:var(--text)}
         <button class="btn btn-ghost btn-sm" onclick="exportAllSeeds()">💾 Backup JSON</button>
         <button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">🗄️ Download Complete Archive</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('archive-restore-input').click()">↩ Restore Complete Archive</button>
-        <input type="file" id="archive-restore-input" accept=".zip,application/zip" style="display:none" onchange="restoreArchiveBackup(event)">
+        <input type="file" id="archive-restore-input" accept=".zip,application/zip" style="display:none" onchange="restoreArchiveBackup(event)" aria-label="Restore complete archive file">
         <button class="btn btn-primary btn-sm" onclick="openExportPackageModal()">📦 Export Package v2</button>
         <button class="btn btn-primary btn-sm" onclick="openImportPackageModal()">📥 Import Package v2</button>
       </div>
@@ -6037,5 +6037,6 @@ document.addEventListener('DOMContentLoaded', function() {
   switchDashTab(savedTab);
 });
 </script>
+<script src="assets/a11y.js"></script>
 </body>
 </html>

@@ -261,31 +261,31 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Payment Processing Mode</label>
-                            <select id="stripe_mode" class="form-control">
+                            <select id="stripe_mode" class="form-control" aria-label="Payment processing mode">
                                 <option value="test">Sandbox / Test Mode</option>
                                 <option value="live">Live Production</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Monthly Revenue Run Rate</label>
-                            <input type="text" class="form-control" value="$29.00 MRR (2 active plans)" disabled style="opacity:0.75;">
+                            <input type="text" class="form-control" aria-label="Monthly revenue run rate" value="$29.00 MRR (2 active plans)" disabled style="opacity:0.75;">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Stripe Secret API Key (sk_...)</label>
-                        <input type="password" id="stripe_secret_key" class="form-control" placeholder="sk_test_..." autocomplete="off">
+                        <input type="password" id="stripe_secret_key" class="form-control" placeholder="sk_test_..." autocomplete="off" aria-label="Stripe secret API key">
                     </div>
                     <div class="form-group">
                         <label>Webhook Signing Secret (whsec_...)</label>
-                        <input type="password" id="stripe_webhook_secret" class="form-control" placeholder="whsec_..." autocomplete="off">
+                        <input type="password" id="stripe_webhook_secret" class="form-control" placeholder="whsec_..." autocomplete="off" aria-label="Stripe webhook signing secret">
                     </div>
                     <div class="form-group">
                         <label>Stripe Pro Checkout URL ($9/mo)</label>
-                        <input type="url" id="stripe_checkout_pro" class="form-control" placeholder="https://buy.stripe.com/...">
+                        <input type="url" id="stripe_checkout_pro" class="form-control" placeholder="https://buy.stripe.com/..." aria-label="Stripe Pro checkout URL">
                     </div>
                     <div class="form-group">
                         <label>Stripe Master Checkout URL ($20/mo)</label>
-                        <input type="url" id="stripe_checkout_master" class="form-control" placeholder="https://buy.stripe.com/...">
+                        <input type="url" id="stripe_checkout_master" class="form-control" placeholder="https://buy.stripe.com/..." aria-label="Stripe Master checkout URL">
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
                         <button type="submit" class="btn btn-emerald">Save Stripe Settings</button>
@@ -300,7 +300,7 @@
                         <span id="webhook-copy-status" style="font-size:11px; color:var(--accent-emerald); display:none; font-weight:600;">✓ Copied!</span>
                     </div>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" id="stripe_webhook_url" class="form-control" readonly style="font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(0,0,0,0.3);" value="">
+                        <input type="text" id="stripe_webhook_url" class="form-control" readonly style="font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(0,0,0,0.3);" value="" aria-label="Webhook URL">
                         <button type="button" class="btn" onclick="copyWebhookUrl()">Copy</button>
                         <button type="button" class="btn btn-cyan" onclick="simulateStripeWebhook()" style="white-space:nowrap;">⚡ Test Webhook</button>
                     </div>
@@ -326,7 +326,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Active Provider</label>
-                            <select id="llm_provider" class="form-control">
+                            <select id="llm_provider" class="form-control" aria-label="Active provider">
                                 <option value="openai_compatible">Groq Cloud (LPU Reasoning)</option>
                                 <option value="openai">OpenAI Official</option>
                                 <option value="gemini">Google Gemini</option>
@@ -335,17 +335,17 @@
                         </div>
                         <div class="form-group">
                             <label>Model Architecture</label>
-                            <input type="text" id="llm_model" class="form-control" placeholder="qwen-qwq-32b">
+                            <input type="text" id="llm_model" class="form-control" placeholder="qwen-qwq-32b" aria-label="Model">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Gateway Endpoint URL</label>
-                        <input type="url" id="llm_api_url" class="form-control" placeholder="https://api.groq.com/openai/v1">
+                        <input type="url" id="llm_api_url" class="form-control" placeholder="https://api.groq.com/openai/v1" aria-label="Gateway endpoint URL">
                     </div>
                     <div class="form-group">
                         <label>Master Platform API Key (Masked)</label>
                         <div style="display:flex;gap:8px;">
-                            <input type="password" id="llm_api_key" class="form-control" placeholder="gsk_... or sk_..." autocomplete="off">
+                            <input type="password" id="llm_api_key" class="form-control" placeholder="gsk_... or sk_..." autocomplete="off" aria-label="Model API key">
                             <button type="button" class="btn" onclick="toggleKeyVisibility('llm_api_key')">👁️</button>
                         </div>
                     </div>
@@ -379,7 +379,7 @@
                         <div class="form-row" style="margin-bottom:0;">
                             <div class="form-group" style="margin-bottom:0;">
                                 <label style="font-size:11px;">Monthly Budget Limit ($ USD)</label>
-                                <input type="number" id="ai_monthly_budget_usd" class="form-control" step="1.0" min="5" value="50.00" style="padding:6px 10px; font-size:12px;">
+                                <input type="number" id="ai_monthly_budget_usd" class="form-control" step="1.0" min="5" value="50.00" style="padding:6px 10px; font-size:12px;" aria-label="Monthly budget limit in US dollars">
                             </div>
                             <div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
                                 <label style="font-size:11px;">Overspend Protection</label>
@@ -404,10 +404,10 @@
     <div class="card" style="padding:12px 18px; margin-bottom:14px; background:var(--bg-card-alt); border:1px solid var(--border);">
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
             <div style="flex:1; min-width:220px;">
-                <input type="text" id="user-search-input" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <input type="text" id="user-search-input" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Search by name or email">
             </div>
             <div style="min-width:140px;">
-                <select id="user-plan-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-plan-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by plan">
                     <option value="">All Tiers</option>
                     <option value="free">Free Tier</option>
                     <option value="pro">Pro Tier</option>
@@ -415,14 +415,14 @@
                 </select>
             </div>
             <div style="min-width:130px;">
-                <select id="user-status-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-status-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by status">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
                 </select>
             </div>
             <div style="min-width:120px;">
-                <select id="user-role-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-role-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by role">
                     <option value="">All Roles</option>
                     <option value="consumer">Consumer</option>
                     <option value="admin">Admin</option>
@@ -442,23 +442,23 @@
             <form id="add-account-form" onsubmit="submitCreateAccount(event)">
                 <div class="form-group">
                     <label>Account Name</label>
-                    <input type="text" id="new_acc_name" class="form-control" placeholder="e.g. Alice Walker" required>
+                    <input type="text" id="new_acc_name" class="form-control" placeholder="e.g. Alice Walker" required aria-label="Account name">
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" id="new_acc_email" class="form-control" placeholder="user@company.com" required>
+                    <input type="email" id="new_acc_email" class="form-control" placeholder="user@company.com" required aria-label="Email address">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Platform Role</label>
-                        <select id="new_acc_role" class="form-control">
+                        <select id="new_acc_role" class="form-control" aria-label="Platform role">
                             <option value="consumer">Consumer</option>
                             <option value="admin">Administrator</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Subscription Tier</label>
-                        <select id="new_acc_plan" class="form-control">
+                        <select id="new_acc_plan" class="form-control" aria-label="Subscription tier">
                             <option value="free">Free Tier</option>
                             <option value="pro" selected>Pro Tier ($9/mo)</option>
                             <option value="master">Master Tier ($20/mo)</option>
@@ -467,7 +467,7 @@
                 </div>
                 <div class="form-group">
                     <label>Initial Password (Optional)</label>
-                    <input type="password" id="new_acc_password" class="form-control" placeholder="Optional initial password">
+                    <input type="password" id="new_acc_password" class="form-control" placeholder="Optional initial password" aria-label="Initial password (optional)">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                     <button type="button" class="btn" onclick="closeAddAccountModal()">Cancel</button>
