@@ -104,6 +104,8 @@ def validate_runtime_config():
     invalid=[name for name,value in numeric.items() if value<=0]
     if invalid: raise RuntimeError("Runtime limits must be positive: "+", ".join(invalid))
     if not 1<=PORT<=65535: raise RuntimeError("SEED_REFLECTIONS_PORT must be between 1 and 65535")
+    if DEPLOYMENT_MODE=="local" and HOST not in {"127.0.0.1","localhost","::1"}:
+        raise RuntimeError("Local mode must bind to a loopback host")
     if DEPLOYMENT_MODE!="local":
         parsed=urllib.parse.urlparse(PUBLIC_ORIGIN)
         if PUBLIC_ORIGIN=="*" or parsed.scheme not in {"http","https"} or not parsed.netloc:
@@ -258,6 +260,11 @@ def load_transcript(transcript_id):
 TELEMETRY_LOG = []
 
 TIER_QUOTAS = {
+    "local": {
+        "max_seeds": 999999,
+        "max_monthly_reflections": 250,
+        "name": "Local"
+    },
     "free": {
         "max_seeds": 20,
         "max_monthly_reflections": 50,
@@ -907,13 +914,17 @@ def load_db():
                     "email": "consumer@seedreflections.app",
                     "name": "Workspace Developer",
                     "role": "consumer",
-                    "plan": "pro",
+                    "plan": "local",
                     "status": "active",
                     "tokens_consumed": 0,
                     "created_at": datetime.now().isoformat(),
                     "last_active": "Today"
                 }
             ]
+        if DEPLOYMENT_MODE=="local":
+            for account in data["accounts"]:
+                if account.get("id")=="usr_consumer_default" and account.get("plan")=="pro":
+                    account["plan"]="local"
         return data
 
 def save_db(db):
@@ -1029,6 +1040,25 @@ def materialize_tenant_relationships(workspace_id):
 
 class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
+    def _local_request_allowed(self):
+        if DEPLOYMENT_MODE!="local": return True
+        listener_port=self.server.server_address[1]
+        allowed_hosts={f"127.0.0.1:{listener_port}",f"localhost:{listener_port}",f"[::1]:{listener_port}"}
+        host=self.headers.get("Host","").lower()
+        origin=self.headers.get("Origin","").lower().rstrip("/")
+        if host not in allowed_hosts or (origin and origin != "http://"+host):
+            self._send_json({"error":"Local requests require a loopback Host and matching Origin"},403)
+            return False
+        return True
+
+    def _send_cors_headers(self):
+        if DEPLOYMENT_MODE=="local":
+            origin=self.headers.get("Origin","").lower().rstrip("/")
+            if origin: self.send_header("Access-Control-Allow-Origin",origin)
+        else:
+            self.send_header("Access-Control-Allow-Origin",PUBLIC_ORIGIN)
+        self.send_header("Vary","Origin")
+
     def _bearer_token(self):
         value=self.headers.get("Authorization","")
         return value[7:].strip() if value.startswith("Bearer ") else ""
@@ -1044,8 +1074,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             # CORS headers
-            self.send_header("Access-Control-Allow-Origin", PUBLIC_ORIGIN)
-            self.send_header("Vary", "Origin")
+            self._send_cors_headers()
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
             self.send_header("X-Content-Type-Options", "nosniff")
@@ -1058,9 +1087,9 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             print(f"Error sending JSON: {e}")
 
     def do_OPTIONS(self):
+        if not self._local_request_allowed(): return
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", PUBLIC_ORIGIN)
-        self.send_header("Vary", "Origin")
+        self._send_cors_headers()
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -1069,6 +1098,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
         if path == "/api/v2/capabilities":
             self._send_json({"mode":DEPLOYMENT_MODE,"billing":os.environ.get("SEED_REFLECTIONS_BILLING_ENABLED","0")=="1",
@@ -1186,7 +1216,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings=dict(workspace.get("settings") or {})
             settings.setdefault("user_name",user.get("name") or "Seed User")
             settings.setdefault("user_email",user.get("email") or "")
-            settings.setdefault("user_plan","free")
+            settings["user_plan"]="local" if DEPLOYMENT_MODE=="local" else settings.get("user_plan","free")
             settings.setdefault("api_mode","managed" if DEPLOYMENT_MODE!="local" else "self_hosted")
             settings.setdefault("llm_provider","managed" if DEPLOYMENT_MODE!="local" else "ollama")
             settings.setdefault("model_selection_mode","auto")
@@ -2717,6 +2747,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self.send_error(404, "File Not Found")
 
     def do_POST(self):
+        if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
         if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
@@ -3553,7 +3584,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     self.send_header("Content-Type", "application/json")
                     self.send_header("Content-Length", str(len(response_data)))
                     self.send_header("Set-Cookie", f"admin_session={token}; Path=/; HttpOnly; SameSite=Lax")
-                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self._send_cors_headers()
                     self.end_headers()
                     self.wfile.write(response_data)
                     return

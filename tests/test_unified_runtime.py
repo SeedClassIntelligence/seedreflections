@@ -43,6 +43,34 @@ class UnifiedRuntime:
     def close(self): self.process.terminate(); self.process.wait(timeout=5); self.temp.cleanup()
 
 class UnifiedRuntimeTests(unittest.TestCase):
+    def test_local_entitlement_is_not_a_paid_subscription(self):
+        runtime=UnifiedRuntime("local")
+        try:
+            status,settings=runtime.request("GET","/api/v2/settings")
+            self.assertEqual(status,200)
+            self.assertEqual(settings["user_plan"],"local")
+            status,account=runtime.request("GET","/api/v1/users/me")
+            self.assertEqual(status,200)
+            self.assertEqual(account["plan"],"local")
+        finally: runtime.close()
+
+    def test_local_rejects_untrusted_host_and_origin(self):
+        runtime=UnifiedRuntime("local")
+        try:
+            connection=http.client.HTTPConnection("127.0.0.1",runtime.port,timeout=5)
+            cases=[("GET","/api/v2/health",{"Host":"attacker.example"},403),
+                   ("GET","/api/v2/health",{"Host":f"127.0.0.1:{runtime.port}","Origin":"https://attacker.example"},403),
+                   ("POST","/api/v2/projects",{"Host":f"127.0.0.1:{runtime.port}","Origin":"https://attacker.example","Content-Type":"application/json"},403),
+                   ("OPTIONS","/api/v2/projects",{"Host":"attacker.example","Origin":"https://attacker.example"},403),
+                   ("GET","/api/v2/health",{"Host":f"localhost:{runtime.port}","Origin":f"http://localhost:{runtime.port}"},200)]
+            for method,path,headers,expected in cases:
+                connection.request(method,path,body=b"{}" if method=="POST" else None,headers=headers)
+                response=connection.getresponse(); response.read()
+                self.assertEqual(response.status,expected,(method,headers))
+                self.assertNotEqual(response.getheader("Access-Control-Allow-Origin"),"*")
+            connection.close()
+        finally: runtime.close()
+
     def test_local_connector_discovers_imports_and_incrementally_syncs_conversations(self):
         runtime=UnifiedRuntime("local")
         try:

@@ -2633,10 +2633,9 @@ async function loadCandidateQueue() {
       return;
     }
     grid.innerHTML = candidates.map(function(item) {
-      var confidence = Math.round(Number(item.confidence || 0) * 100);
       var acceptLabel = item.kind === 'decision' ? 'Accept Decision' : item.kind === 'abandoned' ? 'Confirm History' : 'Accept as Idea';
       return '<article class="candidate-card">' +
-        '<div class="candidate-meta"><span class="candidate-kind">' + escHtml(item.kind) + '</span><span>' + confidence + '% confidence</span></div>' +
+        '<div class="candidate-meta"><span class="candidate-kind">' + escHtml(item.kind) + '</span><span>Phrase match · review source</span></div>' +
         '<h4>' + escHtml(item.title) + '</h4>' +
         '<div class="candidate-source">' + escHtml(item.conversation_title) + ' · message ' + (Number(item.message_ordinal || 0) + 1) + '</div>' +
         '<blockquote>' + escHtml(item.excerpt) + '</blockquote>' +
@@ -5353,10 +5352,16 @@ async function loadAccountSettings() {
 
 function highlightPlanCard(plan) {
   document.querySelectorAll('.plan-tier-card').forEach(function(c){ c.classList.remove('active'); });
+  var badge = document.getElementById('tier-badge');
+  if (plan === 'local') {
+    if (badge) { badge.textContent = 'Local'; badge.style.background = 'var(--green-glow)'; badge.style.color = 'var(--green)'; }
+    var localReflectText = document.getElementById('u-reflect-text');
+    if (localReflectText) localReflectText.textContent = 'Local limit: 250 reflections per month';
+    return;
+  }
   var el = document.getElementById('plan-tier-' + plan);
   if (el) {
     el.classList.add('active');
-    var badge = document.getElementById('tier-badge');
     badge.textContent = plan === 'free' ? 'Free Tier' : (plan === 'master' ? 'Master Tier' : 'Pro Tier');
     badge.style.background = plan === 'free' ? 'var(--border)' : (plan === 'master' ? 'var(--purple-glow)' : 'var(--green-glow)');
     badge.style.color = plan === 'free' ? 'var(--text-muted)' : (plan === 'master' ? 'var(--purple)' : 'var(--green)');

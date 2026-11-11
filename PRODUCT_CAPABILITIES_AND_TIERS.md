@@ -8,7 +8,7 @@ This document defines what SeedReflections is, what it currently does, how a con
 
 ## 1. Product definition
 
-SeedReflections is an AI-work recovery, organization, and continuation platform. It turns exported or user-authorized AI conversations and supporting documents into a readable, searchable archive; identifies evidence-backed ideas and decisions for human review; preserves their source lineage; and gives the user a workspace to continue the work as plans, briefs, reports, task sets, and notes.
+SeedReflections is an AI-work recovery, organization, and continuation platform. It turns exported or user-authorized AI conversations and supporting documents into a readable, searchable archive; flags explicit idea and decision language for human review; preserves source lineage; and gives the user a workspace to continue the work as plans, briefs, reports, task sets, and notes. Current candidate detection uses phrase rules; model-assisted discovery and synthesis remain to be proven separately.
 
 The customer promise is:
 
@@ -147,9 +147,11 @@ Billing and teams are implemented but feature-flagged. They are not active merel
 
 | Tier | Price shown | Confirmed seed capacity | Monthly reflections | Billing behavior |
 |---|---:|---:|---:|---|
-| Free | $0 | 20 | 50 | Default account tier |
+| Free | $0 | 20 | 50 | Default hosted account tier |
 | Pro | $9/month | Unlimited in application quota logic | 250 | Stripe Checkout/portal when production billing is enabled |
 | Master | $20/month | Unlimited in application quota logic | Unlimited in application quota logic | Stripe Checkout/portal when production billing is enabled |
+
+Local mode has a separate **Local** entitlement with Pro-level core quotas (999,999 confirmed seeds and 250 monthly reflections). It is not a paid Pro subscription. The settings and quota surfaces should show Local consistently.
 
 “Unlimited” is implemented as a very high application quota, not a promise of infinite infrastructure. Upload size, storage, compute, security, abuse-prevention, and deployment limits still apply.
 
