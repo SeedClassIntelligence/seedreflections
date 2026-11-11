@@ -1,44 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How SeedReflections Compares — Keep and Continue Your AI Work</title>
 <meta name="description" content="Compare SeedReflections with AI assistants, knowledge workspaces, and capture tools. Bring scattered AI work into one evidence-linked library and continue it.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0c3626">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Zilla+Slab:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
 <style>
-:root{--bg:#06080f;--card:#0d1117;--raised:#161b22;--border:#21262d;--text:#f0f6fc;--text2:#c9d1d9;--muted:#8b949e;--green:#3fb950;--blue:#58a6ff;--amber:#e3b341}*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;line-height:1.6}.site-header{position:sticky;top:0;z-index:10;background:rgba(6,8,15,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}.nav-top{height:50px;padding:0 5%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(33,38,45,.55)}.brand{font-size:17px;font-weight:900;letter-spacing:-.5px;text-decoration:none;color:var(--green)}.brand span{color:#fff}.auth{display:flex;gap:12px;align-items:center}.auth a{font-size:13px;font-weight:700;text-decoration:none}.signin{color:var(--muted)}.signup,.cta{background:var(--green);color:#000;padding:7px 14px;border-radius:7px}.nav-bottom{height:38px;padding:0 5%;display:flex;align-items:center;justify-content:center;gap:8px;overflow:auto;white-space:nowrap}.nav-bottom a{font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;padding:4px 10px}.nav-bottom a:hover,.nav-bottom .active{color:var(--green)}
-.hero{text-align:center;padding:82px 5% 58px;background:radial-gradient(ellipse at 50% 0%,rgba(63,185,80,.08),transparent 65%);border-bottom:1px solid var(--border)}.eyebrow,.label{font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:1.5px}.hero h1{font-size:clamp(35px,5vw,52px);line-height:1.08;letter-spacing:-2px;margin:14px 0 20px}.hero h1 em{color:var(--green);font-style:normal}.lead{max-width:720px;margin:auto;color:var(--text2);font-size:17px;line-height:1.75}.stats{display:flex;justify-content:center;gap:54px;flex-wrap:wrap;margin-top:35px}.stat strong{display:block;color:var(--green);font-size:27px}.stat span{font-size:12px;color:var(--muted)}
-main{max-width:1080px;margin:auto;padding:60px 5% 90px}.section{margin-bottom:62px}.heading{font-size:25px;letter-spacing:-.6px;margin:9px 0 8px}.sub{color:var(--muted);font-size:14px;max-width:790px;margin-bottom:28px}.grid3,.grid2{display:grid;gap:20px}.grid3{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:repeat(2,1fr)}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px}.card h3{font-size:16px;margin-bottom:8px}.card p,.card li{font-size:13px;color:var(--muted)}.card ul{list-style:none;margin-top:13px}.card li{padding:5px 0 5px 17px;position:relative}.card li:before{content:'→';position:absolute;left:0;color:var(--green)}.problem{border-top:3px solid var(--green)}.problem:nth-child(2){border-top-color:var(--amber)}.problem:nth-child(3){border-top-color:var(--blue)}.icon{font-size:25px;margin-bottom:10px}
-.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:15px;background:var(--card)}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:top;font-size:13px}th{background:var(--raised);font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text2)}tr:last-child td{border-bottom:0}.us{background:rgba(63,185,80,.04);border-left:1px solid rgba(63,185,80,.18)}th.us{color:var(--green)}td:first-child{font-weight:700}.muted{color:var(--muted)}.yes{color:var(--green);font-weight:700}.partial{color:var(--amber)}.truth{margin-top:18px;padding:18px 20px;border:1px solid rgba(88,166,255,.25);background:rgba(88,166,255,.06);border-radius:11px;color:var(--text2);font-size:13px}.truth strong{color:var(--blue)}
-.tool{display:flex;flex-direction:column;gap:9px}.tag{align-self:flex-start;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800;color:var(--green);background:rgba(63,185,80,.1);padding:3px 8px;border-radius:20px}.adds{border-top:1px solid var(--border);padding-top:10px;color:var(--text2)!important}.adds strong{color:var(--green)}.sources{font-size:12px;color:var(--muted);margin-top:18px}.sources a{color:var(--blue);text-decoration:none}.verdict{text-align:center;padding:42px;border:1px solid rgba(63,185,80,.25);background:linear-gradient(135deg,rgba(63,185,80,.08),rgba(88,166,255,.05));border-radius:16px}.verdict h2{font-size:26px;margin:9px 0}.verdict p{max-width:700px;margin:0 auto 25px;color:var(--text2)}.cta{display:inline-block;text-decoration:none;font-weight:800;padding:12px 24px}footer{border-top:1px solid var(--border);background:var(--card);padding:45px 5%}.footer{max-width:1080px;margin:auto;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap}.footer p{font-size:13px;color:var(--muted);max-width:470px}.footer-links{display:flex;gap:18px;flex-wrap:wrap}.footer-links a{font-size:13px;color:var(--muted);text-decoration:none}@media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr}.hero{padding-top:58px}.stats{gap:28px}.nav-bottom{justify-content:flex-start}.verdict{padding:32px 20px}}
-</style></head><body>
-<header class="site-header"><div class="nav-top"><a class="brand" href="index.html">Seed<span>Reflections</span></a><div class="auth" id="nav-auth"><a class="signin" href="auth.html?mode=login">Sign In</a><a class="signup" href="auth.html?mode=signup">Sign Up Free</a></div></div><nav class="nav-bottom"><a href="index.html">Home</a><a href="/consumer">Workspace</a><a href="index.html#section-generator">Prompt Engine</a><a class="active" href="comparison.html">Compare</a></nav></header>
-<section class="hero"><div class="eyebrow">Product comparison</div><h1>Your Ideas Keep Getting Lost.<br><em>We Fix That.</em></h1><p class="lead">AI assistants help you create. Knowledge tools help you document. SeedReflections brings the work scattered across those systems into one evidence-linked archive, lets you decide what matters, and gives you a Workspace to continue it.</p><div class="stats"><div class="stat"><strong>4</strong><span>ways to bring work in</span></div><div class="stat"><strong>1</strong><span>cross-source Library</span></div><div class="stat"><strong>You</strong><span>control what becomes project memory</span></div></div></section>
-<main>
-<section class="section"><div class="label">The problem</div><h2 class="heading">AI work is easy to create and hard to keep usable</h2><p class="sub">The problem is not a shortage of conversations. It is turning months or years of scattered work into something you can understand, verify, and continue.</p><div class="grid3"><article class="card problem"><div class="icon">◫</div><h3>Fragmented history</h3><p>Useful work lives across assistants, documents, exports, folders, and copied threads. The context is separated even when the mission is the same.</p></article><article class="card problem"><div class="icon">{ }</div><h3>Unreadable exports</h3><p>Platform exports may preserve the data without making it human-usable. Large JSON archives and long transcripts still need structure, titles, relationships, and search.</p></article><article class="card problem"><div class="icon">✓</div><h3>Unreviewed interpretation</h3><p>AI can identify possible ideas, decisions, tasks, constraints, and drift. Those interpretations should remain proposals until a person accepts, defers, or rejects them.</p></article></div></section>
-<section class="section"><div class="label">Comparison 1 of 2</div><h2 class="heading">SeedReflections and provider-native AI workspaces</h2><p class="sub">ChatGPT Projects, Claude Projects, and Gemini are valuable places to create. SeedReflections does a different job: it recovers work across sources and turns it into a governed continuation system.</p><div class="table-wrap"><table><thead><tr><th>Capability</th><th>ChatGPT Projects</th><th>Claude Projects</th><th>Gemini / Gems</th><th class="us">SeedReflections</th></tr></thead><tbody>
-<tr><td>Primary job</td><td>Creation inside ChatGPT</td><td>Creation inside Claude</td><td>Creation inside Gemini</td><td class="us yes">Recover, organize, review, and continue AI work</td></tr>
-<tr><td>Native project context</td><td class="yes">Projects, files, instructions, memory</td><td class="yes">Projects, knowledge, instructions</td><td class="yes">Gems and Gemini activity</td><td class="us partial">Uses accepted evidence and linked sources as durable context</td></tr>
-<tr><td>Account-data export</td><td class="yes">Available for eligible accounts</td><td class="yes">Conversation and user data export</td><td class="yes">Available through Google Takeout</td><td class="us yes">Ingests exports and makes them human-usable</td></tr>
-<tr><td>Cross-provider Library</td><td class="muted">Provider-native</td><td class="muted">Provider-native</td><td class="muted">Provider-native</td><td class="us yes">One normalized, searchable Library</td></tr>
-<tr><td>Evidence-linked human review</td><td class="muted">Not its primary workflow</td><td class="muted">Not its primary workflow</td><td class="muted">Not its primary workflow</td><td class="us yes">Accept, defer, reject, or abstain</td></tr>
-<tr><td>Persistent continuation artifacts</td><td class="partial">Chats and project sources</td><td class="partial">Chats and project knowledge</td><td class="partial">Chats, Gems, and activity</td><td class="us yes">Plans, briefs, reports, tasks, notes, status, and versions</td></tr></tbody></table></div><div class="truth"><strong>Connection truth:</strong> SeedReflections supports uploaded platform exports, JSON, documents, PDFs, pasted text, user-authorized SeedBridge folders, and scoped integrations. A provider API key does not automatically grant access to a person’s private chat history; direct history sync depends on the provider exposing and authorizing that access.</div></section>
-<section class="section"><div class="label">Comparison 2 of 2</div><h2 class="heading">Different tools solve different parts of the work</h2><p class="sub">This is a comparison of operating models—not a claim that other products have no value.</p><div class="table-wrap"><table><thead><tr><th>Model</th><th>AI assistants</th><th>Knowledge workspaces</th><th>Passive capture</th><th class="us">SeedReflections</th></tr></thead><tbody>
-<tr><td>Best at</td><td>Generating and discussing</td><td>Writing and organizing</td><td>Recording activity</td><td class="us yes">Recovering and continuing AI work</td></tr><tr><td>What enters</td><td>Prompts, files, current context</td><td>Pages, notes, databases, connected sources</td><td>Audio, screen, or device activity</td><td class="us">Exports, JSON, PDFs, docs, text, folders, scoped integrations</td></tr><tr><td>Interpretation governance</td><td>Model responses</td><td>Author/editor workflow</td><td>Search and summaries</td><td class="us yes">Candidate findings require human disposition</td></tr><tr><td>Source lineage</td><td>Usually conversation-level</td><td>Page and citation dependent</td><td>Captured event or recording</td><td class="us yes">Findings link back to source evidence</td></tr><tr><td>Continuation model</td><td>Continue the chat or project</td><td>Continue the page or workspace</td><td>Return to the recording</td><td class="us yes">Promote accepted material into working artifacts</td></tr><tr><td>Deployment</td><td>Provider-hosted</td><td>Cloud or local, depending on tool</td><td>Varies by product</td><td class="us yes">Local-first or tenant-isolated hosted mode</td></tr></tbody></table></div></section>
-<section class="section"><div class="label">The SeedReflections workflow</div><h2 class="heading">One connected path from scattered history to active work</h2><p class="sub">The advantage is not a single feature. It is the governed flow between ingestion, understanding, review, and continuation.</p><div class="grid2">
-<article class="card"><h3>1. Bring work in</h3><p>Upload platform exports and common documents, paste a conversation, select authorized local folders through SeedBridge, or receive content through an approved integration.</p><ul><li>JSON is a first-class ingestion source</li><li>Large archives become usable records</li><li>Source identity and lineage are preserved</li></ul></article>
-<article class="card"><h3>2. Preserve and understand</h3><p>Normalize the material into a searchable Library and identify candidate conversations, ideas, decisions, tasks, constraints, evidence, and drift.</p><ul><li>Original source remains accessible</li><li>Related material can be found across sources</li><li>Insufficient evidence can remain unresolved</li></ul></article>
-<article class="card"><h3>3. Review before authority</h3><p>SeedReflections proposes; the user decides. Accept, defer, or reject candidate interpretations before they become durable project context.</p><ul><li>No silent promotion into project truth</li><li>Evidence stays linked to the finding</li><li>Human judgment remains visible</li></ul></article>
-<article class="card"><h3>4. Continue the work</h3><p>Turn accepted material into plans, briefs, reports, task sets, and notes inside the Workspace—with status, versions, relationships, and export.</p><ul><li>Ask questions across approved sources</li><li>Move from insight to an artifact</li><li>Return without rebuilding context</li></ul></article></div></section>
-<section class="section"><div class="label">Where other tools excel</div><h2 class="heading">SeedReflections complements the places where you already work</h2><p class="sub">You do not need to abandon your preferred assistant or knowledge tool.</p><div class="grid3">
-<article class="card tool"><span class="tag">AI workspace</span><h3>ChatGPT Projects</h3><p>Strong for keeping ChatGPT chats, files, instructions, and project context together.</p><p class="adds"><strong>SeedReflections adds:</strong> recovery across providers, evidence-linked review, and a continuation Library outside one assistant.</p></article>
-<article class="card tool"><span class="tag">AI workspace</span><h3>Claude Projects</h3><p>Strong for working with Claude using project knowledge, instructions, and related conversations.</p><p class="adds"><strong>SeedReflections adds:</strong> normalized imports from multiple systems and governed promotion into reusable artifacts.</p></article>
-<article class="card tool"><span class="tag">AI workspace</span><h3>Gemini and Gems</h3><p>Strong for creating within Google’s AI ecosystem and using customized Gems.</p><p class="adds"><strong>SeedReflections adds:</strong> a shared archive that holds Gemini exports beside work from other sources.</p></article>
-<article class="card tool"><span class="tag">Knowledge</span><h3>Notion AI</h3><p>Strong for creating and searching pages, databases, and connected workspace knowledge.</p><p class="adds"><strong>SeedReflections adds:</strong> AI-conversation recovery, source evidence review, and a dedicated ideation-to-decision flow.</p></article>
-<article class="card tool"><span class="tag">Local knowledge</span><h3>Obsidian and local notes</h3><p>Strong for user-controlled files, linking, and long-term personal knowledge management.</p><p class="adds"><strong>SeedReflections adds:</strong> structured ingestion of AI exports and a guided review-to-workspace pipeline.</p></article>
-<article class="card tool"><span class="tag">Capture</span><h3>Passive capture tools</h3><p>Strong for recording meetings, screens, audio, or activity so events can be revisited.</p><p class="adds"><strong>SeedReflections adds:</strong> deliberate source intake, human-governed interpretation, and mission-focused continuation.</p></article></div>
-<p class="sources">Comparison basis checked against official documentation: <a href="https://help.openai.com/en/articles/10169521-projects-in-chatgpt">ChatGPT Projects</a>, <a href="https://help.openai.com/en/articles/7260999-export-your-data-from-chatgpt">ChatGPT export</a>, <a href="https://support.anthropic.com/en/articles/9517075-what-are-projects">Claude Projects</a>, <a href="https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-data">Claude export</a>, <a href="https://support.google.com/gemini/answer/16920332">Gemini export</a>, and <a href="https://www.notion.com/help/enterprise-search">Notion search</a>. Capabilities can change; provider documentation governs.</p></section>
-<section class="verdict"><div class="label">The bottom line</div><h2>Keep creating where you work. Use SeedReflections to keep the work.</h2><p>SeedReflections does not try to replace every assistant, document system, or note tool. It gives your AI work a durable home: one place to recover it, understand it, approve what matters, and move it forward.</p><a class="cta" href="/consumer">Open the Workspace</a></section>
-</main><footer><div class="footer"><div><a class="brand" href="index.html">Seed<span>Reflections</span></a><p>Bring scattered AI work into one evidence-linked Library. Decide what matters. Continue it in your Workspace.</p></div><div class="footer-links"><a href="index.html">Home</a><a href="/consumer">Workspace</a><a href="comparison.html">Compare</a><a href="auth.html?mode=login">Sign in</a></div></div></footer>
-<script src="js/platform.js"></script><script>if(window.SeedReflectionsPlatform&&SeedReflectionsPlatform.renderNavAuth){SeedReflectionsPlatform.renderNavAuth('#nav-auth',{loggedInHtml:'<a href="/consumer" class="signup">Go to Workspace</a>'});}</script></body></html>
+.hero-c{padding-block:clamp(56px,7vw,104px) clamp(48px,6vw,88px)}
+.hero-c h1{max-width:18ch;margin-bottom:26px}
+.hero-c .lede{max-width:60ch}
+.head2{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(20px,4vw,64px);align-items:end;margin-bottom:clamp(28px,4vw,52px)}
+.head2 h2{grid-column:1/span 7}
+.head2 p{grid-column:9/span 4;color:var(--on-field-2)}
+.sheet .head2 p{color:var(--ink-2)}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cmp{min-width:880px}
+.cmp thead th{white-space:nowrap}
+.cmp tbody th{width:19%;font-size:1rem}
+.cmp td{color:var(--on-field);padding-right:22px}
+.cmp tbody td.us{background:var(--sheet);color:var(--ink);padding-left:20px;padding-right:20px;font-weight:600}
+.cmp thead th.us{background:var(--sheet);padding-left:20px}
+.cmp thead th.us{color:var(--ink-2);border-bottom-color:var(--ink)}
+.cmp tbody tr:last-child .us{box-shadow:0 1px 0 var(--sheet)}
+.note-box{margin-top:32px;padding:20px 22px;border:2px solid var(--on-field);max-width:78ch}
+.note-box strong{font-family:var(--display);font-size:1.15rem;margin-right:6px}
+.steps{border-top:2px solid var(--ink)}
+.step{display:grid;grid-template-columns:72px minmax(0,1fr);gap:clamp(16px,3vw,40px);padding:30px 0;border-bottom:1px solid var(--rule)}
+.step .n{font:700 3rem/1 var(--display);color:var(--ink)}
+.step h3{margin-bottom:8px;font-size:1.5rem}
+.step p{color:var(--ink-2);max-width:64ch}
+.step ul{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 28px;font-weight:600;font-size:.98rem}
+.step li::before{content:"";display:inline-block;width:.6em;height:.6em;margin-right:.6em;background:var(--accent);border-radius:1px;transform:translateY(-1px)}
+.excel td,.excel th{padding-block:20px}
+.excel tbody th{width:22%;font-family:var(--display);font-size:1.2rem;font-weight:600}
+.excel td:nth-child(3){color:var(--on-field)}
+.basis{margin-top:28px;max-width:80ch;font-size:.95rem}
+.basis a{color:var(--on-field);text-underline-offset:3px}
+.bottom h2{max-width:20ch;margin-bottom:22px}
+@media (max-width:860px){.head2 h2,.head2 p{grid-column:1/-1}.head2{align-items:start}}
+@media (max-width:760px){
+  .cmp{min-width:0}
+  .table-wrap{overflow:visible}
+  .cmp tbody th{width:auto;font:600 1.15rem/1.3 var(--display);padding:0 0 8px}
+  .cmp td,.excel td{display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;padding:8px 0;border:0}
+  .cmp td::before,.excel td::before{content:attr(data-label);font:500 .72rem/1.5 var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--on-field-2)}
+  .cmp tbody td.us{padding:10px 12px;margin-top:4px;border-radius:3px}
+  .cmp tbody td.us::before{color:var(--ink-2)}
+  .step{grid-template-columns:44px minmax(0,1fr)}
+  .step .n{font-size:2.2rem}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="SeedReflections home"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
+    <nav class="nav" aria-label="Primary">
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#review">Review</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="comparison.html" aria-current="page">Compare</a>
+      <a href="index.html#section-generator">Prompt tools</a>
+    </nav>
+    <div class="bar-actions">
+      <a class="signin" href="auth.html?mode=login">Sign in</a><a class="btn btn-primary" href="auth.html?mode=signup">Start free</a>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<section class="hero-c" aria-labelledby="h1">
+  <div class="wrap">
+    <h1 id="h1">Your Ideas Keep Getting Lost. We Fix That.</h1>
+    <p class="lede">AI assistants help you create. Knowledge tools help you document. SeedReflections brings the work scattered across those systems into one evidence-linked archive, lets you decide what matters, and gives you a Workspace to continue it.</p>
+  </div>
+</section>
+
+<section class="sheet on-sheet" aria-labelledby="problem">
+  <div class="wrap">
+    <div class="head2">
+      <h2 id="problem">AI work is easy to create and hard to keep usable</h2>
+      <p>The problem is not a shortage of conversations. It is turning months or years of scattered work into something you can understand, verify, and continue.</p>
+    </div>
+    <dl class="defs">
+      <div><dt>Fragmented history</dt><dd>Useful work lives across assistants, documents, exports, folders, and copied threads. The context is separated even when the mission is the same.</dd></div>
+      <div><dt>Unreadable exports</dt><dd>Platform exports may preserve the data without making it human-usable. Large JSON archives and long transcripts still need structure, titles, relationships, and search.</dd></div>
+      <div><dt>Unreviewed interpretation</dt><dd>AI can identify possible ideas, decisions, tasks, constraints, and drift. Those interpretations should remain proposals until a person accepts, defers, or rejects them.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section aria-labelledby="c1">
+  <div class="wrap">
+    <div class="head2">
+      <h2 id="c1">SeedReflections and provider-native AI workspaces</h2>
+      <p>ChatGPT Projects, Claude Projects, and Gemini are valuable places to create. SeedReflections does a different job: it recovers work across sources and turns it into a governed continuation system.</p>
+    </div>
+    <div class="table-wrap"><table class="ledger cmp"><caption class="sr">SeedReflections compared with provider-native AI workspaces</caption><thead><tr><th scope="col">Capability</th><th scope="col">ChatGPT Projects</th><th scope="col">Claude Projects</th><th scope="col">Gemini / Gems</th><th scope="col" class=us>SeedReflections</th></tr></thead><tbody><tr><th scope="row">Primary job</th><td data-label="ChatGPT Projects">Creation inside ChatGPT</td><td data-label="Claude Projects">Creation inside Claude</td><td data-label="Gemini / Gems">Creation inside Gemini</td><td class="us" data-label="SeedReflections">Recover, organize, review, and continue AI work</td></tr><tr><th scope="row">Native project context</th><td data-label="ChatGPT Projects">Projects, files, instructions, memory</td><td data-label="Claude Projects">Projects, knowledge, instructions</td><td data-label="Gemini / Gems">Gems and Gemini activity</td><td class="us" data-label="SeedReflections">Uses accepted evidence and linked sources as durable context</td></tr><tr><th scope="row">Account-data export</th><td data-label="ChatGPT Projects">Available for eligible accounts</td><td data-label="Claude Projects">Conversation and user data export</td><td data-label="Gemini / Gems">Available through Google Takeout</td><td class="us" data-label="SeedReflections">Ingests exports and makes them human-usable</td></tr><tr><th scope="row">Cross-provider Library</th><td data-label="ChatGPT Projects">Provider-native</td><td data-label="Claude Projects">Provider-native</td><td data-label="Gemini / Gems">Provider-native</td><td class="us" data-label="SeedReflections">One normalized, searchable Library</td></tr><tr><th scope="row">Evidence-linked human review</th><td data-label="ChatGPT Projects">Not its primary workflow</td><td data-label="Claude Projects">Not its primary workflow</td><td data-label="Gemini / Gems">Not its primary workflow</td><td class="us" data-label="SeedReflections">Accept, defer, reject, or abstain</td></tr><tr><th scope="row">Persistent continuation artifacts</th><td data-label="ChatGPT Projects">Chats and project sources</td><td data-label="Claude Projects">Chats and project knowledge</td><td data-label="Gemini / Gems">Chats, Gems, and activity</td><td class="us" data-label="SeedReflections">Plans, briefs, reports, tasks, notes, status, and versions</td></tr></tbody></table></div>
+    <p class="note-box"><strong>Connection truth:</strong>SeedReflections supports uploaded platform exports, JSON, documents, PDFs, pasted text, user-authorized SeedBridge folders, and scoped integrations. A provider API key does not automatically grant access to a person’s private chat history; direct history sync depends on the provider exposing and authorizing that access.</p>
+  </div>
+</section>
+
+<section class="band-2" aria-labelledby="c2">
+  <div class="wrap">
+    <div class="head2">
+      <h2 id="c2">Different tools solve different parts of the work</h2>
+      <p>This is a comparison of operating models—not a claim that other products have no value.</p>
+    </div>
+    <div class="table-wrap"><table class="ledger cmp"><caption class="sr">Operating models compared</caption><thead><tr><th scope="col">Model</th><th scope="col">AI assistants</th><th scope="col">Knowledge workspaces</th><th scope="col">Passive capture</th><th scope="col" class=us>SeedReflections</th></tr></thead><tbody><tr><th scope="row">Best at</th><td data-label="AI assistants">Generating and discussing</td><td data-label="Knowledge workspaces">Writing and organizing</td><td data-label="Passive capture">Recording activity</td><td class="us" data-label="SeedReflections">Recovering and continuing AI work</td></tr><tr><th scope="row">What enters</th><td data-label="AI assistants">Prompts, files, current context</td><td data-label="Knowledge workspaces">Pages, notes, databases, connected sources</td><td data-label="Passive capture">Audio, screen, or device activity</td><td class="us" data-label="SeedReflections">Exports, JSON, PDFs, docs, text, folders, scoped integrations</td></tr><tr><th scope="row">Interpretation governance</th><td data-label="AI assistants">Model responses</td><td data-label="Knowledge workspaces">Author/editor workflow</td><td data-label="Passive capture">Search and summaries</td><td class="us" data-label="SeedReflections">Candidate findings require human disposition</td></tr><tr><th scope="row">Source lineage</th><td data-label="AI assistants">Usually conversation-level</td><td data-label="Knowledge workspaces">Page and citation dependent</td><td data-label="Passive capture">Captured event or recording</td><td class="us" data-label="SeedReflections">Findings link back to source evidence</td></tr><tr><th scope="row">Continuation model</th><td data-label="AI assistants">Continue the chat or project</td><td data-label="Knowledge workspaces">Continue the page or workspace</td><td data-label="Passive capture">Return to the recording</td><td class="us" data-label="SeedReflections">Promote accepted material into working artifacts</td></tr><tr><th scope="row">Deployment</th><td data-label="AI assistants">Provider-hosted</td><td data-label="Knowledge workspaces">Cloud or local, depending on tool</td><td data-label="Passive capture">Varies by product</td><td class="us" data-label="SeedReflections">Local-first or tenant-isolated hosted mode</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<section class="sheet on-sheet" aria-labelledby="flow">
+  <div class="wrap">
+    <div class="head2">
+      <h2 id="flow">One connected path from scattered history to active work</h2>
+      <p>The advantage is not a single feature. It is the governed flow between ingestion, understanding, review, and continuation.</p>
+    </div>
+    <div class="steps"><div class="step"><div class="n" aria-hidden="true">1</div><div><h3>Bring work in</h3><p>Upload platform exports and common documents, paste a conversation, select authorized local folders through SeedBridge, or receive content through an approved integration.</p><ul><li>JSON is a first-class ingestion source</li><li>Large archives become usable records</li><li>Source identity and lineage are preserved</li></ul></div></div><div class="step"><div class="n" aria-hidden="true">2</div><div><h3>Preserve and understand</h3><p>Normalize the material into a searchable Library and identify candidate conversations, ideas, decisions, tasks, constraints, evidence, and drift.</p><ul><li>Original source remains accessible</li><li>Related material can be found across sources</li><li>Insufficient evidence can remain unresolved</li></ul></div></div><div class="step"><div class="n" aria-hidden="true">3</div><div><h3>Review before authority</h3><p>SeedReflections proposes; the user decides. Accept, defer, or reject candidate interpretations before they become durable project context.</p><ul><li>No silent promotion into project truth</li><li>Evidence stays linked to the finding</li><li>Human judgment remains visible</li></ul></div></div><div class="step"><div class="n" aria-hidden="true">4</div><div><h3>Continue the work</h3><p>Turn accepted material into plans, briefs, reports, task sets, and notes inside the Workspace—with status, versions, relationships, and export.</p><ul><li>Ask questions across approved sources</li><li>Move from insight to an artifact</li><li>Return without rebuilding context</li></ul></div></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="excel">
+  <div class="wrap">
+    <div class="head2">
+      <h2 id="excel">SeedReflections complements the places where you already work</h2>
+      <p>You do not need to abandon your preferred assistant or knowledge tool.</p>
+    </div>
+    <div class="table-wrap"><table class="ledger excel">
+      <caption class="sr">Where other tools excel and what SeedReflections adds</caption>
+      <thead><tr><th scope="col">Tool</th><th scope="col">Strong for</th><th scope="col">SeedReflections adds</th></tr></thead>
+      <tbody><tr><th scope="row">ChatGPT Projects</th><td data-label="Strong for">Strong for keeping ChatGPT chats, files, instructions, and project context together.</td><td data-label="SeedReflections adds">Recovery across providers, evidence-linked review, and a continuation Library outside one assistant.</td></tr><tr><th scope="row">Claude Projects</th><td data-label="Strong for">Strong for working with Claude using project knowledge, instructions, and related conversations.</td><td data-label="SeedReflections adds">Normalized imports from multiple systems and governed promotion into reusable artifacts.</td></tr><tr><th scope="row">Gemini and Gems</th><td data-label="Strong for">Strong for creating within Google’s AI ecosystem and using customized Gems.</td><td data-label="SeedReflections adds">A shared archive that holds Gemini exports beside work from other sources.</td></tr><tr><th scope="row">Notion AI</th><td data-label="Strong for">Strong for creating and searching pages, databases, and connected workspace knowledge.</td><td data-label="SeedReflections adds">AI-conversation recovery, source evidence review, and a dedicated ideation-to-decision flow.</td></tr><tr><th scope="row">Obsidian and local notes</th><td data-label="Strong for">Strong for user-controlled files, linking, and long-term personal knowledge management.</td><td data-label="SeedReflections adds">Structured ingestion of AI exports and a guided review-to-workspace pipeline.</td></tr><tr><th scope="row">Passive capture tools</th><td data-label="Strong for">Strong for recording meetings, screens, audio, or activity so events can be revisited.</td><td data-label="SeedReflections adds">Deliberate source intake, human-governed interpretation, and mission-focused continuation.</td></tr></tbody>
+    </table></div>
+    <p class="small basis">Comparison basis checked against official documentation: <a href="https://help.openai.com/en/articles/10169521-projects-in-chatgpt">ChatGPT Projects</a>, <a href="https://help.openai.com/en/articles/7260999-export-your-data-from-chatgpt">ChatGPT export</a>, <a href="https://support.anthropic.com/en/articles/9517075-what-are-projects">Claude Projects</a>, <a href="https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-data">Claude export</a>, <a href="https://support.google.com/gemini/answer/16920332">Gemini export</a>, and <a href="https://www.notion.com/help/enterprise-search">Notion search</a>. Capabilities can change; provider documentation governs.</p>
+  </div>
+</section>
+
+<section class="band-3 bottom" aria-labelledby="bottom">
+  <div class="wrap">
+    <h2 id="bottom">Keep creating where you work. Use SeedReflections to keep the work.</h2>
+    <p class="lede">SeedReflections does not try to replace every assistant, document system, or note tool. It gives your AI work a durable home: one place to recover it, understand it, approve what matters, and move it forward.</p>
+    <p style="margin-top:32px"><a class="btn btn-primary" href="/consumer">Open the Workspace</a></p>
+  </div>
+</section>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="index.html"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
+        <p>Seed-Class Intelligence Architecture. Never lose another idea in an AI conversation.</p>
+      </div>
+      <div><h2>Recovery</h2><ul>
+        <li><a href="index.html">Conversation Recovery</a></li><li><a href="/consumer">Universal Snippets</a></li><li><a href="/consumer">Import AI Export</a></li><li><a href="/consumer">My Dashboard</a></li><li><a href="comparison.html">Product Comparison</a></li></ul></div>
+      <div><h2>Platform</h2><ul>
+        <li><a href="auth.html?mode=signup">Sign Up Free</a></li><li><a href="auth.html?mode=login">Log In</a></li><li><a href="auth.html?mode=admin">Admin Portal</a></li></ul></div>
+      <div><h2>Company</h2><ul>
+        <li><a href="https://github.com/SeedClassIntelligence/seedreflections">GitHub</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="https://github.com/SeedClassIntelligence/seedreflections">Open Source</a></li></ul></div>
+    </div>
+    <div class="legal"><span>© 2026 Seed Reflections — Seed-Class Intelligence Architecture</span></div>
+  </div>
+</footer>
+<script src="js/platform.js"></script>
+<script>
+// A visitor who is already signed in is offered the Workspace instead of sign-in buttons.
+(function () {
+  var P = window.SeedReflectionsPlatform;
+  if (!P || !P.isLoggedIn || !P.isLoggedIn()) return;
+  var actions = document.querySelector('.bar-actions');
+  if (actions) actions.innerHTML = '<a class="btn btn-primary" href="/consumer">Go to Workspace</a>';
+})();
+</script>
+
+</body>
+</html>

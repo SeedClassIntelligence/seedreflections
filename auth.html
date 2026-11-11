@@ -1,241 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — Seed Reflections</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box}
-    :root{
-      --bg:#06080f;--bg-card:#0d1117;--bg-surface:#161b22;
-      --border:#21262d;--border-light:#30363d;
-      --text:#f0f6fc;--text2:#c9d1d9;--text3:#8b949e;
-      --blue:#58a6ff;--cyan:#39d0d8;--green:#3fb950;--red:#f85149;
-    }
-    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
-         min-height:100vh;display:flex;flex-direction:column}
-    a{color:var(--blue);text-decoration:none}
-    a:hover{text-decoration:underline}
-
-    nav{padding:0 5%;height:56px;display:flex;align-items:center;justify-content:space-between;
-        border-bottom:1px solid var(--border)}
-    .nav-logo{font-weight:900;font-size:18px;letter-spacing:-.5px;display:inline-flex;align-items:center;color:var(--green)}
-    .nav-logo span{color:inherit}
-
-    .auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px}
-    .auth-card{width:100%;max-width:420px;background:var(--bg-card);border:1px solid var(--border);
-               border-radius:16px;padding:40px}
-    .auth-logo{text-align:center;font-size:28px;font-weight:900;margin-bottom:8px}
-    .auth-logo span{color:var(--cyan)}
-    .auth-tagline{text-align:center;color:var(--text3);font-size:14px;margin-bottom:32px}
-    .tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:28px}
-    .tab-btn{flex:1;background:none;border:none;padding:10px 0;font-size:14px;font-weight:600;
-             color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;
-             transition:color .15s,border-color .15s;font-family:inherit}
-    .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
-
-    .field{margin-bottom:18px}
-    .field label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
-    .field input{width:100%;background:var(--bg-surface);border:1px solid var(--border-light);
-                 border-radius:8px;padding:11px 14px;font-size:14px;color:var(--text);
-                 font-family:inherit;outline:none;transition:border-color .15s}
-    .field input:focus{border-color:var(--blue)}
-    .field input.error-field{border-color:var(--red)}
-
-    .btn-submit{width:100%;padding:13px;border:none;border-radius:8px;
-                background:var(--blue);color:#000;font-size:15px;font-weight:700;
-                cursor:pointer;font-family:inherit;transition:background .15s;margin-top:4px}
-    .btn-submit:hover:not(:disabled){background:#79b8ff}
-    .btn-submit:disabled{opacity:.6;cursor:not-allowed}
-
-    .error-msg{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
-               color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;
-               margin-bottom:16px;display:none}
-    .success-msg{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
-                 color:var(--green);padding:10px 14px;border-radius:8px;font-size:13px;
-                 margin-bottom:16px;display:none}
-    .divider{text-align:center;font-size:12px;color:var(--text3);margin:20px 0}
-    .footer-link{text-align:center;font-size:13px;color:var(--text3);margin-top:20px}
-    .pw-hint{font-size:11px;color:var(--text3);margin-top:4px}
-
-    .plan-badge{display:inline-block;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);
-                color:var(--blue);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;
-                margin-left:8px;vertical-align:middle}
-
-    .forgot-link{font-size:12px;color:var(--text3);float:right;margin-top:6px}
-    .forgot-link:hover{color:var(--blue)}
-
-    .plan-select{margin-bottom:24px;background:var(--bg-surface);border:1px solid var(--border);
-                 border-radius:12px;padding:16px;display:none}
-    .plan-select.show{display:block}
-    .plan-select-title{font-size:12px;color:var(--text3);font-weight:600;letter-spacing:.05em;
-                       text-transform:uppercase;margin-bottom:12px}
-    .plan-opt{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;
-              border:1px solid var(--border);background:var(--bg-card);margin-bottom:8px;
-              transition:border-color .15s}
-    .plan-opt:last-child{margin-bottom:0}
-    .plan-opt.selected,.plan-opt:hover{border-color:var(--blue)}
-    .plan-opt-radio{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-light);
-                    flex-shrink:0;display:flex;align-items:center;justify-content:center}
-    .plan-opt.selected .plan-opt-radio{border-color:var(--blue);background:var(--blue)}
-    .plan-opt.selected .plan-opt-radio::after{content:'';width:5px;height:5px;border-radius:50%;background:#000}
-    .plan-opt-info h4{font-size:13px;font-weight:700;margin-bottom:1px}
-    .plan-opt-info p{font-size:11px;color:var(--text3)}
-    .plan-opt-price{margin-left:auto;font-size:13px;font-weight:700;color:var(--blue)}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Seed Reflections</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c3626">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Zilla+Slab:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.site-header .wrap{max-width:none;padding-inline:clamp(24px,5vw,72px)}
+.bar-actions{margin-left:auto}
+.bar-actions .back{font-weight:600;text-decoration:none;color:var(--on-field-2);padding:10px 4px;min-height:44px;display:inline-flex;align-items:center}
+.bar-actions .back:hover{color:var(--on-field);text-decoration:underline}
+body{display:flex;flex-direction:column;min-height:100vh}
+main{flex:1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+.side{background:var(--field-2);padding:clamp(40px,6vw,88px) clamp(24px,5vw,72px);display:flex;flex-direction:column;justify-content:space-between;gap:48px;border-right:1px solid var(--hair)}
+.side h1{font-size:clamp(2.2rem,4.2vw,3.4rem);max-width:12ch}
+.side .truths{margin:0;padding:0;list-style:none;border-top:2px solid var(--on-field)}
+.side .truths li{padding:14px 0;border-bottom:1px solid var(--hair);color:var(--on-field-2);font-size:1.02rem}
+.side .truths strong{display:block;color:var(--on-field);font:600 1.15rem/1.3 var(--display);margin-bottom:2px}
+.panel{background:var(--sheet);color:var(--ink);padding:clamp(32px,6vw,88px) clamp(20px,5vw,72px);display:flex;align-items:flex-start;justify-content:center}
+.card{width:100%;max-width:460px}
+.tab-row{display:flex;gap:0;border-bottom:2px solid var(--ink);margin-bottom:26px}
+.tab-btn{appearance:none;background:none;border:0;border-bottom:4px solid transparent;margin-bottom:-2px;padding:12px 18px 12px 0;margin-right:18px;font:600 1rem/1 var(--body);color:var(--ink-2);cursor:pointer;min-height:48px}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink)}
+.tab-btn#tab-admin{margin-left:auto;margin-right:0;padding-right:0;font-weight:500;font-size:.92rem}
+.error-msg,.success-msg{display:none;margin:0 0 20px;padding:12px 14px;border:2px solid currentColor;font-size:.98rem;line-height:1.45}
+.error-msg{color:var(--stamp)}
+.success-msg{color:#1d5a35}
+.field{margin-bottom:20px}
+.field label{display:flex;justify-content:space-between;align-items:baseline;font:600 .95rem/1.3 var(--body);margin-bottom:8px}
+.field input{width:100%;min-height:50px;padding:12px 14px;border:2px solid var(--ink);border-radius:3px;background:#f3f8ef;color:var(--ink);font:400 1rem/1.3 var(--body)}
+.field input::placeholder{color:#506a5b}
+.field input:focus{outline:3px solid var(--accent);outline-offset:1px}
+.forgot-link,.footer-link a,.panel .text-link{color:var(--ink);font-weight:600;text-underline-offset:3px}
+.forgot-link{font-weight:500;font-size:.9rem}
+.pw-hint{margin-top:7px;font-size:.9rem;color:var(--ink-2)}
+.btn-submit{width:100%;min-height:52px;border:2px solid var(--ink);border-radius:3px;background:var(--accent);color:var(--accent-ink);font:700 1.05rem/1 var(--body);cursor:pointer;transition:background-color .16s}
+.btn-submit:hover:not(:disabled){background:var(--accent-hi)}
+.btn-submit:disabled{opacity:.65;cursor:progress}
+.footer-link{margin-top:18px;font-size:.98rem;color:var(--ink-2)}
+.note{margin:0 0 20px;padding:14px 16px;background:var(--sheet-2);border-radius:3px;font-size:.96rem;color:var(--ink);line-height:1.5}
+.note strong{font-family:var(--display);font-size:1.12rem;display:block;margin-bottom:4px}
+.plan-select{display:none;margin:4px 0 22px}
+.plan-select.show{display:block}
+.plan-select-title{font:500 .78rem/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin-bottom:8px}
+.plan-opt{display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--rule);cursor:pointer}
+.plan-opt:first-of-type{border-top:2px solid var(--ink)}
+.plan-opt-radio{width:20px;height:20px;border:2px solid var(--ink);border-radius:50%}
+.plan-opt.selected .plan-opt-radio{background:radial-gradient(circle,var(--ink) 0 45%,transparent 50%)}
+.plan-opt .plan-name{display:block;margin:0;font:600 1.05rem/1.2 var(--display)}
+.plan-opt p{margin:2px 0 0;font-size:.9rem;color:var(--ink-2)}
+.plan-opt-price{font:600 .95rem var(--mono)}
+.plan-opt.selected{background:var(--sheet-2)}
+@media (max-width:900px){
+  main{grid-template-columns:minmax(0,1fr)}
+  .side{padding:28px 20px 24px;gap:20px;border-right:0;border-bottom:1px solid var(--hair)}
+  .side h1{font-size:2rem;max-width:none}
+  .side .truths{display:none}
+  .panel{padding:28px 20px 56px}
+}
+@media (max-width:480px){.tab-btn{padding-right:12px;margin-right:12px}}
+</style>
 </head>
 <body>
-
-<style>
-/* ── Two-Row Nav ── */
-.site-header { position:sticky; top:0; z-index:100; background:rgba(6,8,15,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
-.nav-top { display:flex; align-items:center; justify-content:space-between; padding:0 5%; height:50px; border-bottom:1px solid rgba(33,38,45,.5); }
-.nav-logo { font-weight:900; font-size:17px; color:var(--green); letter-spacing:-.5px; text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; }
-.nav-logo em { color:inherit; font-style:normal; }
-.nav-top-right { display:flex; align-items:center; gap:12px; }
-.nav-top-right a { font-size:13px; font-weight:600; text-decoration:none; }
-.nav-top-right .signin { color:var(--text3,#8b949e); }
-.nav-top-right .signin:hover { color:var(--text,#f0f6fc); }
-.nav-top-right .signup { background:var(--green,#3fb950); color:#000; padding:6px 14px; border-radius:6px; font-weight:700; }
-.nav-top-right .signup:hover { filter:brightness(1.1); }
-.nav-bottom { display:flex; align-items:center; justify-content:center; gap:6px; padding:0 5%; height:38px; overflow-x:auto; white-space:nowrap; }
-.nav-bottom a { font-size:12px; font-weight:600; color:var(--text3,#8b949e); text-decoration:none; padding:4px 10px; border-radius:4px; transition:color .15s, background .15s; flex-shrink:0; }
-.nav-bottom a:hover { color:var(--text,#f0f6fc); background:rgba(255,255,255,.05); text-decoration:none; }
-.nav-bottom a.active { color:var(--cyan,#39d0d8); }
-.nav-bottom .sep { width:1px; height:16px; background:var(--border,#21262d); flex-shrink:0; margin:0 4px; }
-@media(max-width:640px) { .nav-bottom { justify-content:flex-start; } .nav-bottom a { font-size:11px; padding:4px 7px; } }
-</style>
+<a class="skip" href="#main">Skip to the sign-in form</a>
 <header class="site-header">
-  <div class="nav-top">
-    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">SeedReflections</a>
-    <div class="nav-top-right" id="nav-auth">
-      <a href="auth.html?mode=login" class="signin">Sign In</a>
-      <a href="auth.html?mode=signup" class="signup">Sign Up</a>
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="SeedReflections home"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
+    <div class="bar-actions">
+      <a class="back" href="index.html">&larr; Back to home</a>
     </div>
-  </div>
-  <div class="nav-bottom">
-    <a href="index.html">🌱 Home</a>
-    <a href="/consumer">Go to Dashboard</a>
-    <a href="comparison.html">Compare</a>
-    <a href="auth.html?mode=admin">🛡️ Admin</a>
   </div>
 </header>
+<main id="main">
+  <section class="side" aria-label="About SeedReflections">
+    <h1>Never lose another AI conversation.</h1>
+    <ul class="truths">
+      <li><strong>You decide.</strong>Nothing becomes accepted knowledge until you say so.</li>
+      <li><strong>Source attached.</strong>Every finding stays linked to the conversation it came from.</li>
+      <li><strong>Gaps shown.</strong>Anything that could not be read is reported, not hidden.</li>
+    </ul>
+  </section>
 
-<div class="auth-wrap">
-  <div class="auth-card">
-    <div class="auth-logo">Seed<span>Reflections</span></div>
-    <div class="auth-tagline">Never lose another AI conversation.</div>
+  <section class="panel">
+    <div class="card">
+      <div class="tab-row" role="tablist" aria-label="Account">
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-login" onclick="switchTab('login')">Log in</button>
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+        <button class="tab-btn" role="tab" aria-selected="false" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+      </div>
 
-    <!-- Tabs -->
-    <div class="tab-row">
-      <button class="tab-btn" id="tab-login" onclick="switchTab('login')">Log in</button>
-      <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create account</button>
-      <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+      <div class="error-msg" id="error-msg" role="alert"></div>
+      <div class="success-msg" id="success-msg" role="status"></div>
+
+      <form id="form-login" onsubmit="doLogin(event)">
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Password <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a></label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn-submit" id="login-btn">Log in →</button>
+        <div class="footer-link">Don't have an account? <a href="#" onclick="switchTab('signup');return false">Sign up free</a></div>
+      </form>
+
+      <form id="form-admin" onsubmit="doAdminLogin(event)" style="display:none">
+        <div class="note"><strong>Platform Master Control</strong>Enter the admin password to open the Admin Dashboard.</div>
+        <div class="field">
+          <label for="admin-pass">Master admin password</label>
+          <input type="password" id="admin-pass" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn-submit" id="admin-btn">Enter Master Control →</button>
+        <div class="footer-link">Looking for your workspace? <a href="#" onclick="switchTab('login');return false">Log in as a user</a></div>
+      </form>
+
+      <form id="form-signup" onsubmit="doSignup(event)" style="display:none">
+        <div class="field">
+          <label for="signup-name">Full name</label>
+          <input type="text" id="signup-name" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="you@company.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" autocomplete="new-password" minlength="12" aria-describedby="pw-hint" required>
+          <div class="pw-hint" id="pw-hint">At least 12 characters.</div>
+        </div>
+
+        <div class="plan-select" id="plan-select">
+          <div class="plan-select-title">Start with</div>
+          <div class="plan-opt selected" id="plan-free" onclick="selectPlan('free')">
+            <div class="plan-opt-radio"></div>
+            <div class="plan-opt-info"><strong class="plan-name">Free Plan</strong><p>50 reflections / mo, 20 seeds capacity</p></div>
+            <div class="plan-opt-price">$0</div>
+          </div>
+          <div class="plan-opt" id="plan-pro" onclick="selectPlan('pro')">
+            <div class="plan-opt-radio"></div>
+            <div class="plan-opt-info"><strong class="plan-name">Pro Tier</strong><p>250 reflections / mo, unlimited seeds</p></div>
+            <div class="plan-opt-price">$9/mo</div>
+          </div>
+          <div class="plan-opt" id="plan-master" onclick="selectPlan('master')">
+            <div class="plan-opt-radio"></div>
+            <div class="plan-opt-info"><strong class="plan-name">Master Tier</strong><p>Unlimited reflections (application quota)</p></div>
+            <div class="plan-opt-price">$20/mo</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="signup-btn">Create account →</button>
+        <div class="footer-link">Already have an account? <a href="#" onclick="switchTab('login');return false">Log in</a></div>
+      </form>
+
+      <div id="form-forgot" style="display:none">
+        <div class="note"><strong>Password reset by email isn't available yet.</strong>If you can't sign in, ask your administrator to reset your password.</div>
+        <div class="footer-link"><a href="#" onclick="switchTab('login');return false">← Back to log in</a></div>
+      </div>
     </div>
-
-    <!-- Shared messages -->
-    <div class="error-msg" id="error-msg"></div>
-    <div class="success-msg" id="success-msg"></div>
-
-    <!-- ── LOGIN FORM ── -->
-    <form id="form-login" onsubmit="doLogin(event)">
-      <div class="field">
-        <label for="login-email">Email</label>
-        <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" required>
-      </div>
-      <div class="field">
-        <label for="login-password">
-          Password
-          <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a>
-        </label>
-        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn-submit" id="login-btn">Log in →</button>
-      <div class="footer-link" style="margin-top:16px">
-        Don't have an account? <a href="#" onclick="switchTab('signup');return false">Sign up free</a>
-      </div>
-    </form>
-
-    <!-- ── ADMIN LOGIN FORM ── -->
-    <form id="form-admin" onsubmit="doAdminLogin(event)" style="display:none">
-      <div style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:12px;margin-bottom:18px;font-size:12.5px;color:var(--text2);line-height:1.5;">
-        🛡️ <strong>Platform Master Control</strong><br>Enter your admin password from <code>.env</code> (default: <code>changeme</code>) to enter the Admin Dashboard.
-      </div>
-      <div class="field">
-        <label for="admin-pass">Master Admin Password</label>
-        <input type="password" id="admin-pass" placeholder="Enter admin password..." autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn-submit" id="admin-btn" style="background:var(--cyan,#39d0d8);color:#000;">Enter Master Control →</button>
-      <div class="footer-link" style="margin-top:16px">
-        Looking for user workspace? <a href="#" onclick="switchTab('login');return false">Log in as user</a>
-      </div>
-    </form>
-
-    <!-- ── SIGNUP FORM ── -->
-    <form id="form-signup" onsubmit="doSignup(event)" style="display:none">
-      <div class="field">
-        <label for="signup-name">Full name</label>
-        <input type="text" id="signup-name" placeholder="William" autocomplete="name" required>
-      </div>
-      <div class="field">
-        <label for="signup-email">Email</label>
-        <input type="email" id="signup-email" placeholder="you@company.com" autocomplete="email" required>
-      </div>
-      <div class="field">
-        <label for="signup-password">Password</label>
-        <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" required>
-        <div class="pw-hint">8+ chars, one uppercase, one number</div>
-      </div>
-
-
-
-      <!-- Optional: plan selection if coming from pricing -->
-      <div class="plan-select" id="plan-select">
-        <div class="plan-select-title">Start with</div>
-        <div class="plan-opt selected" id="plan-free" onclick="selectPlan('free')">
-          <div class="plan-opt-radio"></div>
-          <div class="plan-opt-info"><h4>Free Plan</h4><p>50 reflections / mo, 20 seeds capacity</p></div>
-          <div class="plan-opt-price">$0</div>
-        </div>
-        <div class="plan-opt" id="plan-pro" onclick="selectPlan('pro')">
-          <div class="plan-opt-radio"></div>
-          <div class="plan-opt-info"><h4>Pro Tier</h4><p>250 reflections / mo, unlimited seeds</p></div>
-          <div class="plan-opt-price">$9/mo</div>
-        </div>
-        <div class="plan-opt" id="plan-master" onclick="selectPlan('master')">
-          <div class="plan-opt-radio"></div>
-          <div class="plan-opt-info"><h4>Master Tier</h4><p>Unlimited reflections (application quota)</p></div>
-          <div class="plan-opt-price">$20/mo</div>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit" id="signup-btn">Create account →</button>
-      <div class="footer-link" style="margin-top:16px">
-        Already have an account? <a href="#" onclick="switchTab('login');return false">Log in</a>
-      </div>
-    </form>
-
-    <!-- ── FORGOT PASSWORD FORM ── -->
-    <form id="form-forgot" onsubmit="doForgot(event)" style="display:none">
-      <div style="margin-bottom:20px">
-        <h3 style="font-size:16px;margin-bottom:8px">Reset your password</h3>
-        <p style="font-size:13px;color:var(--text3)">Enter your email and we'll send a reset link.</p>
-      </div>
-      <div class="field">
-        <label for="forgot-email">Email</label>
-        <input type="email" id="forgot-email" placeholder="you@company.com" required>
-      </div>
-      <button type="submit" class="btn-submit" id="forgot-btn">Send reset link</button>
-      <div class="footer-link" style="margin-top:16px">
-        <a href="#" onclick="switchTab('login');return false">← Back to log in</a>
-      </div>
-    </form>
-  </div>
-</div>
+  </section>
+</main>
 
 <script src="js/platform.js"></script>
 <script>
+
   let selectedPlan = 'free';
   let selectedAccountType = 'consumer';
   let nextUrl = '/consumer';
@@ -257,13 +191,23 @@
     location.href = getDashboardForRole(user);
   }
 
+  // Only same-origin paths are accepted as a post-login destination.
+  function safeNext(value) {
+    try {
+      var u = new URL(value, location.origin);
+      if (u.origin === location.origin && /^\/(?!\/)/.test(u.pathname)) return u.pathname + u.search + u.hash;
+    } catch (e) {}
+    return null;
+  }
+
   // ── Init ────────────────────────────────────────────────────────────────────
   (function init() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode') || 'login';
     const pNext = params.get('next');
-    if (pNext) {
-      nextUrl = pNext;
+    var safe = pNext ? safeNext(pNext) : null;
+    if (safe) {
+      nextUrl = safe;
       hasExplicitNext = true;
     }
 
@@ -294,10 +238,12 @@
     document.getElementById('form-signup').style.display  = tab === 'signup'  ? '' : 'none';
     document.getElementById('form-admin').style.display   = tab === 'admin'   ? '' : 'none';
     document.getElementById('form-forgot').style.display  = tab === 'forgot'  ? '' : 'none';
-    document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
-    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-    const tabAdmin = document.getElementById('tab-admin');
-    if (tabAdmin) tabAdmin.classList.toggle('active', tab === 'admin');
+    ['login','signup','admin'].forEach(function (t) {
+      var b = document.getElementById('tab-' + t);
+      if (!b) return;
+      var on = (tab === t) || (tab === 'forgot' && t === 'login');
+      b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
+    });
     clearMessages();
 
     if (tab === 'admin') {
@@ -335,7 +281,7 @@
         return;
       }
       const err = await r.json().catch(() => ({}));
-      showError(err.detail || 'Invalid admin password. Check .env file.');
+      showError(err.detail || 'Invalid admin password.');
       btn.disabled = false; btn.textContent = 'Enter Master Control →';
     } catch (err) {
       showError('Failed to connect to authentication server.');
@@ -432,31 +378,11 @@
   // After login/signup, check if we landed in demo mode and show a notice
   window.addEventListener('seed reflections:auth', function(e) {
     if (e.detail.type === 'login' && SeedReflectionsPlatform.isDemoMode()) {
-      showSuccess('⚡ Local mode — backend not connected. You\'ll see realistic sample data as you explore.');
+      showSuccess('Local mode: backend not connected. You will see sample data as you explore.');
       setTimeout(() => { routeUser(); }, 1800);
     }
   });
 
-  // ── Forgot password ────────────────────────────────────────────────────────────
-  async function doForgot(e) {
-    e.preventDefault();
-    clearMessages();
-    const btn = document.getElementById('forgot-btn');
-    btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const res = await fetch(SeedReflectionsPlatform.API_BASE + '/auth/forgot-password', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: document.getElementById('forgot-email').value.trim() }),
-      });
-      const data = await res.json();
-      showSuccess(data.message || 'Check your inbox for a reset link.');
-    } catch {
-      showSuccess('If that email is registered, a reset link has been sent.');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Send reset link';
-    }
-  }
 </script>
 </body>
 </html>

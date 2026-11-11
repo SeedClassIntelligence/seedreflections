@@ -11,82 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Zilla+Slab:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
 <style>
-/* ───────────────────────── tokens ───────────────────────── */
-:root{
-  --field:#0c3626; --field-2:#0a2f21; --field-3:#07251a;
-  --on-field:#e9f3e5; --on-field-2:#a8d6bb; --hair:rgba(233,243,229,.18);
-  --sheet:#dfead9; --sheet-2:#d2e1cb; --ink:#10261c; --ink-2:#3b5748; --rule:#a9c0a0;
-  --accent:#3fb950; --accent-hi:#58cb69; --accent-ink:#06210f; --stamp:#b8391f;
-  --display:'Zilla Slab',Georgia,'Times New Roman',serif;
-  --body:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
-  --wrap:1240px; --gutter:clamp(20px,4vw,48px);
-}
-*,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:84px;color-scheme:dark}
-body{margin:0;background:var(--field);color:var(--on-field);font:400 17px/1.62 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-img{display:block;max-width:100%;height:auto}
-a{color:inherit}
-::selection{background:var(--accent);color:var(--accent-ink)}
-:focus-visible{outline:3px solid var(--accent-hi);outline-offset:3px;border-radius:3px}
-.on-sheet :focus-visible,.sheet :focus-visible{outline-color:var(--ink)}
-.skip{position:absolute;left:-9999px;top:8px;background:var(--accent);color:var(--accent-ink);padding:10px 16px;font-weight:700;z-index:100;border-radius:4px}
-.skip:focus{left:8px}
-.wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:var(--gutter)}
-.mono{font-family:var(--mono)}
-
-/* ───────────────────────── type ───────────────────────── */
-h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
-h1{font-weight:700;font-size:clamp(2.7rem,5.6vw,4.7rem);line-height:1.04;letter-spacing:-.012em}
-h1 .soft{display:block;font-weight:400;color:var(--on-field-2)}
-h2{font-weight:600;font-size:clamp(1.95rem,3.5vw,3rem);line-height:1.1;letter-spacing:-.008em}
-h3{font-weight:600;font-size:1.3rem;line-height:1.25}
-p{margin:0;text-wrap:pretty}
-.lede,.small,.reg dd,.defs dd,.ledger td,.plan .blurb,figcaption,.reg-note{text-wrap:balance}
-.lede{font-size:1.18rem;line-height:1.6;max-width:56ch;color:var(--on-field-2)}
-.measure{max-width:62ch}
-.small{font-size:.92rem;color:var(--on-field-2)}
-
-/* ───────────────────────── buttons ───────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:12px 22px;border-radius:4px;font:700 1rem/1 var(--body);text-decoration:none;border:2px solid transparent;cursor:pointer;transition:background-color .18s,color .18s,border-color .18s,transform .18s}
-.btn-primary{background:var(--accent);color:var(--accent-ink)}
-.btn-primary:hover{background:var(--accent-hi)}
-.btn-primary:active{transform:translateY(1px)}
-.btn-line{border-color:var(--on-field);color:var(--on-field)}
-.btn-line:hover{background:var(--on-field);color:var(--field)}
-.link-arrow{display:inline-flex;align-items:center;gap:8px;font-weight:700;text-decoration:none;border-bottom:2px solid currentColor;padding-bottom:2px}
-.link-arrow svg{transition:transform .18s}
-.link-arrow:hover svg{transform:translateX(4px)}
-.on-sheet .btn-line{border-color:var(--ink);color:var(--ink)}
-.on-sheet .btn-line:hover{background:var(--ink);color:var(--sheet)}
-
-/* ───────────────────────── header ───────────────────────── */
-.site-header{position:sticky;top:0;z-index:50;background:var(--field);border-bottom:1px solid var(--hair)}
-.bar{display:flex;align-items:center;gap:28px;min-height:68px}
-.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font:700 1.22rem/1 var(--display);letter-spacing:.01em;white-space:nowrap}
-.brand .seed{color:var(--accent)}
-.brand svg{flex:none}
-.nav{display:flex;gap:6px;margin-left:12px;flex:1}
-.nav a{padding:10px 12px;text-decoration:none;font-weight:600;font-size:.96rem;color:var(--on-field-2);border-radius:4px}
-.nav a:hover{color:var(--on-field);background:rgba(233,243,229,.07)}
-.bar-actions{display:flex;align-items:center;gap:14px}
-.bar-actions .signin{font-weight:600;text-decoration:none;color:var(--on-field-2);padding:10px 6px}
-.bar-actions .signin:hover{color:var(--on-field)}
-.bar-actions .btn{min-height:42px;padding:9px 18px;font-size:.95rem}
-
-/* ───────────────────────── sections ───────────────────────── */
-section{padding-block:clamp(72px,9vw,132px)}
-.band-2{background:var(--field-2)}
-.band-3{background:var(--field-3)}
-.sheet{background:var(--sheet);color:var(--ink)}
-.sheet .lede,.sheet .small{color:var(--ink-2)}
-.sheet h2,.sheet h3{color:var(--ink)}
-.split{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(28px,4vw,64px);align-items:start}
-.hair-top{border-top:1px solid var(--hair)}
-
-@media (min-width:1081px){.stick{position:sticky;top:96px;align-self:start}}
-
 /* ───────────────────────── hero ───────────────────────── */
 .hero{padding-block:clamp(56px,7vw,104px) clamp(72px,8vw,120px)}
 .hero .copy{grid-column:1/span 7;padding-top:clamp(0px,2vw,24px)}
@@ -118,29 +44,6 @@ section{padding-block:clamp(72px,9vw,132px)}
 .reg-actions button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
 .reg-note{margin-top:14px;font-size:.9rem;color:var(--ink-2);min-height:2.7em}
 .reg-reset{margin-top:2px;background:none;border:0;padding:4px 0;font:600 .88rem var(--body);color:var(--ink-2);text-decoration:underline;cursor:pointer}
-
-/* ───────────────────────── ledger tables ───────────────────────── */
-.ledger{width:100%;border-collapse:collapse}
-.ledger th,.ledger td{text-align:left;vertical-align:top;padding:16px 18px 16px 0;border-bottom:1px solid var(--hair)}
-.ledger thead th{font:500 .78rem/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--on-field-2);padding-bottom:12px;border-bottom:2px solid var(--on-field)}
-.ledger tbody th{font:600 1.04rem/1.4 var(--body);width:44%}
-.ledger td:last-child{padding-right:0;color:var(--on-field-2)}
-.ledger .how{font:600 .95rem var(--mono);color:var(--on-field);white-space:nowrap}
-.sheet .ledger th,.sheet .ledger td{border-bottom-color:var(--rule)}
-.sheet .ledger thead th{color:var(--ink-2);border-bottom-color:var(--ink)}
-
-.defs{margin:0;padding:0}
-.defs>div{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,3vw,48px);padding:24px 0;border-bottom:1px solid var(--rule)}
-.defs>div:first-child{border-top:2px solid var(--ink)}
-.defs dt{font:600 1.4rem/1.2 var(--display)}
-.defs dd{margin:0;color:var(--ink-2);font-size:1.04rem}
-.on-field-defs>div{border-bottom-color:var(--hair)}
-.on-field-defs>div:first-child{border-top-color:var(--on-field)}
-.on-field-defs dd{color:var(--on-field-2)}
-
-.coverage{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:28px;padding:16px 18px;border:1px solid var(--hair);border-radius:4px}
-.coverage .mono{font-size:.9rem}
-.coverage .stamp{color:#e3a94a}
 
 /* ───────────────────────── screenshots ───────────────────────── */
 .shot{margin:0}
@@ -184,62 +87,21 @@ section{padding-block:clamp(72px,9vw,132px)}
 .plan.pro .btn-primary:hover{background:#1c3d2e}
 .fine-print{margin-top:22px;max-width:78ch}
 
-/* ───────────────────────── footer ───────────────────────── */
-.site-footer{background:var(--field-3);border-top:1px solid var(--hair);padding-block:64px 40px}
-.foot{display:grid;grid-template-columns:minmax(0,5fr) repeat(3,minmax(0,2fr));gap:36px}
-.foot p{color:var(--on-field-2);max-width:34ch;margin-top:14px}
-.foot h2{font:500 .78rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--on-field-2);margin-bottom:16px}
-.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.foot a{text-decoration:none;color:var(--on-field)}
-.foot a:hover{text-decoration:underline}
-.legal{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:48px;padding-top:22px;border-top:1px solid var(--hair);font-size:.9rem;color:var(--on-field-2)}
-
-/* ───────────────────────── responsive ───────────────────────── */
 @media (max-width:1080px){
   .surface{grid-template-columns:minmax(0,1fr);gap:24px}
   .hero .copy{grid-column:1/-1}
   .hero .register{grid-column:1/-1;max-width:620px}
   .surface .txt,.surface.flip .txt{grid-column:1/-1;grid-row:auto}
   .surface .shot,.surface.flip .shot{grid-column:1/-1;grid-row:auto}
-  .nav a{padding:10px 8px;font-size:.92rem}
 }
 @media (max-width:860px){
-  .split{grid-template-columns:minmax(0,1fr);gap:32px}
-  .split>*{grid-column:1/-1!important}
   .plans{grid-template-columns:1fr}
   .plan+.plan{border-left:0;border-top:1px solid var(--hair)}
   .plan.pro+.plan{border-top-color:transparent}
-  .defs>div{grid-template-columns:1fr;gap:8px}
-  .foot{grid-template-columns:1fr 1fr}
-  .foot>div:first-child{grid-column:1/-1}
-  .ledger tbody th{width:auto}
 }
-@media (max-width:760px){
-  .bar{flex-wrap:wrap;gap:8px 14px;padding-block:10px}
-  .nav{order:3;flex:1 0 100%;margin:0 -8px;overflow-x:auto;scrollbar-width:none;gap:2px}
-  .nav::-webkit-scrollbar{display:none}
-  .nav a{white-space:nowrap}
-  .bar-actions{margin-left:auto}
-  .bar-actions .signin{display:none}
-  .ledger,.ledger tbody,.ledger tr,.ledger th,.ledger td{display:block}
-  .ledger thead{display:none}
-  .ledger tr{padding:14px 0;border-bottom:1px solid var(--hair)}
-  .ledger th,.ledger td{border:0;padding:2px 0}
-  .sheet .ledger tr{border-bottom-color:var(--rule)}
-  .reg-rows>div{grid-template-columns:1fr;gap:2px}
-}
-@media (max-width:359px){h1{font-size:2.15rem}.price{font-size:3rem}}
-@media (max-width:480px){
-  body{font-size:16px}
-  .foot{grid-template-columns:1fr}
-  .reg-body{padding:18px 16px}
-  .btn{width:100%;justify-content:center}
-  .cta-row .link-arrow{width:auto}
-}
-@media (prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  *,*::before,*::after{animation:none!important;transition:none!important}
-}
+@media (max-width:760px){.reg-rows>div{grid-template-columns:1fr;gap:2px}}
+@media (max-width:359px){.price{font-size:3rem}}
+@media (max-width:480px){.reg-body{padding:18px 16px}.cta-row .link-arrow{width:auto}}
 
 /* ── prompt tools console (preserved component, scoped) ── */
 #section-generator{--bg:#07251a;--bg-card:#0c3626;--bg-surface:#0f402d;--bg-raised:#124a34;--border:#2a6a4f;--border-light:#2f7a5a;--border-hi:#3d9a72;
@@ -321,15 +183,14 @@ section{padding-block:clamp(72px,9vw,132px)}
   <div class="wrap bar">
     <a class="brand" href="index.html" aria-label="SeedReflections home"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M13 23V12" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round"/><path d="M13 13C13 8 9.5 5.2 4.5 5c0 5 3 8.2 8.5 8Z" fill="#3fb950"/><path d="M13 11.5c0-4.2 3-6.6 8.2-6.8 0 4.4-2.9 7.2-8.2 6.8Z" fill="#7ddb92"/></svg><span><span class="seed">Seed</span>Reflections</span></a>
     <nav class="nav" aria-label="Primary">
-      <a href="#how">How it works</a>
-      <a href="#review">Review</a>
-      <a href="#pricing">Pricing</a>
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#review">Review</a>
+      <a href="index.html#pricing">Pricing</a>
       <a href="comparison.html">Compare</a>
-      <a href="#section-generator">Prompt tools</a>
+      <a href="index.html#section-generator">Prompt tools</a>
     </nav>
     <div class="bar-actions">
-      <a class="signin" href="auth.html?mode=login">Sign in</a>
-      <a class="btn btn-primary" href="auth.html?mode=signup">Start free</a>
+      <a class="signin" href="auth.html?mode=login">Sign in</a><a class="btn btn-primary" href="auth.html?mode=signup">Start free</a>
     </div>
   </div>
 </header>

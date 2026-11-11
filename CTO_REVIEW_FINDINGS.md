@@ -109,3 +109,15 @@ Each was reproduced first, then fixed, and verified again. "Test" means the new 
 - `project-handoff/ARCHITECTURE.md`, `CURRENT_IMPLEMENTATION.md` and `DESIGN_SYSTEM.md` are marked historical.
 - About 20 one-off `patch_*.py`, `repair_*.py` and similar scripts sit in the repository root. They are excluded from the Docker image, but they are clutter and a source-disclosure risk; I left them alone pending your call.
 - `workroom-prototype.html` is not in the repository; I did not touch it.
+
+---
+
+## 9. Found during the sign-in and comparison UI work (Nov 11)
+
+| ID | Sev | Finding | Status |
+|---|---|---|---|
+| **S3** | **High** | **Hosted sign-in cannot work.** `js/platform.js` hard-codes the legacy `/api/v1` API, which hosted mode blocks, so login and signup through `auth.html` fail on a hosted server ("Sign in is temporarily unavailable"). VERIFIED against a running hosted server. Predates the redesign. | **OPEN, needs approval** (authentication change). Proposed fix: choose the v2 auth endpoints when `/api/v2/capabilities` reports hosted. |
+| S4 | High | Open redirect on the sign-in page via the `next` parameter. | **Fixed** (same-origin paths only), before and after tested. |
+| S5 | High | The public Admin tab printed the default admin password ("changeme") and hinted at `.env`. | **Fixed** in the page. The default itself is still accepted by the server when `ADMIN_PASSWORD` is unset (hosted readiness now fails on it). |
+| O8 | Medium | **Password reset does not exist** (no endpoint, no email sending), while the UI claimed a reset link was sent. | UI made honest. **DECISION:** what recovery path to offer. |
+| O9 | Low | Password hint said 8+ chars with an uppercase and a number; the server requires 12 characters. | **Fixed** |
