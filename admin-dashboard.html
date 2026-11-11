@@ -167,6 +167,11 @@
             font-family: inherit; outline: none; transition: border-color 0.15s;
         }
         .form-control:focus { border-color: var(--accent-cyan); }
+        /* 3:1 field boundary (WCAG 1.4.11) and a visible focus ring (2.4.7) */
+        .form-control,
+        input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]),
+        select,textarea { border-color: #6c7a8d; }
+        :is(input, textarea, select, button, a[href], [tabindex]):focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
         /* Table */
@@ -433,7 +438,7 @@
     </div>
 
     <!-- Create Account Modal -->
-    <div id="add-account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div id="add-account-modal" data-dialog="Add account" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
         <div style="background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; width:90%; max-width:480px; padding:24px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <h3 style="font-size:16px; font-weight:700;">➕ Create Tenant Account</h3>
@@ -1058,5 +1063,6 @@ fetchOverview();
 setInterval(fetchOverview, 15000);
 </script>
 
+<script src="assets/dialogs.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
      (tabindex=0), gets a role, and responds to Enter and Space.
    - Single-choice groups (plan pickers, wizard cards) become role="radio" inside a
      role="radiogroup", with aria-checked kept in step with the .selected/.active class.
-   Modal backdrops (.modal-overlay) are left alone: they dismiss on click and Escape. */
+   Modal backdrops (.modal-overlay) are left alone: they dismiss on click. Dialog semantics, focus and Escape live in dialogs.js. */
 (function () {
   'use strict';
   var NATIVE = /^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY|LABEL|OPTION)$/;

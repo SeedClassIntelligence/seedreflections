@@ -1201,7 +1201,7 @@ body{background:#f3f5f4}
 #section-workspace .chip{background:#102219;border-color:#294438;color:#a9c0b5}
 #section-workspace .chip:hover{background:#163326;border-color:#47d486;color:#fff}
 #section-workspace .chat-input-row{background:#0a1711;border-color:#22392f}
-#section-workspace .chat-input-row .chat-input{background:#101f18;border-color:#345244;color:#f2f8f4}
+#section-workspace .chat-input-row .chat-input{background:#101f18;border-color:#6f8c7c;color:#f2f8f4}
 #section-workspace .chat-input-row .chat-input::placeholder{color:#789084}
 #section-workspace .ws-inline-staging{background:#0d1c15;border-color:#294337}
 #section-workspace .cockpit-inspector .seed-detail-section h4{color:#85aa98}
@@ -1221,7 +1221,7 @@ body{background:#f3f5f4}
 body{background:#050c09;color:var(--text)}
 .navbar{background:linear-gradient(90deg,#0d3527 0,#0d3527 224px,#07110d 224px,#07110d 100%);border-bottom-color:#1e3229}
 .navbar .nav-btn{background:#0e1c16;color:#b6cabf;border-color:#294337}.navbar .nav-btn:hover{background:#163326;color:#fff;border-color:#47d486}
-.navbar .nav-avatar{background:#176b49;color:#fff}.navbar #project-filter{background:#101f18!important;color:#eaf4ee!important;border-color:#345244!important}
+.navbar .nav-avatar{background:#176b49;color:#fff}.navbar #project-filter{background:#101f18!important;color:#eaf4ee!important;border-color:#6f8c7c!important}
 .app-primary-nav,.library-subnav{background:#0d3527}
 .section{background:#050c09;color:var(--text)}
 .section-title,.journey-title{color:#f1f8f4}.workspace-intro,.journey-copy{color:#9cb1a6}
@@ -1229,7 +1229,7 @@ body{background:#050c09;color:var(--text)}
 .card-header,.review-queue-head,.import-ledger-head,.archive-detail-head{background:#0d1913;border-color:#22372d}
 .btn-ghost{background:#101f18;color:#c6d7ce;border-color:#345244}.btn-ghost:hover{background:#173326;color:#fff;border-color:#47d486}
 .btn-primary{background:#176b49;color:#fff}.btn-primary:hover{background:#1b7d55}
-.filter-select,.modal input,.modal select,.modal textarea,.intake-textarea,.chat-input,.search-wrap input,.setting-row input,.setting-row select{background:#101f18!important;color:#edf7f1!important;border-color:#345244!important}
+.filter-select,.modal input,.modal select,.modal textarea,.intake-textarea,.chat-input,.search-wrap input,.setting-row input,.setting-row select{background:#101f18!important;color:#edf7f1!important;border-color:#6f8c7c!important}
 .source-method,.journey-step,.archive-map-card,.idea-card,.decision-card,.library-view-tab{background:#0b1510!important;color:#a9bdb2!important;border-color:#294337!important}
 .source-method.active,.library-view-tab.active{background:#153d2d!important;color:#fff!important;border-color:#47d486!important}
 .archive-map-card:hover,.idea-card:hover,.decision-card:hover{background:#101f18!important;border-color:#47d486!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important}
@@ -1237,7 +1237,7 @@ body{background:#050c09;color:var(--text)}
 .overview-stat button,.journey-kicker{color:#47d486!important}
 .tools-manager-head,.tools-policy,.tool-foot{border-color:#22372d}.tool-action{background:#101f18;color:#78dfa6;border-color:#345244}.tool-action:disabled{background:#0d1813;color:#6f887b}
 .privacy-toggle-item,.plan-tier-card,.r-stat,.pattern-item{background:#101f18;border-color:#294337;color:#edf7f1}
-.section input,.section select,.section textarea{background:#101f18;color:#edf7f1;border-color:#345244}
+.section input,.section select,.section textarea{background:#101f18;color:#edf7f1;border-color:#6f8c7c}
 .section input::placeholder,.section textarea::placeholder{color:#71877c}
 
 /* Project Memory/Summary and Context belong to the blackout canvas, not the green navigation rail. */
@@ -1335,6 +1335,10 @@ body{background:#050c09;color:var(--text)}
 }
 /* Status text colours that keep 4.5:1 on the dark surfaces (the shared --cyan/--purple were tuned for light grounds) */
 :root{--status-active:#7aa2ff;--status-other:#b79dff}
+/* Form fields keep a 3:1 boundary against their surround (WCAG 1.4.11) and every control shows a focus ring (2.4.7).
+   !important because earlier theme layers and inline styles set outline:none and 1:1 borders. */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]),select,textarea{border-color:#6f8c7c!important}
+:is(input,textarea,select,button,a[href],summary,[tabindex]):focus-visible{outline:2px solid #7ae3aa!important;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -2175,6 +2179,7 @@ body{background:#050c09;color:var(--text)}
     <div class="snippets-grid" id="snippets-grid">
       <!-- rendered by JS -->
     </div>
+  </div>
 </div>
 
 <!-- ── Create Project Modal ────────────────────────────────────────── -->
@@ -6040,5 +6045,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <script src="assets/a11y.js"></script>
+<script src="assets/dialogs.js"></script>
 </body>
 </html>
