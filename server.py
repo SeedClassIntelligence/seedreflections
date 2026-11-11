@@ -69,7 +69,7 @@ from integration_store import (create_integration as create_api_integration, lis
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
-from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential
+from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential, local_backend_status as model_key_backend_status
 from tool_store import list_tools as list_workspace_tools, get_tool as get_workspace_tool, disconnect_tool as disconnect_workspace_tool
 
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
@@ -133,11 +133,13 @@ def production_readiness():
     billing=stripe_billing_enabled(); cfg=load_config()
     credential_master=os.environ.get("SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY","").strip()
     legacy_model_key=bool(cfg.get("llm_api_key"))
-    local_backend=(os.name=="nt")
-    credential_ready=(not legacy_model_key) and ((DEPLOYMENT_MODE=="local" and local_backend) or (DEPLOYMENT_MODE!="local" and bool(credential_master)))
+    local_status=model_key_backend_status()
+    # Local mode without an OS keychain is an accepted, honestly reported state: saved keys are
+    # disabled and only explicit session-only keys exist. It is never a silent plaintext fallback.
+    credential_ready=(not legacy_model_key) and (DEPLOYMENT_MODE=="local" or bool(credential_master))
     check("credential_storage",credential_ready,
         ("legacy plaintext model key must be rotated through encrypted storage" if legacy_model_key else
-         (("local OS credential boundary" if local_backend else "no OS credential backend on this platform: model API keys cannot be saved locally") if DEPLOYMENT_MODE=="local" else
+         (local_status["detail"] if DEPLOYMENT_MODE=="local" else
           ("encrypted credential backend configured" if credential_master else "hosted BYOK requires a deployment-secret master key"))))
     billing_values=[stripe_setting(cfg,"STRIPE_SECRET_KEY","stripe_secret_key"),stripe_setting(cfg,"STRIPE_WEBHOOK_SECRET","stripe_webhook_secret"),
         stripe_setting(cfg,"STRIPE_PRICE_PRO","stripe_price_pro"),stripe_setting(cfg,"STRIPE_PRICE_MASTER","stripe_price_master")]
@@ -1270,6 +1272,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings.setdefault("privacy_ai_training",False); settings.setdefault("privacy_marketing_emails",False)
             settings.pop("llm_api_key",None)
             settings["model_credential"]=model_credential_status(user["workspace_id"],settings.get("llm_provider","ollama"))
+            settings["model_key_storage"]=model_key_backend_status() if DEPLOYMENT_MODE=="local" else {"saved_keys":True,"backend":"aes256gcm_envelope","session_only_keys":False,"detail":"Saved keys are encrypted with per-credential data keys wrapped by the deployment master key."}
             self._send_json(settings)
             return
         if path == "/api/v2/models":
@@ -3108,10 +3111,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             provider=str(body.get("llm_provider") or settings.get("llm_provider") or "ollama")
             supplied_key=str(body.get("llm_api_key") or "").strip()
             if supplied_key:
-                try: store_model_credential(user["workspace_id"],provider,supplied_key,DEPLOYMENT_MODE)
+                try: store_model_credential(user["workspace_id"],provider,supplied_key,DEPLOYMENT_MODE,temporary=bool(body.get("llm_api_key_temporary")))
                 except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
             if body.get("clear_llm_api_key"): delete_model_credential(user["workspace_id"],provider)
-            settings.update({key:value for key,value in body.items() if key in allowed and key not in {"llm_api_key","clear_llm_api_key"}})
+            settings.update({key:value for key,value in body.items() if key in allowed and key not in {"llm_api_key","clear_llm_api_key","llm_api_key_temporary"}})
             settings.pop("llm_api_key",None)
             workspace["settings"]=settings; save_workspace(workspace,user["workspace_id"],"settings_updated")
             self._send_json({"status":"success"})
@@ -5159,9 +5162,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         elif path in ("/api/v1/settings", "/api/v1/admin/config"):
             cfg = load_config()
             supplied_key=str(body.pop("llm_api_key","") or "").strip()
+            temporary_key=bool(body.pop("llm_api_key_temporary",False))
             provider=str(body.get("llm_provider") or cfg.get("llm_provider") or "ollama")
             if supplied_key:
-                try: store_model_credential("local",provider,supplied_key,DEPLOYMENT_MODE)
+                try: store_model_credential("local",provider,supplied_key,DEPLOYMENT_MODE,temporary=temporary_key)
                 except (ValueError,RuntimeError,OSError) as exc: self._send_json({"error":str(exc),"code":"credential_storage_unavailable"},503); return
                 cfg.pop("llm_api_key",None)
             clear_key=body.pop("clear_llm_api_key",False)

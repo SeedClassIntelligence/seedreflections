@@ -44,10 +44,43 @@ def _master_key():
     if len(key)!=32: raise RuntimeError("Credential master key must decode to exactly 32 bytes")
     return key
 
+KEYRING_SERVICE = "SeedReflections model credential"
+_SESSION_KEYS = {}  # (workspace_id, provider) -> key; memory only, never persisted, cleared on restart
+
+
+def _keyring_module():
+    """Return the keyring module only when it has a real OS-backed backend."""
+    try:
+        import keyring
+        from keyring.backends import fail
+    except Exception:
+        return None
+    backend = keyring.get_keyring()
+    if isinstance(backend, fail.Keyring) or getattr(backend, "priority", 0) <= 0:
+        return None
+    return keyring
+
+
+def local_backend_status():
+    """Describe how a local model key can be stored on this machine."""
+    if os.name == "nt":
+        return {"saved_keys": True, "backend": "windows_dpapi", "session_only_keys": True,
+                "detail": "Saved keys are protected by Windows (DPAPI) for the current user."}
+    keyring = _keyring_module()
+    if keyring is not None:
+        kind = "macos_keychain" if os.uname().sysname == "Darwin" else "os_keyring"
+        return {"saved_keys": True, "backend": kind, "session_only_keys": True,
+                "detail": "Saved keys are held by the operating system keychain; the database stores no key material."}
+    return {"saved_keys": False, "backend": None, "session_only_keys": True,
+            "detail": "No operating-system keychain is available, so saved keys are disabled. A key can be used for this session only and is forgotten when SeedReflections restarts."}
+
+
+def _keyring_name(workspace_id, provider): return f"{workspace_id}:{provider}"
+
 def _encrypt(value, mode):
     raw=value.encode("utf-8")
     if mode=="local":
-        if os.name!="nt": raise RuntimeError("Local BYOK requires operating-system credential protection; no supported backend is configured")
+        if os.name!="nt": raise RuntimeError("Saved keys are unavailable: this computer has no operating-system keychain. Use a session-only key instead.")
         return "windows_dpapi",base64.b64encode(_dpapi(raw,True)).decode(),""
     master=_master_key(); data_key=secrets.token_bytes(32); data_nonce=secrets.token_bytes(12); wrap_nonce=secrets.token_bytes(12)
     ciphertext=AESGCM(data_key).encrypt(data_nonce,raw,b"SeedReflections:model-key")
@@ -69,10 +102,23 @@ def initialize():
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL, last_used_at TEXT,
       UNIQUE(workspace_id,provider))""")
 
-def set_credential(workspace_id,provider,value,deployment_mode="local"):
+def set_credential(workspace_id,provider,value,deployment_mode="local",temporary=False):
     value=str(value or "").strip()
     if not value: raise ValueError("API key is required")
-    scheme,ciphertext,wrapped=_encrypt(value,deployment_mode); now=_now(); initialize()
+    if temporary:
+        if deployment_mode!="local": raise ValueError("Session-only keys are available only in local mode")
+        _SESSION_KEYS[(workspace_id,provider)]=value
+        return credential_status(workspace_id,provider)
+    now=_now(); initialize()
+    if deployment_mode=="local" and os.name!="nt":
+        keyring=_keyring_module()
+        if keyring is None: raise RuntimeError("Saved keys are unavailable: this computer has no operating-system keychain. Use a session-only key instead.")
+        try: keyring.set_password(KEYRING_SERVICE,_keyring_name(workspace_id,provider),value)
+        except Exception as exc: raise RuntimeError("The operating-system keychain refused the key: "+str(exc)) from exc
+        scheme,ciphertext,wrapped="os_keyring","keychain",""
+    else:
+        scheme,ciphertext,wrapped=_encrypt(value,deployment_mode)
+    _SESSION_KEYS.pop((workspace_id,provider),None)
     with _connect() as db:
         db.execute("""INSERT INTO model_credentials(id,workspace_id,provider,scheme,ciphertext,wrapped_key,key_hint,created_at,updated_at)
           VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(workspace_id,provider) DO UPDATE SET scheme=excluded.scheme,ciphertext=excluded.ciphertext,
@@ -81,14 +127,23 @@ def set_credential(workspace_id,provider,value,deployment_mode="local"):
     return credential_status(workspace_id,provider)
 
 def get_credential(workspace_id,provider):
+    if (workspace_id,provider) in _SESSION_KEYS: return _SESSION_KEYS[(workspace_id,provider)]
     initialize()
     with _connect() as db:
         db.row_factory=sqlite3.Row; row=db.execute("SELECT * FROM model_credentials WHERE workspace_id=? AND provider=?",(workspace_id,provider)).fetchone()
         if not row: return ""
+        if row["scheme"]=="os_keyring":
+            keyring=_keyring_module()
+            value=(keyring.get_password(KEYRING_SERVICE,_keyring_name(workspace_id,provider)) if keyring else None) or ""
+            if value: db.execute("UPDATE model_credentials SET last_used_at=? WHERE id=?",(_now(),row["id"]))
+            return value
         value=_decrypt(row["scheme"],row["ciphertext"],row["wrapped_key"])
         db.execute("UPDATE model_credentials SET last_used_at=? WHERE id=?",(_now(),row["id"])); return value
 
 def credential_status(workspace_id,provider):
+    if (workspace_id,provider) in _SESSION_KEYS:
+        return {"credential_configured":True,"provider":provider,"scheme":"session_only","key_hint":_SESSION_KEYS[(workspace_id,provider)][-4:],
+                "persisted":False,"note":"Held in memory for this session only; forgotten when SeedReflections restarts."}
     initialize()
     with _connect() as db:
         db.row_factory=sqlite3.Row; row=db.execute("SELECT provider,key_hint,scheme,created_at,updated_at,last_used_at FROM model_credentials WHERE workspace_id=? AND provider=?",(workspace_id,provider)).fetchone()
@@ -96,5 +151,13 @@ def credential_status(workspace_id,provider):
 
 def delete_credential(workspace_id,provider):
     initialize()
-    with _connect() as db: changed=db.execute("DELETE FROM model_credentials WHERE workspace_id=? AND provider=?",(workspace_id,provider)).rowcount
-    return bool(changed)
+    removed_session=_SESSION_KEYS.pop((workspace_id,provider),None) is not None
+    with _connect() as db:
+        row=db.execute("SELECT scheme FROM model_credentials WHERE workspace_id=? AND provider=?",(workspace_id,provider)).fetchone()
+        changed=db.execute("DELETE FROM model_credentials WHERE workspace_id=? AND provider=?",(workspace_id,provider)).rowcount
+    if row and row[0]=="os_keyring":
+        keyring=_keyring_module()
+        if keyring is not None:
+            try: keyring.delete_password(KEYRING_SERVICE,_keyring_name(workspace_id,provider))
+            except Exception: pass
+    return bool(changed) or removed_session

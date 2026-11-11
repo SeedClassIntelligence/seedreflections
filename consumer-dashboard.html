@@ -1892,6 +1892,8 @@ body{background:#050c09;color:var(--text)}
           <div class="setting-row"><label for="acc-llm-model">Provider Model ID</label><input id="acc-llm-model" placeholder="qwen2.5:7b"></div>
           <div class="setting-row" id="acc-lbl-url-block"><label for="acc-llm-url">Endpoint URL</label><input id="acc-llm-url" type="url" placeholder="http://localhost:11434"></div>
           <div class="setting-row" id="acc-lbl-key-block"><label for="acc-llm-key">API Key</label><input id="acc-llm-key" type="password" autocomplete="new-password" placeholder="Provider API key"></div>
+          <div class="setting-row" id="acc-key-temp-row" style="display:none"><label for="acc-llm-key-temp">Session only</label><label style="display:flex;gap:8px;align-items:center;font-size:11.5px;font-weight:400"><input id="acc-llm-key-temp" type="checkbox" style="width:auto"> Use this key for this session only. It is kept in memory and forgotten when SeedReflections restarts.</label></div>
+          <div id="acc-key-status" role="status" style="font-size:11.5px;color:var(--text-muted);margin-top:6px"></div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:8px">A model API key powers analysis; it does not import private conversation history. Hosted credentials require encrypted secret storage before production use.</div>
         </div>
 
@@ -5342,7 +5344,8 @@ async function loadAccountSettings() {
     document.getElementById('acc-llm-provider').value = cfg.llm_provider || 'ollama';
     document.getElementById('acc-llm-model').value = cfg.llm_model || '';
     document.getElementById('acc-llm-url').value = cfg.llm_api_url || '';
-    document.getElementById('acc-llm-key').value = cfg.llm_api_key || '';
+    document.getElementById('acc-llm-key').value = '';
+    renderKeyStorageStatus(cfg.model_key_storage, cfg.model_credential);
     document.getElementById('acc-model-selection-mode').value = cfg.model_selection_mode || 'auto';
     await loadModelCatalog(cfg.preferred_model_id || '');
     
@@ -5464,26 +5467,45 @@ async function saveAccountProfile() {
   }
 }
 
+function renderKeyStorageStatus(storage, credential) {
+  var status = document.getElementById('acc-key-status'), tempRow = document.getElementById('acc-key-temp-row'), temp = document.getElementById('acc-llm-key-temp');
+  if (!status) return;
+  var parts = [];
+  if (storage && storage.detail) parts.push(storage.detail);
+  if (credential && credential.credential_configured) {
+    parts.push(credential.scheme === 'session_only'
+      ? 'A session-only key ending in ' + credential.key_hint + ' is active.'
+      : 'A saved key ending in ' + credential.key_hint + ' is stored. Enter a new key to replace it.');
+  }
+  status.textContent = parts.join(' ');
+  var savedKeysOff = storage && storage.saved_keys === false;
+  if (tempRow) tempRow.style.display = (storage && storage.session_only_keys) ? '' : 'none';
+  if (temp) { temp.checked = !!savedKeysOff; temp.disabled = !!savedKeysOff; }
+}
+
 async function saveAccLLMConfig() {
   var config = {
     api_mode: document.getElementById('acc-api-mode').value,
     llm_provider: document.getElementById('acc-llm-provider').value,
     llm_model: document.getElementById('acc-llm-model').value,
     llm_api_url: document.getElementById('acc-llm-url').value,
-    llm_api_key: document.getElementById('acc-llm-key').value
+    llm_api_key: document.getElementById('acc-llm-key').value,
+    llm_api_key_temporary: !!(document.getElementById('acc-llm-key-temp') && document.getElementById('acc-llm-key-temp').checked)
     ,model_selection_mode: document.getElementById('acc-model-selection-mode').value
     ,preferred_model_id: document.getElementById('acc-preferred-model').value
   };
   try {
-    await productFetch('/settings', {
+    var response = await productFetch('/settings', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(config)
     });
-    showToast('Key settings updated!');
+    var result = await response.json().catch(function(){ return {}; });
+    if (!response.ok) throw new Error(result.error || 'Settings could not be saved.');
+    showToast(config.llm_api_key ? (config.llm_api_key_temporary ? 'Key active for this session only.' : 'Key saved to secure storage.') : 'AI settings updated.');
     loadAccountSettings();
   } catch(e) {
-    showToast('Failed to save key parameters.');
+    showToast(e.message || 'Failed to save key parameters.');
   }
 }
 

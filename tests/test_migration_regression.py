@@ -470,7 +470,7 @@ class TestDatabaseMigrationAndRegression(unittest.TestCase):
         # in-memory store so the provider-mapping logic under test is still exercised.
         vault = {}
         credential_patches = [] if os.name == "nt" else [
-            patch.object(server, "store_model_credential", lambda workspace, provider, key, mode="local": vault.__setitem__((workspace, provider), key)),
+            patch.object(server, "store_model_credential", lambda workspace, provider, key, mode="local", **kwargs: vault.__setitem__((workspace, provider), key)),
             patch.object(server, "load_model_credential", lambda workspace, provider: vault.get((workspace, provider), "")),
         ]
         for credential_patch in credential_patches:
