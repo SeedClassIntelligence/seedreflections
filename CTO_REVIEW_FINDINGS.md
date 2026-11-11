@@ -80,7 +80,7 @@ Each was reproduced first, then fixed, and verified again. "Test" means the new 
 - **Hosted CORS and headers:** origin pinned to the configured origin; `X-Frame-Options`, `nosniff`, `Referrer-Policy` present.
 - **Import at scale:** a 26 MB export with 3,005 conversations imported in 5 s as a background job; Claude-format and text imports worked; a truncated JSON file failed loudly with a clear reason.
 - **Hosted backup and restore (VERIFIED):** a 5.3 MB backup in 1.4 s; a tampered source was rejected (`integrity verification failed`); a valid restore returned the workspace to its backup-time state.
-- **Interface:** zero console errors, zero failed requests, zero horizontal overflow at 1440, 768 and 390 px across every dashboard tab; no dead controls after the fixes.
+- **Interface:** zero console errors, zero failed requests and no dead controls after the fixes. *Correction (Nov 11):* this item originally also said there was zero horizontal overflow at 768 and 390 px on every tab. That was overstated: the narrow-width check had covered only four tabs. A full 10-tab check found the Artifacts tab overflowing by 123px (768) and 411px (390); it is fixed and all 10 tabs now pass at 1440 / 768 / 390.
 - **Evidence path:** accepted decisions carry source conversation and message IDs.
 
 ---
