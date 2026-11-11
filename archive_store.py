@@ -963,3 +963,187 @@ def export_local_backup_archive():
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
+
+
+# ── Verified local restore ────────────────────────────────────────────────────
+RESTORE_PRESERVED_TABLES = ("model_credentials", "api_integrations", "runtime_users", "runtime_workspaces",
+                            "runtime_memberships", "runtime_sessions", "runtime_invitations", "runtime_auth_attempts")
+RESTORE_COUNT_TABLES = (("conversations", "Conversations"), ("messages", "Messages"), ("imports", "Imports"),
+                        ("source_files", "Preserved source files"), ("idea_candidates", "Candidates"),
+                        ("workspace_seeds", "Accepted ideas"), ("workspace_decisions", "Decisions"),
+                        ("workspace_projects", "Projects"), ("workspace_artifacts", "Work artifacts"))
+RESTORE_STAGING_SECONDS = 30 * 60
+
+
+class RestoreError(ValueError):
+    """A restore was refused or rolled back; the message is safe to show the user."""
+
+
+def _table_counts(path):
+    connection = sqlite3.connect(path)
+    try:
+        existing = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        return {label: (connection.execute(f"SELECT COUNT(*) FROM [{table}]").fetchone()[0] if table in existing else 0)
+                for table, label in RESTORE_COUNT_TABLES}
+    finally:
+        connection.close()
+
+
+def _restore_staging_dir():
+    directory = DB_PATH.parent / "restore-staging"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def _purge_stale_staging():
+    cutoff = datetime.now().timestamp() - RESTORE_STAGING_SECONDS
+    for item in _restore_staging_dir().glob("*.db"):
+        if item.stat().st_mtime < cutoff:
+            item.unlink(missing_ok=True)
+
+
+def preview_local_restore(zip_path):
+    """Verify a local backup ZIP completely, stage it, and describe what a restore would replace.
+
+    Nothing live is modified. Raises RestoreError for anything unverifiable.
+    """
+    import hashlib, secrets, zipfile
+    initialize(); _purge_stale_staging()
+    try:
+        package = zipfile.ZipFile(zip_path)
+    except zipfile.BadZipFile as exc:
+        raise RestoreError("File is not a SeedReflections backup ZIP") from exc
+    with package:
+        names = set(package.namelist())
+        if names != {"archive.db", "manifest.json"}:
+            raise RestoreError("Not a SeedReflections local backup (unexpected contents). Hosted backups restore only through a hosted workspace.")
+        try:
+            manifest = json.loads(package.read("manifest.json"))
+        except ValueError as exc:
+            raise RestoreError("Backup manifest is unreadable") from exc
+        if manifest.get("format") != "seedreflections-local-snapshot-v1" or not manifest.get("sha256"):
+            raise RestoreError("Unsupported or incomplete backup manifest")
+        declared = int(manifest.get("byte_count") or 0)
+        if package.getinfo("archive.db").file_size != declared:
+            raise RestoreError("Backup size does not match its manifest")
+        token = secrets.token_hex(16); staged = _restore_staging_dir() / f"{token}.db"
+        digest = hashlib.sha256(); written = 0
+        try:
+            with package.open("archive.db") as source, staged.open("wb") as target:
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    written += len(chunk)
+                    if written > declared:
+                        raise RestoreError("Backup contains more data than its manifest declares")
+                    digest.update(chunk); target.write(chunk)
+            if digest.hexdigest() != manifest["sha256"]:
+                raise RestoreError("Backup checksum verification failed; the file is corrupt or has been modified")
+            check = sqlite3.connect(staged)
+            try:
+                if check.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                    raise RestoreError("Backup database failed its integrity check")
+                tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            finally:
+                check.close()
+            if not {"conversations", "messages", "imports"} <= tables:
+                raise RestoreError("Backup database is missing core archive tables")
+            incoming = _table_counts(staged)
+        except Exception:
+            staged.unlink(missing_ok=True)
+            raise
+    return {"token": token, "created_at": manifest.get("created_at"), "backup": incoming,
+            "current": _table_counts(DB_PATH), "preserved": list(RESTORE_PRESERVED_TABLES),
+            "expires_in_seconds": RESTORE_STAGING_SECONDS,
+            "notice": "Everything in your archive and work history will be replaced by this backup. A safety snapshot is taken first and the restore is rolled back automatically if anything fails. Model keys, integration tokens and account sessions are kept as they are now."}
+
+
+def _read_rows(path, tables):
+    saved = {}
+    connection = sqlite3.connect(path)
+    try:
+        existing = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        for table in tables:
+            if table in existing:
+                cursor = connection.execute(f"SELECT * FROM [{table}]")
+                saved[table] = ([column[0] for column in cursor.description], cursor.fetchall())
+    finally:
+        connection.close()
+    return saved
+
+
+def _write_rows(path, saved):
+    connection = sqlite3.connect(path, timeout=30)
+    try:
+        existing = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        for table, (columns, rows) in saved.items():
+            if table not in existing:
+                continue
+            connection.execute(f"DELETE FROM [{table}]")
+            names = ",".join(f"[{c}]" for c in columns)
+            connection.executemany(f"INSERT INTO [{table}]({names}) VALUES({','.join('?' * len(columns))})", rows)
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _copy_database(source_path, destination_path):
+    source = sqlite3.connect(source_path); destination = sqlite3.connect(destination_path, timeout=60)
+    try:
+        source.backup(destination)
+    finally:
+        destination.close(); source.close()
+
+
+def apply_local_restore(token):
+    """Replace the local archive with a previously previewed, verified backup.
+
+    Takes a safety snapshot first, preserves live credentials/tokens/identity, and rolls
+    back to the snapshot if anything fails or the result does not match the backup.
+    """
+    import zipfile, tempfile
+    initialize()
+    if not re.fullmatch(r"[0-9a-f]{32}", str(token or "")):
+        raise RestoreError("Restore token is invalid")
+    staged = _restore_staging_dir() / f"{token}.db"
+    if not staged.exists() or staged.stat().st_mtime < datetime.now().timestamp() - RESTORE_STAGING_SECONDS:
+        staged.unlink(missing_ok=True)
+        raise RestoreError("Restore preview expired or was not found; upload the backup again")
+    with _connect() as db:
+        running = db.execute("SELECT (SELECT COUNT(*) FROM import_jobs WHERE status IN ('queued','running')) + "
+                             "(SELECT COUNT(*) FROM analysis_jobs WHERE status IN ('queued','running'))").fetchone()[0]
+    if running:
+        raise RestoreError("An import or analysis is still running. Wait for it to finish, then restore.")
+    expected = _table_counts(staged)
+    snapshot_dir = DB_PATH.parent / "safety-snapshots"; snapshot_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_zip = export_local_backup_archive()
+    snapshot = snapshot_dir / f"pre-restore-{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip"
+    shutil.move(str(snapshot_zip), str(snapshot))
+    preserved = _read_rows(DB_PATH, RESTORE_PRESERVED_TABLES)
+    try:
+        _copy_database(staged, DB_PATH)
+        _write_rows(DB_PATH, preserved)
+        check = sqlite3.connect(DB_PATH)
+        try:
+            if check.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                raise RestoreError("Restored database failed its integrity check")
+        finally:
+            check.close()
+        if _table_counts(DB_PATH) != expected:
+            raise RestoreError("Restored data does not match the backup")
+        initialize()
+    except Exception as exc:
+        try:
+            work = Path(tempfile.mkdtemp(prefix="seed-rollback-"))
+            try:
+                with zipfile.ZipFile(snapshot) as package:
+                    package.extract("archive.db", work)
+                _copy_database(work / "archive.db", DB_PATH)
+                _write_rows(DB_PATH, preserved)
+            finally:
+                shutil.rmtree(work, ignore_errors=True)
+        except Exception as rollback_error:
+            raise RestoreError(f"Restore failed AND automatic rollback failed ({rollback_error}). "
+                               f"Your pre-restore snapshot is at {snapshot}") from exc
+        raise RestoreError(f"Restore failed and your previous archive was put back: {exc}") from exc
+    finally:
+        staged.unlink(missing_ok=True)
+    return {"status": "restored", "restored": expected, "safety_snapshot": str(snapshot)}

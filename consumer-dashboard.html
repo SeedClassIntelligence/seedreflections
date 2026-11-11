@@ -1787,7 +1787,7 @@ body{background:#050c09;color:var(--text)}
   <div class="account-grid">
     <div class="card" style="grid-column:1/-1">
       <div class="card-header"><h3>Data & portability</h3></div>
-      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"></div>
+      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
     </div>
     
     <!-- Column 1: Usage Tracker -->
@@ -5775,14 +5775,53 @@ async function downloadArchiveBackup() {
 
 async function restoreArchiveBackup(event) {
   var file = event.target.files && event.target.files[0]; if (!file) return;
-  if (!confirm('Restore this complete archive? Current hosted workspace data will be replaced after verification.')) { event.target.value=''; return; }
+  var token = localStorage.getItem('seedreflections_access_token');
+  var headers = token ? {'Authorization':'Bearer '+token} : {};
+  var panel = document.getElementById('restore-preview-panel');
   try {
-    var token = localStorage.getItem('seedreflections_access_token'); var form = new FormData(); form.append('file',file);
-    var response = await fetch('/api/v2/restore/upload',{method:'POST',headers:token?{'Authorization':'Bearer '+token}:{},body:form});
-    var result = await response.json(); if (!response.ok) throw new Error(result.error || 'Restore failed');
-    showToast('Complete archive restored and verified.'); await boot();
-  } catch (error) { showToast(error.message); }
-  finally { event.target.value=''; }
+    var mode = 'hosted';
+    try { var caps = await (await fetch('/api/v2/capabilities')).json(); mode = caps.mode || 'hosted'; } catch (e) {}
+    var form = new FormData(); form.append('file', file);
+    if (mode !== 'local') {
+      if (!confirm('Restore this complete archive? Current hosted workspace data will be replaced after verification.')) return;
+      var hosted = await fetch('/api/v2/restore/upload', {method:'POST', headers:headers, body:form});
+      var hostedResult = await hosted.json(); if (!hosted.ok) throw new Error(hostedResult.error || 'Restore failed');
+      showToast('Complete archive restored and verified.'); await boot(); return;
+    }
+    panel.innerHTML = '<div class="empty-sub">Verifying backup…</div>';
+    var response = await fetch('/api/v2/restore/preview', {method:'POST', headers:headers, body:form});
+    var preview = await response.json(); if (!response.ok) throw new Error(preview.error || 'Backup could not be verified');
+    var rows = Object.keys(preview.backup).map(function(label) {
+      var inBackup = Number(preview.backup[label]), now = Number(preview.current[label] || 0);
+      var changed = inBackup !== now;
+      return '<tr><td>' + escHtml(label) + '</td><td style="text-align:right">' + inBackup.toLocaleString() + '</td><td style="text-align:right;' + (changed ? 'color:var(--amber);font-weight:700' : '') + '">' + now.toLocaleString() + '</td></tr>';
+    }).join('');
+    panel.innerHTML = '<div class="import-ledger" style="padding:16px">' +
+      '<strong>Backup verified' + (preview.created_at ? ' · created ' + escHtml(String(preview.created_at).slice(0,10)) : '') + '</strong>' +
+      '<p style="font-size:11.5px;color:var(--text-muted);margin:8px 0">' + escHtml(preview.notice) + '</p>' +
+      '<table style="width:100%;font-size:11.5px;border-collapse:collapse;margin:10px 0"><thead><tr style="text-align:left;color:var(--text-muted)"><th>What</th><th style="text-align:right">In backup</th><th style="text-align:right">Your archive now</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<label style="font-size:11.5px;display:block;margin-bottom:6px">Type <strong>REPLACE</strong> to confirm</label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="restore-confirm-text" class="form-input" autocomplete="off" style="max-width:180px" aria-label="Type REPLACE to confirm" oninput="document.getElementById(\'restore-confirm-btn\').disabled = this.value !== \'REPLACE\'">' +
+      '<button id="restore-confirm-btn" class="btn btn-primary btn-sm" disabled onclick="confirmLocalRestore(\'' + escHtml(preview.token) + '\')">Replace my archive</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'restore-preview-panel\').innerHTML=\'\'">Cancel</button></div>' +
+      '<div id="restore-result" role="status" style="font-size:11.5px;margin-top:10px"></div></div>';
+  } catch (error) {
+    if (panel) panel.innerHTML = '<div class="coverage-partial" role="alert" style="padding:10px 14px;font-size:12px">' + escHtml(error.message) + '</div>';
+    else showToast(error.message);
+  } finally { event.target.value = ''; }
+}
+
+async function confirmLocalRestore(restoreToken) {
+  var result = document.getElementById('restore-result'), button = document.getElementById('restore-confirm-btn');
+  button.disabled = true; result.textContent = 'Taking a safety snapshot and restoring…';
+  try {
+    var token = localStorage.getItem('seedreflections_access_token');
+    var response = await fetch('/api/v2/restore/confirm', {method:'POST', headers:Object.assign({'Content-Type':'application/json'}, token ? {'Authorization':'Bearer '+token} : {}),
+      body: JSON.stringify({token: restoreToken, confirm: document.getElementById('restore-confirm-text').value})});
+    var data = await response.json(); if (!response.ok) throw new Error(data.error || 'Restore failed');
+    document.getElementById('restore-preview-panel').innerHTML = '<div class="coverage-complete" role="status" style="padding:10px 14px;font-size:12px">Archive restored and verified. A safety snapshot of your previous archive was saved to ' + escHtml(data.safety_snapshot) + '.</div>';
+    await boot();
+  } catch (error) { result.textContent = error.message; result.className = 'coverage-partial'; button.disabled = false; }
 }
 
 /* ── Snippets ──────────────────────────────────────────────────────── */

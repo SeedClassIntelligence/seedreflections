@@ -34,7 +34,7 @@ from archive_store import get_conversation as get_archive_conversation
 from archive_store import raw_conversations as get_raw_archive_conversations
 from archive_store import list_imports as list_archive_imports
 from archive_store import create_import_job, update_import_job, get_import_job, list_import_jobs
-from archive_store import count_candidates as count_archive_candidates, export_local_backup_archive
+from archive_store import count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
 from archive_store import (analyze_conversation, list_candidates, review_candidate,
                            create_analysis_job, get_analysis_job, run_archive_analysis,
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
@@ -2810,10 +2810,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error":"Viewer access is read-only","code":"insufficient_role"},403); return
         content_length = int(self.headers.get("Content-Length", 0))
         content_type = self.headers.get("Content-Type", "")
+        if path == "/api/v2/restore/preview":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user["workspace_id"]!="local": self._send_json({"error":"Hosted workspaces restore through /api/v2/restore/upload."},409); return
+            if content_length<=0 or content_length>MAX_UPLOAD_BYTES:
+                self._send_json({"error":"Backup is empty or exceeds the configured size limit","limit_bytes":MAX_UPLOAD_BYTES},400 if content_length<=0 else 413); return
+            if "multipart/form-data" not in content_type: self._send_json({"error":"Expected multipart/form-data"},400); return
+            staged_path=None
+            try:
+                filename,staged_path=stream_multipart_upload(self.rfile,content_length,content_type)
+                self._send_json(preview_local_restore(staged_path))
+            except (ValueError,RestoreError) as exc: self._send_json({"error":str(exc)},400)
+            finally:
+                if staged_path: Path(staged_path).unlink(missing_ok=True)
+            return
         if path == "/api/v2/restore/upload":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
-            if user["workspace_id"]=="local": self._send_json({"error":"In-app restore is not available in local mode because it would overwrite your only copy. To restore: stop SeedReflections, replace data/archive.db with archive.db from the backup ZIP (verify its sha256 in manifest.json), then start it again."},409); return
+            if user["workspace_id"]=="local": self._send_json({"error":"Local restore uses /api/v2/restore/preview and /api/v2/restore/confirm."},409); return
             if content_length<=0 or content_length>MAX_UPLOAD_BYTES:
                 self._send_json({"error":"Backup is empty or exceeds the configured size limit","limit_bytes":MAX_UPLOAD_BYTES},400 if content_length<=0 else 413); return
             if "multipart/form-data" not in content_type: self._send_json({"error":"Expected multipart/form-data"},400); return
@@ -3056,10 +3071,19 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(result,201)
             except (ValueError,json.JSONDecodeError) as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/restore/confirm":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if user["workspace_id"]!="local": self._send_json({"error":"Hosted workspaces restore through /api/v2/restore/upload."},409); return
+            if str(body.get("confirm") or "")!="REPLACE":
+                self._send_json({"error":"Type REPLACE to confirm that your current archive will be replaced."},400); return
+            try: self._send_json(apply_local_restore(body.get("token")))
+            except RestoreError as exc: self._send_json({"error":str(exc)},409)
+            return
         if path == "/api/v2/restore":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
-            if user["workspace_id"]=="local": self._send_json({"error":"In-app restore is not available in local mode because it would overwrite your only copy. To restore: stop SeedReflections, replace data/archive.db with archive.db from the backup ZIP (verify its sha256 in manifest.json), then start it again."},409); return
+            if user["workspace_id"]=="local": self._send_json({"error":"Local restore uses /api/v2/restore/preview and /api/v2/restore/confirm."},409); return
             try: self._send_json(tenant_restore_backup(user["workspace_id"],body.get("backup")))
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
