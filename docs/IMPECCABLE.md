@@ -47,4 +47,11 @@ Updated as fixes land. Status: open / fixed (verified in running product) / decl
 
 | Area | Finding | Status |
 |---|---|---|
-| (to be filled as each pass completes) | | |
+| Dashboard, all tabs | 189 font-size declarations below 12px (8 to 11.5px): detector `tiny-text` + `undersized-ui-text` | **Fixed**: 12px floor. Dashboard source findings 53 to 19; rendered Workspace 9 to 4. Layout re-verified: no page overflow or clipped text on all 10 tabs at 1440 / 768 / 390 px. |
+| Artifacts tab | Page overflowed horizontally by **123px at 768** and **411px at 390** (editor grid `280px 1fr` grew to the textarea width; metadata row never stacked). Pre-existing, found by the new all-tab narrow-width check, not caused by the font change (identical before). | **Fixed**: `minmax(0,1fr)` columns, stack below 900 / 600px. Verified. |
+| Review cards | Kind label and "Phrase match" ran together ("DECISIONPhrase match"). | **Fixed** (10px gap). Verified in browser. |
+| Review cards | The same sentence ("Direct decision language found in a user-authored source message. Human confirmation required.") repeats on every card; 250 cards render about 1,500 buttons; no filters, detail view or pagination. | Open: belongs to the Review work-inbox redesign. |
+| Workspace, phone width | Project memory panel fills about two thirds of the width; "+ Add or connect" wraps to three lines; Tools / Prompt Engine / Settings not reachable from the 4-item bottom bar. | Open: Workspace layout pass. |
+| Dashboard | low-contrast (4; one is 1.4:1) and gray-on-color on cream surfaces; 5 cramped-padding in the cockpit layout; 2 side-tab accents; overused font (Inter); 2 skipped headings | Open |
+| Landing / comparison / auth / admin | 95 findings (index 55, comparison 21, admin 9, auth 6, product 2, style 2), including -0.16em tracking on the hero headline and the eyebrow-chip + kicker pattern | Open: not yet touched |
+| Not yet run | `critique` and `audit` (agent commands), `DESIGN.md` (`document`), rendered contrast on tabs other than Workspace, keyboard-focus audit, `harden` empty/error states | Open |
