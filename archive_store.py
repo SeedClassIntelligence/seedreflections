@@ -195,7 +195,7 @@ def _platform(data, filename):
         return "chatgpt"
     if "chat_messages" in sample:
         return "claude"
-    if "chunkedPrompt" in sample or "modelResponse" in sample or sample.get("platform") == "gemini":
+    if "chunkedPrompt" in sample or "modelResponse" in sample or "safeHtmlItem" in sample or str(sample.get("header", "")).lower().startswith("gemini"):
         return "gemini"
     if "rollout" in sample or "turns" in sample or sample.get("platform") == "codex":
         return "codex"
@@ -209,6 +209,34 @@ def _platform(data, filename):
     for provider, normalized in aliases.items():
         if provider in name: return normalized
     return "generic"
+
+
+def _source_id(raw, index):
+    """Use the export's own id; otherwise derive one from the content so separate files never collide."""
+    explicit = raw.get("id") or raw.get("uuid") or raw.get("conversation_id")
+    if explicit:
+        return str(explicit)
+    digest = hashlib.sha256(json.dumps(raw, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:12]
+    return f"conversation-{digest}"
+
+
+def _gemini_items(raw, source_id):
+    """Gemini AI Studio (chunkedPrompt.chunks) and Google Takeout activity entries."""
+    prompt = raw.get("chunkedPrompt")
+    if isinstance(prompt, dict) and isinstance(prompt.get("chunks"), list):
+        return [{"id": f"{source_id}-{i}", "role": "assistant" if str(c.get("role")).lower() == "model" else c.get("role") or "user",
+                 "content": c.get("text") or c.get("content")} for i, c in enumerate(prompt["chunks"]) if isinstance(c, dict) and not c.get("isThought")]
+    if "safeHtmlItem" in raw or str(raw.get("header", "")).lower().startswith("gemini"):
+        title = str(raw.get("title") or "")
+        asked = re.sub(r"^(Prompted|Asked|Said)\s+", "", title)
+        answer = " ".join(_text([h.get("html") if isinstance(h, dict) else h for h in raw.get("safeHtmlItem") or []]).split())
+        answer = re.sub(r"<[^>]+>", " ", answer)
+        answer = re.sub(r"\s+", " ", answer).strip()
+        items = [{"id": f"{source_id}-prompt", "role": "user", "content": asked, "created_at": raw.get("time")}]
+        if answer:
+            items.append({"id": f"{source_id}-response", "role": "assistant", "content": answer, "created_at": raw.get("time")})
+        return items
+    return None
 
 
 def _messages(raw, source_id):
@@ -236,7 +264,8 @@ def _messages(raw, source_id):
                 "created_at": _timestamp(message.get("create_time")),
             })
         return result
-    items = raw.get("chat_messages") or raw.get("messages") or raw.get("turns") or raw.get("items") or []
+    gemini = _gemini_items(raw, source_id)
+    items = gemini or raw.get("chat_messages") or raw.get("messages") or raw.get("turns") or raw.get("items") or []
     if not items and (raw.get("chunkedPrompt") is not None or raw.get("modelResponse") is not None):
         items = []
         if raw.get("chunkedPrompt") is not None:
@@ -295,7 +324,7 @@ def import_json(content, filename="export.json"):
         for index, raw in enumerate(data):
             if not isinstance(raw, dict):
                 continue
-            source_id = str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index + 1}")
+            source_id = _source_id(raw, index)
             title = str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index + 1}")
             messages = _messages(raw, source_id)
             raw_json = json.dumps(raw, ensure_ascii=False, sort_keys=True)
@@ -424,7 +453,7 @@ def import_json_path(path, filename="export.json"):
         db.execute("INSERT INTO imports VALUES(?,?,?,?,?,?,?)", (import_id, Path(filename).name, platform, digest, 0, 0, _now()))
         for index, raw in enumerate(itertools.chain([first], iterator)):
             if not isinstance(raw, dict): continue
-            source_id=str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index+1}")
+            source_id=_source_id(raw, index)
             title=str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index+1}")
             messages=_messages(raw, source_id); raw_json=json.dumps(raw,ensure_ascii=False,sort_keys=True)
             prior=db.execute("SELECT * FROM conversations WHERE source_id=? AND platform=? ORDER BY COALESCE(updated_at,created_at) DESC LIMIT 1",(source_id,platform)).fetchone()
