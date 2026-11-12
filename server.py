@@ -42,7 +42,7 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
 from document_ingest import import_document, import_document_path
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
-    logout as auth_logout, consume_auth_attempt, list_members as auth_list_members,
+    logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
     list_workspaces as auth_list_workspaces, create_invitation as auth_create_invitation,
     list_invitations as auth_list_invitations, accept_invitation as auth_accept_invitation,
     switch_workspace as auth_switch_workspace, update_member_role as auth_update_member_role,
@@ -2965,7 +2965,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
         permission_exempt={"/api/v2/auth/signup","/api/v2/auth/login","/api/v2/integrations/import",
-            "/api/v2/integrations/ping","/api/v2/team/invitations/accept","/api/v2/workspaces/switch"}
+            "/api/v2/integrations/ping","/api/v2/team/invitations/accept","/api/v2/workspaces/switch","/api/v2/account/delete"}
         if path.startswith("/api/v2/") and path not in permission_exempt:
             permission_user=self._runtime_user()
             if permission_user and permission_user.get("role")=="viewer":
@@ -3205,6 +3205,18 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             try: self._send_json(auth_login(body.get("email"),body.get("password")))
             except ValueError as exc: self._send_json({"error":str(exc)},401)
+            return
+        if path == "/api/v2/account/delete":
+            if DEPLOYMENT_MODE == "local":
+                self._send_json({"error":"Local mode keeps your archive on this computer. Delete the data folder to remove it."},409); return
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if str(body.get("confirm") or "").strip()!="DELETE":
+                self._send_json({"error":"Type DELETE to confirm"},400); return
+            if not auth_request_allowed(f"{user['id']}:account-delete"):
+                self._send_json({"error":"Too many attempts. Try again later."},429); return
+            try: self._send_json(auth_delete_account(user["id"],body.get("password")))
+            except ValueError as exc: self._send_json({"error":str(exc)},400 if "password" not in str(exc).lower() else 403)
             return
         if path == "/api/v2/auth/logout":
             if DEPLOYMENT_MODE != "local": auth_logout(self._bearer_token())

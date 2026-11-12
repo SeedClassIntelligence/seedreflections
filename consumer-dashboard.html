@@ -2026,6 +2026,21 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
       </div>
     </div>
 
+    <div class="card" id="account-delete-card" hidden>
+      <div class="card-header"><h3 aria-level="2">Delete account</h3></div>
+      <div class="card-body">
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">Permanently deletes your account and everything in your own workspace: imported conversations, documents, findings, saved work, stored model keys and connection tokens. It cannot be undone. Export anything you want to keep first. If you share a workspace, you leave it; if you are its only owner, hand it over or remove the other members first.</p>
+        <button type="button" class="btn btn-sm" id="account-delete-open" onclick="openAccountDelete()" style="background:transparent;border:1px solid var(--red);color:var(--red)">Delete my account…</button>
+        <form id="account-delete-form" hidden onsubmit="submitAccountDelete(event)" style="display:grid;gap:10px;max-width:360px;margin-top:6px">
+          <label style="font-size:12.5px;display:grid;gap:4px">Your password<input id="account-delete-password" type="password" autocomplete="current-password" required></label>
+          <label style="font-size:12.5px;display:grid;gap:4px">Type DELETE to confirm<input id="account-delete-confirm" autocomplete="off" required oninput="document.getElementById('account-delete-go').disabled = this.value.trim() !== 'DELETE'"></label>
+          <div id="account-delete-error" role="alert" style="font-size:12.5px;color:var(--red)"></div>
+          <div style="display:flex;gap:8px"><button type="submit" class="btn btn-sm" id="account-delete-go" disabled style="background:var(--red);color:#06080f;font-weight:700">Permanently delete</button>
+          <button type="button" class="btn btn-sm" onclick="closeAccountDelete()">Cancel</button></div>
+        </form>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header"><h3 aria-level="2">Billing Plans & Subscriptions</h3></div>
       <div class="card-body">
@@ -5592,6 +5607,37 @@ async function exportCurrentArtifact(){var id=document.getElementById('artifact-
 
 
 /* ── Connect your own assistant (MCP tokens) ───────────────────────── */
+/* ── Account deletion (hosted accounts only) ───────────────────────── */
+function initAccountDelete() {
+  var card = document.getElementById('account-delete-card');
+  if (card && localStorage.getItem('seedreflections_access_token')) card.hidden = false;
+}
+function openAccountDelete() {
+  document.getElementById('account-delete-form').hidden = false;
+  document.getElementById('account-delete-open').hidden = true;
+  document.getElementById('account-delete-password').focus();
+}
+function closeAccountDelete() {
+  var form = document.getElementById('account-delete-form'); form.reset(); form.hidden = true;
+  document.getElementById('account-delete-error').textContent = '';
+  document.getElementById('account-delete-go').disabled = true;
+  var open = document.getElementById('account-delete-open'); open.hidden = false; open.focus();
+}
+async function submitAccountDelete(event) {
+  event.preventDefault();
+  var error = document.getElementById('account-delete-error'), go = document.getElementById('account-delete-go');
+  error.textContent = ''; go.disabled = true;
+  try {
+    var response = await productFetch('/account/delete', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: document.getElementById('account-delete-password').value, confirm: document.getElementById('account-delete-confirm').value.trim()})});
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Account could not be deleted.');
+    Object.keys(localStorage).filter(function(k){ return k.indexOf('seed') === 0 || k.indexOf('srt') === 0; }).forEach(function(k){ localStorage.removeItem(k); });
+    window.location.href = 'index.html';
+  } catch (e) { error.textContent = e.message || 'Account could not be deleted.'; go.disabled = false; }
+}
+document.addEventListener('DOMContentLoaded', initAccountDelete);
+
 async function loadAgentTokens() {
   var box = document.getElementById('agent-token-list'); if (!box) return;
   try {
