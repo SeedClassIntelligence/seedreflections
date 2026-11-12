@@ -1205,7 +1205,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         allowed_hosts={f"127.0.0.1:{listener_port}",f"localhost:{listener_port}",f"[::1]:{listener_port}"}
         host=self.headers.get("Host","").lower()
         origin=self.headers.get("Origin","").lower().rstrip("/")
-        if host not in allowed_hosts or (origin and origin != "http://"+host):
+        # The browser extension posts from a chrome-extension:// origin. It is let through only for the two
+        # connection-token routes, only with a Bearer token present, and still only on a loopback Host.
+        extension_delivery=(origin.startswith(("chrome-extension://","moz-extension://")) and host in allowed_hosts
+            and self.path.split("?")[0] in {"/api/v2/integrations/import","/api/v2/integrations/ping"}
+            and self.headers.get("Authorization","").lower().startswith("bearer "))
+        if host not in allowed_hosts or (origin and origin != "http://"+host and not extension_delivery):
             self._send_json({"error":"Local requests require a loopback Host and matching Origin"},403)
             return False
         return True
