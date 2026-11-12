@@ -1349,6 +1349,7 @@ button,select,input,textarea{font-family:inherit}
 .intake-card,.intake-grid>*{min-width:0;max-width:100%}
 @media(max-width:720px){.intake-grid{grid-template-columns:minmax(0,1fr)}.import-ledger-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .chat-input,#section-intake input,#section-intake select,#section-intake textarea{min-width:0;max-width:100%}
+.work-context{text-transform:none!important;letter-spacing:0!important;font-family:inherit!important;font-size:13px!important;line-height:1.6;color:var(--text-secondary)!important}
 @media(max-width:720px){
   /* source forms stack on phones; the bottom bar shares the width so "More" stays on screen */
   #section-intake div[style*="grid-template-columns:minmax("]{grid-template-columns:minmax(0,1fr)!important}
@@ -3853,6 +3854,7 @@ function selectSeedForCockpit(seedId) {
 
   // Populate active working card directly inside Center Workspace Chat
   renderActiveCardInChat(seed);
+  loadWorkSession(seedId);
 
   // Render lineage SVG and inspect provenance in right inspector
   renderLineageGraphSVG();
@@ -3928,6 +3930,7 @@ function renderActiveCardInChat(seed) {
 
 function clearActiveSeedFocus() {
   activeFocusSeedId = null;
+  document.querySelectorAll('.work-context, .work-turn').forEach(function(e){ e.remove(); });
   var oldCards = document.querySelectorAll('.chat-active-card');
   oldCards.forEach(function(c){ c.remove(); });
   var welcomeBlock = document.getElementById('chat-welcome-block');
@@ -4299,6 +4302,7 @@ function discussSeed(seedId) {
   clearBtn.textContent = '✕ Clear Focus';
   clearBtn.onclick = function() {
     activeFocusSeedId = null;
+    document.querySelectorAll('.work-context, .work-turn').forEach(function(e){ e.remove(); });
     div.remove();
     appendChat('Cleared focus mode. Back to global chat.', 'system');
   };
@@ -4308,6 +4312,7 @@ function discussSeed(seedId) {
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 
+  loadWorkSession(seedId);
   // Set starter text in chat input to guide user
   var chatInput = document.getElementById('chat-input');
   chatInput.value = 'Help me outline the next steps and plan for this idea.';
@@ -4772,6 +4777,77 @@ function cancelUploadStaging() { selectedShelfThreadIds.clear(); renderShelfThre
 function runReflectionOnSelected() { runReflectionOnSelectedThreads(); }
 
 /* ── Unified Workspace Chat ────────────────────────────────────────── */
+
+/* ── Work Studio: a saved working session for the focused idea ─────── */
+function workContextHtml(title, ctx) {
+  var parts = ['<strong>Working from:</strong> ' + escHtml(title || ctx.idea || 'this idea')];
+  if (ctx.source) parts.push('Source "' + escHtml(ctx.source.title) + '": ' + ctx.source.included + ' of ' + ctx.source.total + ' messages in context (messages ' + ctx.source.first + '–' + ctx.source.last + ')');
+  var counts = [];
+  if (ctx.decisions) counts.push(ctx.decisions + ' decision' + (ctx.decisions === 1 ? '' : 's'));
+  if (ctx.questions) counts.push(ctx.questions + ' open question' + (ctx.questions === 1 ? '' : 's'));
+  if (ctx.artifacts) counts.push(ctx.artifacts + ' saved item' + (ctx.artifacts === 1 ? '' : 's'));
+  if (counts.length) parts.push(counts.join(' · '));
+  var html = parts.join('<br>');
+  if (ctx.notice) html += '<br><span style="color:var(--amber)">Not everything fits: ' + escHtml(ctx.notice) + '</span>';
+  return html;
+}
+function appendDraftButtons(bubble, drafts) {
+  (drafts || []).forEach(function(d) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-ghost btn-sm';
+    b.style.marginTop = '8px'; b.style.display = 'block';
+    b.textContent = 'Draft saved: ' + d.title + ' (review it)';
+    b.onclick = function() { switchDashTab('artifacts'); };
+    bubble.appendChild(b);
+  });
+}
+function workReplyText(content, meta) {
+  meta = meta || {}; var out = content;
+  if (meta.mode === 'model' && meta.sources && meta.sources.length) {
+    var read = meta.sources.filter(function(src){ return src.messages && src.messages.length; });
+    if (read.length) out += '\n\nSources: ' + read.slice(0, 5).map(function(src){ return src.title + ' (message ' + src.messages.slice(0, 3).join(', ') + ')'; }).join('; ');
+  } else if (meta.mode === 'records_only' && meta.reason) {
+    out += '\n\nNo model answered this one: ' + meta.reason;
+  }
+  return out;
+}
+function workAsk(text) { var input = document.getElementById('chat-input'); input.value = text; sendChatInput(); }
+async function loadWorkSession(seedId) {
+  try {
+    var resp = await productFetch('/work/session?seed_id=' + encodeURIComponent(seedId));
+    if (!resp.ok) return;
+    var data = await resp.json();
+    if (activeFocusSeedId !== seedId) return;
+    document.querySelectorAll('.work-context, .work-turn').forEach(function(e){ e.remove(); });
+    var box = appendChat('', 'system'); box.classList.add('work-context');
+    box.style.textAlign = 'left';
+    box.innerHTML = workContextHtml(data.seed.title, data.context) +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="workAsk(\'Write a plan for this idea and save it as a draft.\')">Draft a plan</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="workAsk(\'What is still open or undecided here?\')">What is still open?</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="workAsk(\'What have I already decided about this?\')">What have I decided?</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="startFreshWorkSession(\'' + escHtml(seedId) + '\')">Start fresh</button></div>';
+    (data.turns || []).forEach(function(t) {
+      var bubble = appendChat(t.role === 'user' ? t.content : workReplyText(t.content, t.meta), t.role === 'user' ? 'user' : 'assistant');
+      bubble.classList.add('work-turn');
+      if (t.role === 'assistant') appendDraftButtons(bubble, (t.meta || {}).drafts);
+    });
+  } catch (e) { /* the studio still works without the preview */ }
+}
+async function startFreshWorkSession(seedId) {
+  await productFetch('/work/clear', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ seed_id: seedId }) });
+  loadWorkSession(seedId);
+}
+async function sendWorkTurn(msg, thinkingBubble) {
+  var resp = await productFetch('/work/turn', { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ seed_id: activeFocusSeedId, prompt: msg }) });
+  var data = await resp.json();
+  thinkingBubble.remove();
+  if (!resp.ok) { appendChat(data.error || 'Could not continue this idea.', 'assistant'); return; }
+  var bubble = appendChat(workReplyText(data.answer, data), 'assistant');
+  bubble.classList.add('work-turn');
+  appendDraftButtons(bubble, data.drafts);
+}
+
 var CHAT_HISTORY = [];
 async function sendChatInput() {
   var input = document.getElementById('chat-input');
@@ -4825,8 +4901,13 @@ async function sendChatInput() {
     }
   } else {
     // Normal chat prompt
-    appendChat(msg, 'user');
+    var userBubble = appendChat(msg, 'user');
     var thinkingBubble = appendChat('Thinking…', 'assistant');
+    if (activeFocusSeedId) {
+      userBubble.classList.add('work-turn');
+      try { await sendWorkTurn(msg, thinkingBubble); } catch (e) { thinkingBubble.remove(); appendChat('Could not reach the server. Your idea and saved work are unchanged.', 'assistant'); }
+      return;
+    }
 
     try {
       var resp = await productFetch('/seeds/chat', {

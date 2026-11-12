@@ -70,7 +70,9 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
-from workspace_agent import run_agent
+from workspace_agent import run_agent, make_draft_tool
+import work_sessions
+import work_context
 import agent_tokens
 import mcp_endpoint
 import time as _time_module
@@ -779,6 +781,35 @@ def agent_count_use(workspace_id):
     for old in [k for k in _AGENT_USAGE if k[1]!=key[1]]: _AGENT_USAGE.pop(old,None)
     _AGENT_USAGE[key]=_AGENT_USAGE.get(key,0)+1
 
+def agent_runtime(user, body, task="chat"):
+    """Resolve the model for an assistant turn and say why not if it cannot run. Returns
+    (provider, api_url, api_key, model, reason); reason is None when a model can be called."""
+    overrides={"workspace_id":user["workspace_id"]}
+    if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
+    provider,api_url,api_key,model,_route=resolve_task_runtime(task,load_config(),overrides)
+    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status()
+    reason=None
+    if not ai_allowed: reason=ai_msg
+    elif not model or not (api_url if provider=="ollama" else api_key):
+        reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
+    elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
+    return provider,api_url,api_key,model,reason
+
+def save_assistant_draft(user, seed, session_id):
+    """Return a save(title, kind, body, refs) callback that stores a DRAFT artifact for the user to review."""
+    def save(title, kind, body, refs):
+        workspace=load_workspace(workspace_id=user["workspace_id"]); now=datetime.now().isoformat()
+        artifact={"artifact_id":uuid.uuid4().hex,"type":kind,"title":title,"content":body,"status":"draft",
+            "project_id":seed.get("project_id"),"conversation_ids":[r["conversation_id"] for r in refs],
+            "seed_ids":[seed["seed_id"]],"created_by":"assistant","origin":"assistant_draft","source_refs":refs,
+            "session_id":session_id,"created_at":now,"updated_at":now,"versions":[]}
+        workspace.setdefault("artifacts",[]).append(artifact)
+        save_workspace(workspace,user["workspace_id"],"artifact_drafted_by_assistant")
+        return artifact
+    return save
+
+WORK_DRAFT_INTENT=re.compile(r"\b(draft|write|save|plan|brief|report|outline|summar|task|note|document|spec)",re.I)
+
 class _AgentStores:
     """Read-only archive access bound to ONE workspace, taken from the authenticated session."""
     def __init__(self, workspace_id, workspace):
@@ -1350,6 +1381,17 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings["model_key_storage"]=model_key_backend_status() if DEPLOYMENT_MODE=="local" else {"saved_keys":True,"backend":"aes256gcm_envelope","session_only_keys":False,"detail":"Saved keys are encrypted with per-credential data keys wrapped by the deployment master key."}
             self._send_json(settings)
             return
+        if path == "/api/v2/work/session":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            seed_id=(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("seed_id") or [""])[0]
+            workspace=load_workspace(workspace_id=user["workspace_id"])
+            seed=next((dict(item) for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==seed_id),None)
+            if not seed: self._send_json({"error":"Idea not found in this workspace"},404); return
+            seed.setdefault("seed_id",seed_id)
+            _text,report=work_context.assemble(_AgentStores(user["workspace_id"],workspace),workspace,seed)
+            self._send_json({"seed":{"seed_id":seed_id,"title":seed.get("title") or seed.get("intent")},
+                "turns":work_sessions.turns(user["workspace_id"],seed_id),"context":report}); return
         if path == "/mcp":
             self._send_json({"error":"This endpoint accepts POST only"},405); return
         if path == "/api/v2/agent-tokens":
@@ -3349,6 +3391,44 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not user: self._send_json({"error":"Authentication required"},401); return
             ok=agent_tokens.revoke_token(user["workspace_id"],body.get("id"))
             self._send_json({"revoked":ok},200 if ok else 404); return
+        if path == "/api/v2/work/turn":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            ws_id=user["workspace_id"]; seed_id=str(body.get("seed_id") or ""); prompt=str(body.get("prompt") or "").strip()
+            if not seed_id or not prompt: self._send_json({"error":"seed_id and prompt are required"},400); return
+            workspace=load_workspace(workspace_id=ws_id)
+            seed=next((dict(item) for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==seed_id),None)
+            if not seed: self._send_json({"error":"Idea not found in this workspace"},404); return
+            seed.setdefault("seed_id",seed_id)
+            stores=_AgentStores(ws_id,workspace)
+            context_text,report=work_context.assemble(stores,workspace,seed)
+            history=[{"role":t["role"],"content":t["content"]} for t in work_sessions.turns(ws_id,seed_id,limit=12)]
+            session=work_sessions.add_turn(ws_id,seed_id,"user",prompt)
+            provider,api_url,api_key,model,reason=agent_runtime(user,body,"plan")
+            drafts=[]; answer=None; meta=None
+            if reason is None:
+                try:
+                    agent_count_use(ws_id)
+                    extra=((lambda sources: make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
+                           if WORK_DRAFT_INTENT.search(prompt) else None)
+                    result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
+                        context_text=context_text,extra_factory=extra,
+                        preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
+                    answer=result["answer"]
+                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"context":report,
+                          "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts]}
+                except ModelCallError as exc: reason=str(exc)
+            if meta is None:
+                answer=(f"No model answered ({reason}). Here is what your project record holds for \"{report['idea']}\":\n\n"
+                        f"Intent: {seed.get('intent') or seed.get('summary') or 'not recorded'}\nNext action: {seed.get('next_action') or 'not recorded'}")
+                meta={"mode":"records_only","reason":reason,"context":report,"drafts":[]}
+            work_sessions.add_turn(ws_id,seed_id,"assistant",answer,meta)
+            self._send_json({"answer":answer,"session_id":session["id"],**meta}); return
+        if path == "/api/v2/work/clear":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"cleared":work_sessions.clear(user["workspace_id"],str(body.get("seed_id") or ""))}); return
         if path == "/api/v2/chat":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -3358,16 +3438,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             active_id=body.get("active_seed_id")
             seed=next((item for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==active_id),None)
             # Model-backed assistant: read-only tools over this workspace, bounded, budget-checked.
-            overrides={"workspace_id":user["workspace_id"]}
-            if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
-            cfg=load_config()
-            provider,api_url,api_key,model,_route=resolve_task_runtime("chat",cfg,overrides)
-            ai_allowed,_ai_code,ai_msg,_spend,_cap=check_ai_gateway_status()
-            reason=None
-            if not ai_allowed: reason=ai_msg
-            elif not model or not (api_url if provider=="ollama" else api_key):
-                reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
-            elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
+            provider,api_url,api_key,model,reason=agent_runtime(user,body,"chat")
             if reason is None:
                 try:
                     agent_count_use(user["workspace_id"])
