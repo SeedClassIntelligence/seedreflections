@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T18:43:49Z",
+  "title": "Design System: SeedReflections",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Near-Black Ground",
+        "canonical": "#06080f",
+        "tonalRamp": [
+          "#030407",
+          "#04050a",
+          "#05070c",
+          "#06080f",
+          "#33343a",
+          "#606165",
+          "#8c8d91",
+          "#b9babc"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Console Card",
+        "canonical": "#0d1117",
+        "tonalRamp": [
+          "#06080a",
+          "#080b0f",
+          "#0b0e13",
+          "#0d1117",
+          "#393c41",
+          "#64676b",
+          "#909294",
+          "#bbbcbe"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Raised Surface",
+        "canonical": "#161b22",
+        "tonalRamp": [
+          "#0a0c0f",
+          "#0e1216",
+          "#12161c",
+          "#161b22",
+          "#40444a",
+          "#6a6d72",
+          "#949699",
+          "#bebfc1"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Hover Surface",
+        "canonical": "#1c2128",
+        "tonalRamp": [
+          "#0d0f12",
+          "#12151a",
+          "#171b21",
+          "#1c2128",
+          "#45494f",
+          "#6e7175",
+          "#97999c",
+          "#bfc1c3"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#21262d",
+        "tonalRamp": [
+          "#0f1114",
+          "#15191d",
+          "#1b1f25",
+          "#21262d",
+          "#494d53",
+          "#717479",
+          "#999b9e",
+          "#c1c2c4"
+        ]
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#30363d",
+        "tonalRamp": [
+          "#16181b",
+          "#1f2328",
+          "#272c32",
+          "#30363d",
+          "#555a60",
+          "#7b7e83",
+          "#a0a3a6",
+          "#c5c7c9"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Near-White",
+        "canonical": "#f0f6fc",
+        "tonalRamp": [
+          "#6c6f71",
+          "#9ca0a4",
+          "#c5cacf",
+          "#f0f6fc",
+          "#f3f8fd",
+          "#f5f9fd",
+          "#f8fbfe",
+          "#fbfcfe"
+        ]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Soft Text",
+        "canonical": "#c9d1d9",
+        "tonalRamp": [
+          "#5a5e62",
+          "#83888d",
+          "#a5abb2",
+          "#c9d1d9",
+          "#d3d9e0",
+          "#dce2e7",
+          "#e6eaee",
+          "#f0f2f4"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#8b949e",
+        "tonalRamp": [
+          "#3f4347",
+          "#5a6067",
+          "#727982",
+          "#8b949e",
+          "#a0a7af",
+          "#b5bbc1",
+          "#caced2",
+          "#dfe1e4"
+        ]
+      },
+      "text-dim": {
+        "role": "neutral",
+        "displayName": "Dim Text",
+        "canonical": "#7d8590",
+        "tonalRamp": [
+          "#383c41",
+          "#51565e",
+          "#676d76",
+          "#7d8590",
+          "#949ba4",
+          "#acb1b8",
+          "#c3c7cc",
+          "#dbdde0"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Action Green",
+        "canonical": "#3fb950",
+        "tonalRamp": [
+          "#1c5324",
+          "#297834",
+          "#349842",
+          "#3fb950",
+          "#62c670",
+          "#84d28f",
+          "#a7dfae",
+          "#c9ebce"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Action Green Hover",
+        "canonical": "#4ade80",
+        "tonalRamp": [
+          "#21643a",
+          "#309053",
+          "#3db669",
+          "#4ade80",
+          "#6be497",
+          "#8beaae",
+          "#acf0c5",
+          "#ccf6db"
+        ]
+      },
+      "link-blue": {
+        "role": "secondary",
+        "displayName": "Link Blue",
+        "canonical": "#58a6ff",
+        "tonalRamp": [
+          "#284b73",
+          "#396ca6",
+          "#4888d1",
+          "#58a6ff",
+          "#76b6ff",
+          "#94c6ff",
+          "#b2d6ff",
+          "#d0e6ff"
+        ]
+      },
+      "cyan": {
+        "role": "secondary",
+        "displayName": "Console Cyan",
+        "canonical": "#39d0d8",
+        "tonalRamp": [
+          "#1a5e61",
+          "#25878c",
+          "#2fabb1",
+          "#39d0d8",
+          "#5dd8df",
+          "#80e1e6",
+          "#a4e9ed",
+          "#c8f2f4"
+        ]
+      },
+      "teal": {
+        "role": "tertiary",
+        "displayName": "Gradient Teal",
+        "canonical": "#2dd4bf",
+        "tonalRamp": [
+          "#145f56",
+          "#1d8a7c",
+          "#25ae9d",
+          "#2dd4bf",
+          "#53dccb",
+          "#79e3d6",
+          "#9eebe2",
+          "#c4f3ed"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Status Amber",
+        "canonical": "#d29922",
+        "tonalRamp": [
+          "#5e450f",
+          "#886316",
+          "#ac7d1c",
+          "#d29922",
+          "#daab4a",
+          "#e2be72",
+          "#ead099",
+          "#f2e2c1"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "#f85149",
+        "tonalRamp": [
+          "#702421",
+          "#a1352f",
+          "#cb423c",
+          "#f85149",
+          "#f9706a",
+          "#fb908b",
+          "#fcafab",
+          "#fdcecc"
+        ]
+      },
+      "danger-fill": {
+        "role": "tertiary",
+        "displayName": "Danger Fill",
+        "canonical": "#da3633",
+        "tonalRamp": [
+          "#621817",
+          "#8e2321",
+          "#b32c2a",
+          "#da3633",
+          "#e15a58",
+          "#e77e7c",
+          "#eea3a1",
+          "#f5c7c6"
+        ]
+      },
+      "purple": {
+        "role": "tertiary",
+        "displayName": "Category Purple",
+        "canonical": "#bc8cff",
+        "tonalRamp": [
+          "#553f73",
+          "#7a5ba6",
+          "#9a73d1",
+          "#bc8cff",
+          "#c8a1ff",
+          "#d4b5ff",
+          "#e0caff",
+          "#ecdfff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline only: 76px, 900, -2.5px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles: 46px, 900."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text, 16px / 1.6."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Green uppercase eyebrow above section titles."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Prompts, code and tabular numbers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "console",
+        "value": "0 16px 48px rgba(0,0,0,.4)",
+        "purpose": "Only under the Prompt Engine console card."
+      },
+      {
+        "name": "hero-glow",
+        "value": "radial-gradient(ellipse at 50% -12%, rgba(63,185,80,.07) 0%, transparent 38%)",
+        "purpose": "Soft green light behind the hero and the app canvas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "0.15s ease",
+        "purpose": "Colour, border and brightness changes on hover."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "app-phone",
+        "value": "720px"
+      },
+      {
+        "name": "app-rail",
+        "value": "900px"
+      },
+      {
+        "name": "stack",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action per view. Black text on green.",
+      "html": "<a class=\"ds-btn-green\" href=\"#\">Bring in my AI history</a>",
+      "css": ".ds-btn-green{display:inline-flex;align-items:center;gap:7px;padding:13px 24px;border-radius:9px;background:#3fb950;color:#000;font:700 15px Inter,sans-serif;text-decoration:none;transition:filter .15s,background .15s}.ds-btn-green:hover{filter:brightness(1.1)}.ds-btn-green:focus-visible{outline:2px solid #3fb950;outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The second action. Cyan outline; turns green on hover.",
+      "html": "<a class=\"ds-btn-outline\" href=\"#\">See how it works →</a>",
+      "css": ".ds-btn-outline{display:inline-flex;align-items:center;padding:13px 24px;border-radius:9px;border:1px solid #39d0d8;color:#39d0d8;font:700 15px Inter,sans-serif;text-decoration:none;transition:border-color .15s,color .15s}.ds-btn-outline:hover{border-color:#3fb950;color:#3fb950}"
+    },
+    {
+      "name": "Nav Bar",
+      "kind": "nav",
+      "refersTo": "button-nav-signup",
+      "description": "Two-row sticky header shared by every public page.",
+      "html": "<div class=\"ds-nav\"><div class=\"ds-top\"><span class=\"ds-logo\">Seed<em>Reflections</em></span><span><a class=\"ds-in\">Sign In</a><a class=\"ds-up\">Sign Up</a></span></div><div class=\"ds-bottom\"><a>Home</a><a class=\"on\">Compare</a><a>Admin</a></div></div>",
+      "css": ".ds-nav{background:#06080f;border-bottom:1px solid #21262d;font-family:Inter,sans-serif}.ds-top{display:flex;justify-content:space-between;align-items:center;height:50px;padding:0 5%}.ds-logo{font-weight:900;font-size:17px;letter-spacing:-.5px;color:#3fb950}.ds-logo em{font-style:normal;color:#f0f6fc}.ds-in{color:#8b949e;font-size:13px;font-weight:600;margin-right:12px}.ds-up{background:#3fb950;color:#000;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700}.ds-bottom{display:flex;justify-content:center;gap:6px;height:38px;align-items:center}.ds-bottom a{font-size:12px;font-weight:600;color:#8b949e;padding:4px 10px;border-radius:4px}.ds-bottom a.on{color:#39d0d8}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Pricing and feature cards: flat, hairline border, 16px radius.",
+      "html": "<div class=\"ds-card\"><h3>Pro</h3><p>250 reflections / month</p></div>",
+      "css": ".ds-card{background:#0d1117;border:1px solid #21262d;border-radius:16px;padding:36px 28px;color:#f0f6fc;font-family:Inter,sans-serif}.ds-card p{color:#c9d1d9}"
+    },
+    {
+      "name": "Eyebrow Pill",
+      "kind": "chip",
+      "refersTo": "eyebrow-pill",
+      "description": "Small green pill above the hero title.",
+      "html": "<span class=\"ds-pill\">Seed-Class Intelligence Architecture</span>",
+      "css": ".ds-pill{display:inline-block;padding:5px 14px;border-radius:20px;border:1px solid rgba(63,185,80,.3);background:rgba(63,185,80,.1);color:#3fb950;font:700 12px Inter,sans-serif;letter-spacing:.3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "card",
+      "description": "Fields keep a border of at least 3:1 against the card and a green focus ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"you@company.com\">",
+      "css": ".ds-input{background:#161b22;color:#f0f6fc;border:1px solid #6e7681;border-radius:8px;padding:10px 12px;font:14px Inter,sans-serif;min-width:240px}.ds-input:focus{outline:2px solid #3fb950;outline-offset:2px}.ds-input::placeholder{color:#8b949e}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Dark Console",
+    "overview": "A GitHub-dark workbench: a near-black page, slightly lighter cards, thin borders and a single green that says 'do this'. Headlines are heavy and tight Inter, with a green-to-teal gradient on the second half of the hero line. Every page, public and app, uses the same palette, type and green.",
+    "keyCharacteristics": [
+      "Near-black ground with tonal layering instead of shadows",
+      "Inter 900 display type, tight tracking",
+      "One green (#3fb950) for the action that matters, with black text on it",
+      "Identical two-row header and five nav items on every public page",
+      "App pages share the same palette in a left-rail layout"
+    ],
+    "rules": [
+      {
+        "name": "The One Green Rule",
+        "body": "Green marks the single action or the selected state on a screen. A second action uses the outline style.",
+        "section": "colors"
+      },
+      {
+        "name": "The Black-On-Green Rule",
+        "body": "Text on #3fb950 is black. White on this green is about 2.3:1.",
+        "section": "colors"
+      },
+      {
+        "name": "The One System Rule",
+        "body": "No page gets its own palette. The dashboard and the local product page used to; both now use this system.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do put black text on green",
+      "Do keep one green action per view",
+      "Do use the shared header on every public page",
+      "Do keep claims to what is built"
+    ],
+    "donts": [
+      "Don't recolour a page to a private palette",
+      "Don't use a serif for headings or a blue primary button",
+      "Don't use white text on #3fb950",
+      "Don't use the plant icon in navigation or UI chrome"
+    ]
+  }
+}

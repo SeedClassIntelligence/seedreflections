@@ -19,12 +19,12 @@
             --text-primary: #f0f6fc;
             --text-secondary: #c9d1d9;
             --text-muted: #8b949e;
-            --text-dim: #6e7681;
-            --accent-blue: #2da96a;
-            --accent-cyan: #47d486;
-            --accent-emerald: #47d486;
+            --text-dim: #7d8590;
+            --accent-blue: #58a6ff;
+            --accent-cyan: #3fb950;
+            --accent-emerald: #3fb950;
             --accent-amber: #d29922;
-            --accent-purple: #7bcf9f;
+            --accent-purple: #bc8cff;
             --accent-red: #f85149;
         }
 
@@ -52,7 +52,8 @@
         }
 
         .header-left { display: flex; align-items: center; gap: 14px; }
-        .header-right { display: flex; align-items: center; gap: 14px; }
+        .header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        @media (max-width: 720px) { .header-right { gap: 8px; } }
 
         .logo-mark {
             width: 32px; height: 32px;
@@ -63,11 +64,12 @@
         }
 
         .logo-text {
-            font-size: 17px; font-weight: 800; letter-spacing: -0.3px;
+            font-size: 17px; font-weight: 900; letter-spacing: -0.5px; color: var(--accent-emerald);
         }
+        .logo-text em { font-style: normal; color: var(--text-primary); }
         .logo-text span {
             color: var(--accent-cyan); font-weight: 500; font-size: 12px; margin-left: 6px;
-            background: rgba(57,208,216,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(57,208,216,0.2);
+            background: rgba(63,185,80,0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(63,185,80,0.25);
         }
 
         .btn {
@@ -123,7 +125,7 @@
             font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--text-primary);
         }
         .stat-sub {
-            font-size: 12px; color: var(--text-dim); margin-top: 6px;
+            font-size: 12px; color: var(--text-muted); margin-top: 6px;
         }
 
         .section-title {
@@ -166,6 +168,20 @@
             font-family: inherit; outline: none; transition: border-color 0.15s;
         }
         .form-control:focus { border-color: var(--accent-cyan); }
+        /* 3:1 field boundary (WCAG 1.4.11) and a visible focus ring (2.4.7) */
+        .form-control,
+        input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]),
+        select,textarea { border-color: #6c7a8d; }
+@media (prefers-reduced-motion: reduce){
+          html{scroll-behavior:auto}
+          /* keep colour and opacity feedback, drop movement */
+          *,*::before,*::after{transition-property:color,background-color,border-color,opacity!important}
+          .pulse,.live-dot{animation:none!important}
+          .spinner{animation:none!important;border-color:var(--accent)!important}
+        }
+        button.btn,.btn,select,textarea,input:not([type=checkbox]):not([type=radio]){min-height:44px;min-width:44px;box-sizing:border-box}
+        label:has(> input[type=checkbox]){display:inline-flex;align-items:center;min-height:44px}
+        :is(input, textarea, select, button, a[href], [tabindex]):focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
         /* Table */
@@ -174,7 +190,7 @@
             width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;
         }
         table.data-table th {
-            padding: 12px 16px; color: var(--text-muted); font-weight: 600; font-size: 11.5px;
+            padding: 12px 16px; color: var(--text-muted); font-weight: 600; font-size: 12px;
             text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
             background: var(--bg-card-alt);
         }
@@ -184,7 +200,7 @@
         table.data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
         .badge {
-            padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block;
+            padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block;
         }
         .badge-green { background: rgba(63, 185, 80, 0.15); color: var(--accent-emerald); border: 1px solid rgba(63, 185, 80, 0.3); }
         .badge-purple { background: rgba(188, 140, 255, 0.15); color: var(--accent-purple); border: 1px solid rgba(188, 140, 255, 0.3); }
@@ -211,7 +227,7 @@
 <header class="header">
     <div class="header-left">
         <div class="logo-mark">🛡️</div>
-        <div class="logo-text">SeedReflections <span>Master Control</span></div>
+        <div class="logo-text" role="heading" aria-level="1">Seed<em>Reflections</em> <span>Master Control</span></div>
     </div>
     <div class="header-right">
         <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--accent-emerald);">
@@ -222,7 +238,7 @@
     </div>
 </header>
 
-<div class="container">
+<div class="container" role="main">
     <!-- Top Level Platform Metrics -->
     <div class="stat-grid">
         <div class="stat-card cyan">
@@ -259,32 +275,27 @@
                 <form id="stripe-form" onsubmit="saveStripeConfig(event)">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Payment Processing Mode</label>
-                            <select id="stripe_mode" class="form-control">
+                            <label for="stripe_mode">Payment Processing Mode</label><select id="stripe_mode" class="form-control" aria-label="Payment processing mode">
                                 <option value="test">Sandbox / Test Mode</option>
                                 <option value="live">Live Production</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Monthly Revenue Run Rate</label>
-                            <input type="text" class="form-control" value="$29.00 MRR (2 active plans)" disabled style="opacity:0.75;">
+                            <label for="mrr_display">Monthly Revenue Run Rate</label>
+                            <input type="text" id="mrr_display" class="form-control" aria-label="Monthly revenue run rate" value="$29.00 MRR (2 active plans)" disabled style="opacity:0.75;">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Stripe Secret API Key (sk_...)</label>
-                        <input type="password" id="stripe_secret_key" class="form-control" placeholder="sk_test_..." autocomplete="off">
+                        <label for="stripe_secret_key">Stripe Secret API Key (sk_...)</label><input type="password" id="stripe_secret_key" class="form-control" placeholder="sk_test_..." autocomplete="off" aria-label="Stripe secret API key">
                     </div>
                     <div class="form-group">
-                        <label>Webhook Signing Secret (whsec_...)</label>
-                        <input type="password" id="stripe_webhook_secret" class="form-control" placeholder="whsec_..." autocomplete="off">
+                        <label for="stripe_webhook_secret">Webhook Signing Secret (whsec_...)</label><input type="password" id="stripe_webhook_secret" class="form-control" placeholder="whsec_..." autocomplete="off" aria-label="Stripe webhook signing secret">
                     </div>
                     <div class="form-group">
-                        <label>Stripe Pro Checkout URL ($9/mo)</label>
-                        <input type="url" id="stripe_checkout_pro" class="form-control" placeholder="https://buy.stripe.com/...">
+                        <label for="stripe_checkout_pro">Stripe Pro Checkout URL ($9/mo)</label><input type="url" id="stripe_checkout_pro" class="form-control" placeholder="https://buy.stripe.com/..." aria-label="Stripe Pro checkout URL">
                     </div>
                     <div class="form-group">
-                        <label>Stripe Master Checkout URL ($20/mo)</label>
-                        <input type="url" id="stripe_checkout_master" class="form-control" placeholder="https://buy.stripe.com/...">
+                        <label for="stripe_checkout_master">Stripe Master Checkout URL ($20/mo)</label><input type="url" id="stripe_checkout_master" class="form-control" placeholder="https://buy.stripe.com/..." aria-label="Stripe Master checkout URL">
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
                         <button type="submit" class="btn btn-emerald">Save Stripe Settings</button>
@@ -296,14 +307,14 @@
                 <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">⚡ Live Webhook Ingestion Endpoint</span>
-                        <span id="webhook-copy-status" style="font-size:11px; color:var(--accent-emerald); display:none; font-weight:600;">✓ Copied!</span>
+                        <span id="webhook-copy-status" style="font-size: 12px; color:var(--accent-emerald); display:none; font-weight:600;">✓ Copied!</span>
                     </div>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" id="stripe_webhook_url" class="form-control" readonly style="font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(0,0,0,0.3);" value="">
+                        <input type="text" id="stripe_webhook_url" class="form-control" readonly style="font-family:'JetBrains Mono',monospace; font-size:12px; background:rgba(0,0,0,0.3);" value="" aria-label="Webhook URL">
                         <button type="button" class="btn" onclick="copyWebhookUrl()">Copy</button>
                         <button type="button" class="btn btn-cyan" onclick="simulateStripeWebhook()" style="white-space:nowrap;">⚡ Test Webhook</button>
                     </div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+                    <div style="font-size: 12px; color:var(--text-muted); margin-bottom:12px;">
                         Auto-syncs tiers on: <code>checkout.session.completed</code>, <code>customer.subscription.updated</code>, <code>customer.subscription.deleted</code>
                     </div>
                     <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px;">Recent Webhook Ingestions:</div>
@@ -324,8 +335,7 @@
                 <form id="llm-form" onsubmit="saveLLMConfig(event)">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Active Provider</label>
-                            <select id="llm_provider" class="form-control">
+                            <label for="llm_provider">Active Provider</label><select id="llm_provider" class="form-control" aria-label="Active provider">
                                 <option value="openai_compatible">Groq Cloud (LPU Reasoning)</option>
                                 <option value="openai">OpenAI Official</option>
                                 <option value="gemini">Google Gemini</option>
@@ -333,18 +343,16 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Model Architecture</label>
-                            <input type="text" id="llm_model" class="form-control" placeholder="qwen-qwq-32b">
+                            <label for="llm_model">Model Architecture</label><input type="text" id="llm_model" class="form-control" placeholder="qwen-qwq-32b" aria-label="Model">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Gateway Endpoint URL</label>
-                        <input type="url" id="llm_api_url" class="form-control" placeholder="https://api.groq.com/openai/v1">
+                        <label for="llm_api_url">Gateway Endpoint URL</label><input type="url" id="llm_api_url" class="form-control" placeholder="https://api.groq.com/openai/v1" aria-label="Gateway endpoint URL">
                     </div>
                     <div class="form-group">
-                        <label>Master Platform API Key (Masked)</label>
+                        <label for="llm_api_key">Master Platform API Key (Masked)</label>
                         <div style="display:flex;gap:8px;">
-                            <input type="password" id="llm_api_key" class="form-control" placeholder="gsk_... or sk_..." autocomplete="off">
+                            <input type="password" id="llm_api_key" class="form-control" placeholder="gsk_... or sk_..." autocomplete="off" aria-label="Model API key">
                             <button type="button" class="btn" onclick="toggleKeyVisibility('llm_api_key')">👁️</button>
                         </div>
                     </div>
@@ -360,7 +368,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div>
                             <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">🛑 Emergency AI Killswitch</span>
-                            <div style="font-size:11px; color:var(--text-muted);">Instantly halts all outbound LLM API requests and switches to local heuristics</div>
+                            <div style="font-size: 12px; color:var(--text-muted);">Instantly halts all outbound LLM API requests and switches to local heuristics</div>
                         </div>
                         <button type="button" id="killswitch-btn" class="btn btn-red" onclick="toggleKillswitch()" style="font-weight:600; padding:6px 14px; white-space:nowrap;">
                             ⚡ ENGAGE KILLSWITCH
@@ -377,11 +385,10 @@
                         </div>
                         <div class="form-row" style="margin-bottom:0;">
                             <div class="form-group" style="margin-bottom:0;">
-                                <label style="font-size:11px;">Monthly Budget Limit ($ USD)</label>
-                                <input type="number" id="ai_monthly_budget_usd" class="form-control" step="1.0" min="5" value="50.00" style="padding:6px 10px; font-size:12px;">
+                                <label for="ai_monthly_budget_usd" style="font-size: 12px;">Monthly Budget Limit ($ USD)</label><input type="number" id="ai_monthly_budget_usd" class="form-control" step="1.0" min="5" value="50.00" style="padding:6px 10px; font-size:12px;" aria-label="Monthly budget limit in US dollars">
                             </div>
                             <div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
-                                <label style="font-size:11px;">Overspend Protection</label>
+                                <span class="field-label" style="font-size: 12px;">Overspend Protection</span>
                                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; color:var(--text-secondary); margin-top:4px;">
                                     <input type="checkbox" id="ai_budget_hard_stop" checked> Hard-stop LLMs at cap
                                 </label>
@@ -403,10 +410,10 @@
     <div class="card" style="padding:12px 18px; margin-bottom:14px; background:var(--bg-card-alt); border:1px solid var(--border);">
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
             <div style="flex:1; min-width:220px;">
-                <input type="text" id="user-search-input" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <input type="text" id="user-search-input" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Search by name or email">
             </div>
             <div style="min-width:140px;">
-                <select id="user-plan-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-plan-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by plan">
                     <option value="">All Tiers</option>
                     <option value="free">Free Tier</option>
                     <option value="pro">Pro Tier</option>
@@ -414,14 +421,14 @@
                 </select>
             </div>
             <div style="min-width:130px;">
-                <select id="user-status-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-status-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by status">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
                 </select>
             </div>
             <div style="min-width:120px;">
-                <select id="user-role-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;">
+                <select id="user-role-filter" class="form-control" onchange="filterUsersTable()" style="padding:7px 12px; font-size:13px;" aria-label="Filter by role">
                     <option value="">All Roles</option>
                     <option value="consumer">Consumer</option>
                     <option value="admin">Admin</option>
@@ -432,7 +439,7 @@
     </div>
 
     <!-- Create Account Modal -->
-    <div id="add-account-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div id="add-account-modal" data-dialog="Add account" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(4px); align-items:center; justify-content:center;">
         <div style="background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; width:90%; max-width:480px; padding:24px; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <h3 style="font-size:16px; font-weight:700;">➕ Create Tenant Account</h3>
@@ -440,24 +447,20 @@
             </div>
             <form id="add-account-form" onsubmit="submitCreateAccount(event)">
                 <div class="form-group">
-                    <label>Account Name</label>
-                    <input type="text" id="new_acc_name" class="form-control" placeholder="e.g. Alice Walker" required>
+                    <label for="new_acc_name">Account Name</label><input type="text" id="new_acc_name" class="form-control" placeholder="e.g. Alice Walker" required aria-label="Account name">
                 </div>
                 <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="new_acc_email" class="form-control" placeholder="user@company.com" required>
+                    <label for="new_acc_email">Email Address</label><input type="email" id="new_acc_email" class="form-control" placeholder="user@company.com" required aria-label="Email address">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Platform Role</label>
-                        <select id="new_acc_role" class="form-control">
+                        <label for="new_acc_role">Platform Role</label><select id="new_acc_role" class="form-control" aria-label="Platform role">
                             <option value="consumer">Consumer</option>
                             <option value="admin">Administrator</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Subscription Tier</label>
-                        <select id="new_acc_plan" class="form-control">
+                        <label for="new_acc_plan">Subscription Tier</label><select id="new_acc_plan" class="form-control" aria-label="Subscription tier">
                             <option value="free">Free Tier</option>
                             <option value="pro" selected>Pro Tier ($9/mo)</option>
                             <option value="master">Master Tier ($20/mo)</option>
@@ -465,8 +468,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Initial Password (Optional)</label>
-                    <input type="password" id="new_acc_password" class="form-control" placeholder="Optional initial password">
+                    <label for="new_acc_password">Initial Password (Optional)</label><input type="password" id="new_acc_password" class="form-control" placeholder="Optional initial password" aria-label="Initial password (optional)">
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
                     <button type="button" class="btn" onclick="closeAddAccountModal()">Cancel</button>
@@ -530,7 +532,7 @@
                         🧹 Prune Orphan Transcripts
                     </button>
                 </div>
-                <div id="maintenance-feedback" style="margin-top:10px; font-size:11px; color:var(--text-muted); display:none;"></div>
+                <div id="maintenance-feedback" style="margin-top:10px; font-size: 12px; color:var(--text-muted); display:none;"></div>
             </div>
         </div>
 
@@ -547,6 +549,10 @@
 </div>
 
 <script>
+// Escape anything that came from a user or the server before it is placed in HTML.
+function adminEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+// A value passed to an inline handler: a JSON string literal, then HTML-escaped for the attribute.
+function adminArg(v) { return adminEsc(JSON.stringify(String(v == null ? '' : v))); }
 let currentConfig = {};
 
 function toggleKeyVisibility(id) {
@@ -656,7 +662,7 @@ async function fetchOverview() {
                 const planKey = (ev.plan || '').toLowerCase();
                 const planBadge = planKey.includes('master') ? '<span class="badge badge-purple">Master</span>' : (planKey.includes('pro') ? '<span class="badge badge-amber">Pro</span>' : '<span class="badge badge-blue">Free</span>');
                 return '<div style="padding:4px 0; border-bottom:1px dashed rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">' +
-                       '<span>[' + timeStr + '] <strong>' + ev.event_type + '</strong> &middot; ' + (ev.customer_email || 'n/a') + '</span>' +
+                       '<span>[' + adminEsc(timeStr) + '] <strong>' + adminEsc(ev.event_type) + '</strong> &middot; ' + adminEsc(ev.customer_email || 'n/a') + '</span>' +
                        '<span>' + planBadge + '</span>' +
                        '</div>';
             }).join('');
@@ -716,7 +722,7 @@ async function fetchOverview() {
                 logs.push('[' + new Date(t.timestamp).toLocaleTimeString() + '] LLM ' + t.caller + ' · ' + t.model + ' · ' + t.total_tokens + ' tokens · $' + t.estimated_cost_usd);
             });
         }
-        logBody.innerHTML = logs.map(l => '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03);">' + l + '</div>').join('');
+        logBody.innerHTML = logs.map(l => '<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03);">' + adminEsc(l) + '</div>').join('');
 
     } catch (e) {
         console.error('Failed to load admin overview:', e);
@@ -860,19 +866,19 @@ function renderUsersList(users) {
         const seedLimitStr = (u.seeds_limit && u.seeds_limit < 1000) ? (u.seeds_count + ' / ' + u.seeds_limit) : (u.seeds_count + ' / ∞');
         const refLimitStr = (u.reflections_limit && u.reflections_limit < 1000) ? ((u.reflections_count || 0) + ' / ' + u.reflections_limit) : ((u.reflections_count || 0) + ' / ∞');
         return '<tr>' +
-            '<td><strong>' + u.name + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + u.email + '</span></td>' +
-            '<td><span class="badge ' + roleClass + '">' + u.role.toUpperCase() + '</span></td>' +
-            '<td><span class="badge ' + planClass + '">' + u.plan + '</span></td>' +
+            '<td><strong>' + adminEsc(u.name) + '</strong><br><span style="font-size:12px;color:var(--text-muted);">' + adminEsc(u.email) + '</span></td>' +
+            '<td><span class="badge ' + roleClass + '">' + adminEsc(String(u.role || '').toUpperCase()) + '</span></td>' +
+            '<td><span class="badge ' + planClass + '">' + adminEsc(u.plan) + '</span></td>' +
             '<td style="font-family:monospace;font-size:12px;">' + seedLimitStr + '</td>' +
-            '<td style="font-family:monospace;font-size:12px;">' + refLimitStr + '<br><span style="font-size:11px;color:var(--text-muted);">' + (u.tokens_consumed || 0).toLocaleString() + ' tok</span></td>' +
-            '<td><span class="badge ' + statusClass + '">' + u.status + '</span></td>' +
-            '<td>' + u.last_active + '</td>' +
+            '<td style="font-family:monospace;font-size:12px;">' + refLimitStr + '<br><span style="font-size: 12px;color:var(--text-muted);">' + (u.tokens_consumed || 0).toLocaleString() + ' tok</span></td>' +
+            '<td><span class="badge ' + statusClass + '">' + adminEsc(u.status) + '</span></td>' +
+            '<td>' + adminEsc(u.last_active) + '</td>' +
             '<td>' +
                 '<div style="display:flex; gap:4px; flex-wrap:wrap;">' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptUserPlanChange('' + u.id + '', '' + u.name + '')">Plan</button>' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="toggleUserStatus('' + u.id + '', '' + u.status + '')">' + (u.status === 'Active' ? 'Suspend' : 'Activate') + '</button>' +
-                    '<button class="btn" style="padding:3px 7px;font-size:11px;" onclick="promptResetPassword('' + u.id + '', '' + u.email + '')">Password</button>' +
-                    '<button class="btn btn-red" style="padding:3px 7px;font-size:11px;" onclick="promptDeleteUser('' + u.id + '', '' + u.name + '', '' + u.role + '')">Delete</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size: 12px;" onclick="promptUserPlanChange(' + adminArg(u.id) + ', ' + adminArg(u.name) + ')">Plan</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size: 12px;" onclick="toggleUserStatus(' + adminArg(u.id) + ', ' + adminArg(u.status) + ')">' + (u.status === 'Active' ? 'Suspend' : 'Activate') + '</button>' +
+                    '<button class="btn" style="padding:3px 7px;font-size: 12px;" onclick="promptResetPassword(' + adminArg(u.id) + ', ' + adminArg(u.email) + ')">Password</button>' +
+                    '<button class="btn btn-red" style="padding:3px 7px;font-size: 12px;" onclick="promptDeleteUser(' + adminArg(u.id) + ', ' + adminArg(u.name) + ', ' + adminArg(u.role) + ')">Delete</button>' +
                 '</div>' +
             '</td>' +
         '</tr>';
@@ -1053,5 +1059,6 @@ fetchOverview();
 setInterval(fetchOverview, 15000);
 </script>
 
+<script src="assets/dialogs.js"></script>
 </body>
 </html>

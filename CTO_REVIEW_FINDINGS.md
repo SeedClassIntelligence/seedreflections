@@ -80,7 +80,7 @@ Each was reproduced first, then fixed, and verified again. "Test" means the new 
 - **Hosted CORS and headers:** origin pinned to the configured origin; `X-Frame-Options`, `nosniff`, `Referrer-Policy` present.
 - **Import at scale:** a 26 MB export with 3,005 conversations imported in 5 s as a background job; Claude-format and text imports worked; a truncated JSON file failed loudly with a clear reason.
 - **Hosted backup and restore (VERIFIED):** a 5.3 MB backup in 1.4 s; a tampered source was rejected (`integrity verification failed`); a valid restore returned the workspace to its backup-time state.
-- **Interface:** zero console errors, zero failed requests, zero horizontal overflow at 1440, 768 and 390 px across every dashboard tab; no dead controls after the fixes.
+- **Interface:** zero console errors, zero failed requests and no dead controls after the fixes. *Correction (Nov 11):* this item originally also said there was zero horizontal overflow at 768 and 390 px on every tab. That was overstated: the narrow-width check had covered only four tabs. A full 10-tab check found the Artifacts tab overflowing by 123px (768) and 411px (390); it is fixed and all 10 tabs now pass at 1440 / 768 / 390.
 - **Evidence path:** accepted decisions carry source conversation and message IDs.
 
 ---
@@ -109,3 +109,15 @@ Each was reproduced first, then fixed, and verified again. "Test" means the new 
 - `project-handoff/ARCHITECTURE.md`, `CURRENT_IMPLEMENTATION.md` and `DESIGN_SYSTEM.md` are marked historical.
 - About 20 one-off `patch_*.py`, `repair_*.py` and similar scripts sit in the repository root. They are excluded from the Docker image, but they are clutter and a source-disclosure risk; I left them alone pending your call.
 - `workroom-prototype.html` is not in the repository; I did not touch it.
+
+---
+
+## 9. Found during the sign-in and comparison UI work (Nov 11)
+
+| ID | Sev | Finding | Status |
+|---|---|---|---|
+| **S3** | **High** | **Hosted sign-in cannot work.** `js/platform.js` hard-codes the legacy `/api/v1` API, which hosted mode blocks, so login and signup through `auth.html` fail on a hosted server ("Sign in is temporarily unavailable"). VERIFIED against a running hosted server. Predates the redesign. | **OPEN, needs approval** (authentication change). Proposed fix: choose the v2 auth endpoints when `/api/v2/capabilities` reports hosted. |
+| S4 | High | Open redirect on the sign-in page via the `next` parameter. | **Fixed** (same-origin paths only), before and after tested. |
+| S5 | High | The public Admin tab printed the default admin password ("changeme") and hinted at `.env`. | **Fixed** in the page. The default itself is still accepted by the server when `ADMIN_PASSWORD` is unset (hosted readiness now fails on it). |
+| O8 | Medium | **Password reset does not exist** (no endpoint, no email sending), while the UI claimed a reset link was sent. | UI made honest. **DECISION:** what recovery path to offer. |
+| O9 | Low | Password hint said 8+ chars with an uppercase and a number; the server requires 12 characters. | **Fixed** |

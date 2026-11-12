@@ -27,26 +27,27 @@
     .auth-card{width:100%;max-width:420px;background:var(--bg-card);border:1px solid var(--border);
                border-radius:16px;padding:40px}
     .auth-logo{text-align:center;font-size:28px;font-weight:900;margin-bottom:8px}
-    .auth-logo span{color:var(--cyan)}
+    .auth-logo{color:var(--green);margin-top:0}
+    .auth-logo span{color:var(--text)}
     .auth-tagline{text-align:center;color:var(--text3);font-size:14px;margin-bottom:32px}
     .tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:28px}
     .tab-btn{flex:1;background:none;border:none;padding:10px 0;font-size:14px;font-weight:600;
              color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;
              transition:color .15s,border-color .15s;font-family:inherit}
-    .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+    .tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
 
     .field{margin-bottom:18px}
     .field label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
     .field input{width:100%;background:var(--bg-surface);border:1px solid var(--border-light);
                  border-radius:8px;padding:11px 14px;font-size:14px;color:var(--text);
                  font-family:inherit;outline:none;transition:border-color .15s}
-    .field input:focus{border-color:var(--blue)}
+    .field input:focus{border-color:var(--green)}
     .field input.error-field{border-color:var(--red)}
 
     .btn-submit{width:100%;padding:13px;border:none;border-radius:8px;
-                background:var(--blue);color:#000;font-size:15px;font-weight:700;
+                background:var(--green);color:#000;font-size:15px;font-weight:700;
                 cursor:pointer;font-family:inherit;transition:background .15s;margin-top:4px}
-    .btn-submit:hover:not(:disabled){background:#79b8ff}
+    .btn-submit:hover:not(:disabled){background:#4ade80}
     .btn-submit:disabled{opacity:.6;cursor:not-allowed}
 
     .error-msg{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
@@ -63,7 +64,9 @@
                 color:var(--blue);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;
                 margin-left:8px;vertical-align:middle}
 
-    .forgot-link{font-size:12px;color:var(--text3);float:right;margin-top:6px}
+    .forgot-link{font-size:12px;color:var(--text3)}
+    .label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+    .label-row label{margin-bottom:0}
     .forgot-link:hover{color:var(--blue)}
 
     .plan-select{margin-bottom:24px;background:var(--bg-surface);border:1px solid var(--border);
@@ -75,80 +78,62 @@
               border:1px solid var(--border);background:var(--bg-card);margin-bottom:8px;
               transition:border-color .15s}
     .plan-opt:last-child{margin-bottom:0}
-    .plan-opt.selected,.plan-opt:hover{border-color:var(--blue)}
+    .plan-opt.selected,.plan-opt:hover{border-color:var(--green)}
     .plan-opt-radio{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-light);
                     flex-shrink:0;display:flex;align-items:center;justify-content:center}
-    .plan-opt.selected .plan-opt-radio{border-color:var(--blue);background:var(--blue)}
+    .plan-opt.selected .plan-opt-radio{border-color:var(--green);background:var(--green)}
     .plan-opt.selected .plan-opt-radio::after{content:'';width:5px;height:5px;border-radius:50%;background:#000}
     .plan-opt-info h4{font-size:13px;font-weight:700;margin-bottom:1px}
     .plan-opt-info p{font-size:11px;color:var(--text3)}
-    .plan-opt-price{margin-left:auto;font-size:13px;font-weight:700;color:var(--blue)}
+    .plan-opt-price{margin-left:auto;font-size:13px;font-weight:700;color:var(--green)}
   </style>
+<link rel="stylesheet" href="assets/shell.css">
 </head>
 <body>
 
 <style>
-/* ── Two-Row Nav ── */
-.site-header { position:sticky; top:0; z-index:100; background:rgba(6,8,15,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
-.nav-top { display:flex; align-items:center; justify-content:space-between; padding:0 5%; height:50px; border-bottom:1px solid rgba(33,38,45,.5); }
-.nav-logo { font-weight:900; font-size:17px; color:var(--green); letter-spacing:-.5px; text-decoration:none; white-space:nowrap; display:inline-flex; align-items:center; }
-.nav-logo em { color:inherit; font-style:normal; }
-.nav-top-right { display:flex; align-items:center; gap:12px; }
-.nav-top-right a { font-size:13px; font-weight:600; text-decoration:none; }
-.nav-top-right .signin { color:var(--text3,#8b949e); }
-.nav-top-right .signin:hover { color:var(--text,#f0f6fc); }
-.nav-top-right .signup { background:var(--green,#3fb950); color:#000; padding:6px 14px; border-radius:6px; font-weight:700; }
-.nav-top-right .signup:hover { filter:brightness(1.1); }
-.nav-bottom { display:flex; align-items:center; justify-content:center; gap:6px; padding:0 5%; height:38px; overflow-x:auto; white-space:nowrap; }
-.nav-bottom a { font-size:12px; font-weight:600; color:var(--text3,#8b949e); text-decoration:none; padding:4px 10px; border-radius:4px; transition:color .15s, background .15s; flex-shrink:0; }
-.nav-bottom a:hover { color:var(--text,#f0f6fc); background:rgba(255,255,255,.05); text-decoration:none; }
-.nav-bottom a.active { color:var(--cyan,#39d0d8); }
-.nav-bottom .sep { width:1px; height:16px; background:var(--border,#21262d); flex-shrink:0; margin:0 4px; }
-@media(max-width:640px) { .nav-bottom { justify-content:flex-start; } .nav-bottom a { font-size:11px; padding:4px 7px; } }
 </style>
 <header class="site-header">
   <div class="nav-top">
-    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">SeedReflections</a>
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">Seed<em>Reflections</em></a>
     <div class="nav-top-right" id="nav-auth">
       <a href="auth.html?mode=login" class="signin">Sign In</a>
       <a href="auth.html?mode=signup" class="signup">Sign Up</a>
     </div>
   </div>
-  <div class="nav-bottom">
-    <a href="index.html">🌱 Home</a>
+  <div class="nav-bottom" role="navigation" aria-label="Primary">
+    <a href="index.html">Home</a>
     <a href="/consumer">Go to Dashboard</a>
-    <a href="comparison.html">Compare</a>
+    <a href="prompts.html">📋 Prompt Engine</a>
+    <a href="comparison.html">⚔️ Compare</a>
     <a href="auth.html?mode=admin">🛡️ Admin</a>
   </div>
 </header>
 
-<div class="auth-wrap">
+<main class="auth-wrap">
   <div class="auth-card">
-    <div class="auth-logo">Seed<span>Reflections</span></div>
+    <h1 class="auth-logo">Seed<span>Reflections</span></h1>
     <div class="auth-tagline">Never lose another AI conversation.</div>
 
     <!-- Tabs -->
-    <div class="tab-row">
-      <button class="tab-btn" id="tab-login" onclick="switchTab('login')">Log in</button>
-      <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create account</button>
-      <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+    <div class="tab-row" role="tablist" aria-label="Account">
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="form-login" id="tab-login" onclick="switchTab('login')">Log in</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="form-signup" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="form-admin" id="tab-admin" onclick="switchTab('admin')">Admin</button>
     </div>
 
     <!-- Shared messages -->
-    <div class="error-msg" id="error-msg"></div>
-    <div class="success-msg" id="success-msg"></div>
+    <div class="error-msg" id="error-msg" role="alert"></div>
+    <div class="success-msg" id="success-msg" role="status"></div>
 
     <!-- ── LOGIN FORM ── -->
-    <form id="form-login" onsubmit="doLogin(event)">
+    <form id="form-login" role="tabpanel" aria-labelledby="tab-login" onsubmit="doLogin(event)">
       <div class="field">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" required>
       </div>
       <div class="field">
-        <label for="login-password">
-          Password
-          <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a>
-        </label>
+        <div class="label-row"><label for="login-password">Password</label><a href="#" class="forgot-link" onclick="showForgot(event)">Forgot?</a></div>
         <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn-submit" id="login-btn">Log in →</button>
@@ -158,22 +143,22 @@
     </form>
 
     <!-- ── ADMIN LOGIN FORM ── -->
-    <form id="form-admin" onsubmit="doAdminLogin(event)" style="display:none">
+    <form id="form-admin" role="tabpanel" aria-labelledby="tab-admin" onsubmit="doAdminLogin(event)" style="display:none">
       <div style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:12px;margin-bottom:18px;font-size:12.5px;color:var(--text2);line-height:1.5;">
-        🛡️ <strong>Platform Master Control</strong><br>Enter your admin password from <code>.env</code> (default: <code>changeme</code>) to enter the Admin Dashboard.
+        🛡️ <strong>Platform Master Control</strong><br>Enter the master admin password configured for this deployment to open the Admin Dashboard.
       </div>
       <div class="field">
         <label for="admin-pass">Master Admin Password</label>
         <input type="password" id="admin-pass" placeholder="Enter admin password..." autocomplete="current-password" required>
       </div>
-      <button type="submit" class="btn-submit" id="admin-btn" style="background:var(--cyan,#39d0d8);color:#000;">Enter Master Control →</button>
+      <button type="submit" class="btn-submit" id="admin-btn" >Enter Master Control →</button>
       <div class="footer-link" style="margin-top:16px">
         Looking for user workspace? <a href="#" onclick="switchTab('login');return false">Log in as user</a>
       </div>
     </form>
 
     <!-- ── SIGNUP FORM ── -->
-    <form id="form-signup" onsubmit="doSignup(event)" style="display:none">
+    <form id="form-signup" role="tabpanel" aria-labelledby="tab-signup" onsubmit="doSignup(event)" style="display:none">
       <div class="field">
         <label for="signup-name">Full name</label>
         <input type="text" id="signup-name" placeholder="William" autocomplete="name" required>
@@ -184,8 +169,8 @@
       </div>
       <div class="field">
         <label for="signup-password">Password</label>
-        <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" required>
-        <div class="pw-hint">8+ chars, one uppercase, one number</div>
+        <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" minlength="12" aria-describedby="pw-hint" required>
+        <div class="pw-hint" id="pw-hint">At least 12 characters.</div>
       </div>
 
 
@@ -217,22 +202,17 @@
     </form>
 
     <!-- ── FORGOT PASSWORD FORM ── -->
-    <form id="form-forgot" onsubmit="doForgot(event)" style="display:none">
+    <form id="form-forgot" role="tabpanel" aria-labelledby="tab-login" onsubmit="return false" style="display:none">
       <div style="margin-bottom:20px">
         <h3 style="font-size:16px;margin-bottom:8px">Reset your password</h3>
-        <p style="font-size:13px;color:var(--text3)">Enter your email and we'll send a reset link.</p>
+        <p style="font-size:13px;color:var(--text3)"><strong>Password reset by email isn't available yet.</strong> If you can't sign in, ask your administrator to reset your password.</p>
       </div>
-      <div class="field">
-        <label for="forgot-email">Email</label>
-        <input type="email" id="forgot-email" placeholder="you@company.com" required>
-      </div>
-      <button type="submit" class="btn-submit" id="forgot-btn">Send reset link</button>
       <div class="footer-link" style="margin-top:16px">
         <a href="#" onclick="switchTab('login');return false">← Back to log in</a>
       </div>
     </form>
   </div>
-</div>
+</main>
 
 <script src="js/platform.js"></script>
 <script>
@@ -257,13 +237,23 @@
     location.href = getDashboardForRole(user);
   }
 
+  // Only same-origin paths are accepted as a post-login destination.
+  function safeNext(value) {
+    try {
+      const u = new URL(value, location.origin);
+      if (u.origin === location.origin && /^\/(?!\/)/.test(u.pathname)) return u.pathname + u.search + u.hash;
+    } catch (e) {}
+    return null;
+  }
+
   // ── Init ────────────────────────────────────────────────────────────────────
   (function init() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode') || 'login';
     const pNext = params.get('next');
-    if (pNext) {
-      nextUrl = pNext;
+    const safe = pNext ? safeNext(pNext) : null;
+    if (safe) {
+      nextUrl = safe;
       hasExplicitNext = true;
     }
 
@@ -289,19 +279,40 @@
   })();
 
   // ── Tab switching ────────────────────────────────────────────────────────────
+  // Tabs: arrow keys, Home and End move between tabs (ARIA tabs pattern)
+  (function () {
+    const row = document.querySelector('.tab-row'); if (!row) return;
+    row.addEventListener('keydown', function (e) {
+      const tabs = Array.prototype.slice.call(row.querySelectorAll('[role="tab"]'));
+      const i = tabs.indexOf(document.activeElement); if (i < 0) return;
+      let n = null;
+      if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') n = tabs[0];
+      else if (e.key === 'End') n = tabs[tabs.length - 1];
+      if (!n) return;
+      e.preventDefault(); n.click(); n.focus();
+    });
+  })();
+
   function switchTab(tab) {
     document.getElementById('form-login').style.display   = tab === 'login'   ? '' : 'none';
     document.getElementById('form-signup').style.display  = tab === 'signup'  ? '' : 'none';
     document.getElementById('form-admin').style.display   = tab === 'admin'   ? '' : 'none';
     document.getElementById('form-forgot').style.display  = tab === 'forgot'  ? '' : 'none';
-    document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
-    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-    const tabAdmin = document.getElementById('tab-admin');
-    if (tabAdmin) tabAdmin.classList.toggle('active', tab === 'admin');
+    ['login','signup','admin'].forEach(function (t) {
+      const b = document.getElementById('tab-' + t);
+      if (!b) return;
+      const on = (tab === t) || (tab === 'forgot' && t === 'login');
+      b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
+    });
     clearMessages();
 
     if (tab === 'admin') {
-      setTimeout(() => { const p = document.getElementById('admin-pass'); if(p) p.focus(); }, 50);
+      setTimeout(() => {
+        if (document.activeElement && document.activeElement.getAttribute('role') === 'tab') return;  // keep focus on the tab while arrowing through tabs
+        const p = document.getElementById('admin-pass'); if(p) p.focus();
+      }, 50);
     }
 
     // Show plan selector on signup tab if plan param present
@@ -335,7 +346,7 @@
         return;
       }
       const err = await r.json().catch(() => ({}));
-      showError(err.detail || 'Invalid admin password. Check .env file.');
+      showError(err.detail || 'Invalid admin password.');
       btn.disabled = false; btn.textContent = 'Enter Master Control →';
     } catch (err) {
       showError('Failed to connect to authentication server.');
@@ -437,26 +448,7 @@
     }
   });
 
-  // ── Forgot password ────────────────────────────────────────────────────────────
-  async function doForgot(e) {
-    e.preventDefault();
-    clearMessages();
-    const btn = document.getElementById('forgot-btn');
-    btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const res = await fetch(SeedReflectionsPlatform.API_BASE + '/auth/forgot-password', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: document.getElementById('forgot-email').value.trim() }),
-      });
-      const data = await res.json();
-      showSuccess(data.message || 'Check your inbox for a reset link.');
-    } catch {
-      showSuccess('If that email is registered, a reset link has been sent.');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Send reset link';
-    }
-  }
 </script>
+<script src="assets/a11y.js"></script>
 </body>
 </html>
