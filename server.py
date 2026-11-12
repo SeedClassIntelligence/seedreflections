@@ -71,7 +71,7 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
-from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, merge_extras
+from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, make_web_tool, merge_extras, user_urls
 import work_sessions
 import work_context
 import agent_tokens
@@ -797,6 +797,13 @@ def agent_runtime(user, body, task="chat"):
         reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
     return provider,api_url,api_key,model,reason
+
+def web_page_text(page):
+    """Readable text of a fetched page, for the assistant."""
+    if page["kind"]=="application/pdf":
+        from document_ingest import extract_document
+        return extract_document(page["body"],"page.pdf")["text"]
+    return web_fetch.as_document(page)[1].decode("utf-8","replace")
 
 def save_assistant_draft(user, seed, session_id):
     """Return a save(title, kind, body, refs) callback that stores a DRAFT artifact for the user to review."""
@@ -3537,18 +3544,20 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                             payload={**payload,"title":art.get("title"),"before":str(art.get("content") or "")[:20000],"base_updated_at":art.get("updated_at")}
                         else: payload={**payload,"source_refs":refs}
                         return work_sessions.add_proposal(ws_id,seed_id,kind,payload)
+                    web_pages=[]; allowed_urls=user_urls(prompt,history)
                     def extras(sources):
                         parts=[]
                         if allow_draft: parts.append(make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
                         if allow_rev or allow_dec: parts.append(make_proposal_tools(read_artifact,propose,sources,proposals,allow_rev,allow_dec))
+                        if allowed_urls: parts.append(make_web_tool(lambda u: web_fetch.fetch_page(u,allow_private=WEB_ALLOW_PRIVATE),web_page_text,allowed_urls,web_pages))
                         return merge_extras(*parts)
-                    extra=extras if (allow_draft or allow_rev or allow_dec) else None
+                    extra=extras if (allow_draft or allow_rev or allow_dec or allowed_urls) else None
                     result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
                         context_text=context_text,extra_factory=extra,
                         preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
                     record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
                     answer=result["answer"]
-                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"context":report,
+                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages,"context":report,
                           "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
                           "proposals":[work_proposal_view(p) for p in proposals]}
                 except ModelCallError as exc: reason=str(exc)
@@ -3587,13 +3596,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if reason is None:
                 try:
                     agent_count_use(user["workspace_id"])
+                    chat_history=body.get("history") if isinstance(body.get("history"),list) else None
+                    web_pages=[]; allowed_urls=user_urls(prompt,chat_history)
+                    web_extra=((lambda sources: merge_extras(make_web_tool(lambda u: web_fetch.fetch_page(u,allow_private=WEB_ALLOW_PRIVATE),web_page_text,allowed_urls,web_pages))) if allowed_urls else None)
                     result=run_agent(prompt,_AgentStores(user["workspace_id"],workspace),
                         lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
-                        history=body.get("history") if isinstance(body.get("history"),list) else None,
+                        history=chat_history,extra_factory=web_extra,
                         active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
                     record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
                     self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
-                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"]})
+                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages})
                     return
                 except ModelCallError as exc:
                     reason=str(exc)
