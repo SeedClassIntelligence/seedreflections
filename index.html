@@ -430,12 +430,18 @@
     .sig-receipt-label { color: var(--text3); }
     .sig-receipt-val { color: var(--text2); text-align: right; }
     .sig-receipt-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.05); font-size: 11px; display: flex; align-items: center; gap: 8px; color: var(--green); }
+    /* Accessibility: skip link, reduced motion, comfortable tap targets on public nav and footer */
+    .skip-link{position:absolute;left:12px;top:-60px;z-index:1000;background:var(--green);color:#000;font-weight:700;padding:10px 16px;border-radius:8px}
+    .skip-link:focus{top:12px;text-decoration:none}
+    @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+    .site-header a,.nav-links a,footer a{display:inline-flex;align-items:center;min-height:44px}
 </style>
   <!-- PWA restricted to Developer + Enterprise tiers -->
   <meta name="theme-color" content="#06080f">
 <link rel="stylesheet" href="assets/shell.css">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 
 <!-- ── NAV ── -->
 <style>
@@ -529,6 +535,7 @@
     <a href="auth.html?mode=admin">🛡️ Admin</a>
   </div>
 </header>
+<main id="main">
 
 <!-- ── HERO ── -->
 <section class="hero">
@@ -1220,6 +1227,7 @@
 
 
 <!-- ── FOOTER ── -->
+</main>
 <footer>
   <div class="footer-grid">
     <div class="footer-brand">

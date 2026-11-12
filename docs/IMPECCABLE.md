@@ -134,3 +134,5 @@ Verified after the change: contrast 0 failures on all 17 page states; 0 horizont
 
 Not done from the audit (not requested): index reduced-motion, a skip link and `<main>` on the landing page, 44px public nav and footer targets, auth focus ring, dashboard CSS collapse, shared tokens, Privacy and Terms, the four inert chips in the dashboard Prompt tab.
 
+| Audit open items closed (landing) | Reduced motion, skip link, `<main>`, 44px public nav and footer targets were not done. | **Fixed** in `index.html`. Measured: skip link is the first Tab stop and visible; 0 nav/footer targets under 44px at 1440 and 390; no horizontal overflow; animated demo content stays visible under reduced motion. Only the landing page was measured. |
+| Decision: browser extension | Founder agreed (Nov 12). | **Deferred.** Only a user-triggered, single-open-conversation capture, built after Privacy and Terms exist. No bulk or background scraping. Exports stay the primary path for ChatGPT, Gemini and claude.ai. |
