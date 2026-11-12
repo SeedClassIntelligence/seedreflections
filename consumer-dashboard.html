@@ -4759,6 +4759,7 @@ function cancelUploadStaging() { selectedShelfThreadIds.clear(); renderShelfThre
 function runReflectionOnSelected() { runReflectionOnSelectedThreads(); }
 
 /* ── Unified Workspace Chat ────────────────────────────────────────── */
+var CHAT_HISTORY = [];
 async function sendChatInput() {
   var input = document.getElementById('chat-input');
   var msg = input.value.trim();
@@ -4818,11 +4819,20 @@ async function sendChatInput() {
       var resp = await productFetch('/seeds/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ prompt: msg, active_seed_id: activeFocusSeedId })
+        body: JSON.stringify({ prompt: msg, active_seed_id: activeFocusSeedId, history: CHAT_HISTORY.slice(-6) })
       });
       var data = await resp.json();
       thinkingBubble.remove();
-      appendChat(data.answer || localAnswer(msg), 'assistant');
+      var reply = data.answer || localAnswer(msg);
+      if (data.mode === 'model' && data.sources && data.sources.length) {
+        reply += '\n\nSources: ' + data.sources.slice(0, 5).map(function(src){
+          return src.title + (src.messages && src.messages.length ? ' (message ' + src.messages.slice(0, 3).join(', ') + ')' : '');
+        }).join('; ');
+      } else if (data.mode === 'records_only' && data.reason) {
+        reply += '\n\nNo model answered this one: ' + data.reason;
+      }
+      appendChat(reply, 'assistant');
+      CHAT_HISTORY.push({ role: 'user', content: msg }, { role: 'assistant', content: data.answer || '' });
     } catch (e) {
       thinkingBubble.remove();
       appendChat(localAnswer(msg), 'assistant');

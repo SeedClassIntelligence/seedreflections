@@ -69,6 +69,10 @@ from integration_store import (create_integration as create_api_integration, lis
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
+from model_invoke import complete as invoke_model, ModelCallError
+from workspace_agent import run_agent
+import tenant_archive_store as _tenant_archive_module
+import archive_store as _local_archive_module
 from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential, local_backend_status as model_key_backend_status
 from tool_store import list_tools as list_workspace_tools, get_tool as get_workspace_tool, disconnect_tool as disconnect_workspace_tool
 
@@ -746,6 +750,39 @@ def runtime_model_catalog():
         if cfg.get("llm_api_key") or model_credential_status("local",provider).get("credential_configured"): available_ids.add(configured_id)
     for item in catalog: item["available"]=item["id"] in available_ids
     return catalog
+
+
+_AGENT_USAGE = {}
+
+def agent_daily_limit_reached(workspace_id):
+    """Optional per-workspace daily cap on assistant messages. 0 or unset means no cap. In-process counter."""
+    try: limit=int(os.environ.get("SEED_REFLECTIONS_AGENT_DAILY_LIMIT","0") or 0)
+    except ValueError: limit=0
+    if limit<=0: return False
+    key=(workspace_id,datetime.now().strftime("%Y-%m-%d"))
+    return _AGENT_USAGE.get(key,0)>=limit
+
+def agent_count_use(workspace_id):
+    key=(workspace_id,datetime.now().strftime("%Y-%m-%d"))
+    for old in [k for k in _AGENT_USAGE if k[1]!=key[1]]: _AGENT_USAGE.pop(old,None)
+    _AGENT_USAGE[key]=_AGENT_USAGE.get(key,0)+1
+
+class _AgentStores:
+    """Read-only archive access bound to ONE workspace, taken from the authenticated session."""
+    def __init__(self, workspace_id, workspace):
+        self._ws=workspace_id; self._workspace=workspace
+    def list_conversations(self, query="", limit=8):
+        if self._ws=="local": return _local_archive_module.list_conversations(query=query,limit=limit)
+        return _tenant_archive_module.list_conversations(self._ws,query=query,limit=limit)
+    def get_conversation(self, conversation_id):
+        if self._ws=="local": return _local_archive_module.get_conversation(conversation_id)
+        return _tenant_archive_module.get_conversation(self._ws,conversation_id)
+    def list_candidates(self, status="pending", limit=10):
+        if self._ws=="local": return _local_archive_module.list_candidates(status=status,limit=limit)
+        return _tenant_archive_module.list_candidates(self._ws,status=status,limit=limit)
+    def accepted_ideas(self, limit=10):
+        closed={"completed","done","archived","wilted"}
+        return [i for i in self._workspace.get("seeds",[]) if str(i.get("status","")).lower() not in closed][:limit]
 
 def resolve_task_runtime(task, cfg=None, settings=None):
     """Resolve an available task route and its matching provider connection."""
@@ -3263,6 +3300,30 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             workspace=load_workspace(workspace_id=user["workspace_id"])
             active_id=body.get("active_seed_id")
             seed=next((item for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==active_id),None)
+            # Model-backed assistant: read-only tools over this workspace, bounded, budget-checked.
+            overrides={"workspace_id":user["workspace_id"]}
+            if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
+            cfg=load_config()
+            provider,api_url,api_key,model,_route=resolve_task_runtime("chat",cfg,overrides)
+            ai_allowed,_ai_code,ai_msg,_spend,_cap=check_ai_gateway_status()
+            reason=None
+            if not ai_allowed: reason=ai_msg
+            elif not model or not (api_url if provider=="ollama" else api_key):
+                reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
+            elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
+            if reason is None:
+                try:
+                    agent_count_use(user["workspace_id"])
+                    result=run_agent(prompt,_AgentStores(user["workspace_id"],workspace),
+                        lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
+                        history=body.get("history") if isinstance(body.get("history"),list) else None,
+                        active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
+                    self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
+                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"]})
+                    return
+                except ModelCallError as exc:
+                    reason=str(exc)
             if seed:
                 title=seed.get("title") or str(seed.get("intent") or "this idea")[:80]
                 intent=seed.get("intent") or seed.get("summary") or "No intent has been recorded yet."
@@ -3274,7 +3335,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 open_seeds=[item for item in workspace.get("seeds",[]) if str(item.get("status","")).lower() not in {"completed","done","archived","wilted"}]
                 answer=(f"Your workspace currently has {len(open_seeds)} active confirmed idea{'s' if len(open_seeds) != 1 else ''}. "
                         "Choose one from the shelf to continue with its saved intent and source context, or import a conversation and map its ideas first.")
-            self._send_json({"answer":answer,"grounded":True,"active_seed_id":active_id})
+            self._send_json({"answer":answer,"grounded":True,"active_seed_id":active_id,"mode":"records_only","reason":reason})
             return
         if path == "/api/v2/analysis/run":
             user=self._runtime_user()
