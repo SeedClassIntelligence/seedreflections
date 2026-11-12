@@ -34,7 +34,7 @@ from archive_store import get_conversation as get_archive_conversation
 from archive_store import raw_conversations as get_raw_archive_conversations
 from archive_store import list_imports as list_archive_imports
 from archive_store import create_import_job, update_import_job, get_import_job, list_import_jobs
-from archive_store import count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
+from archive_store import count_candidate_links, candidate_facets, get_candidate_detail, count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
 from archive_store import (analyze_conversation, list_candidates, review_candidate,
                            create_analysis_job, get_analysis_job, run_archive_analysis,
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
@@ -49,12 +49,12 @@ from auth_store import (signup as auth_signup, login as auth_login, authenticate
     remove_member as auth_remove_member)
 from tenant_archive_store import (import_json as tenant_import_json, overview as tenant_archive_overview,
     list_conversations as tenant_list_conversations, get_conversation as tenant_get_conversation,
-    analyze as tenant_analyze, list_candidates as tenant_list_candidates, count_candidates as tenant_count_candidates, review as tenant_review,
+    analyze as tenant_analyze, list_candidates as tenant_list_candidates, count_candidates as tenant_count_candidates, candidate_facets as tenant_candidate_facets, get_candidate_detail as tenant_candidate_detail, review as tenant_review,
     create_import_job as tenant_create_import_job, update_import_job as tenant_update_import_job,
     get_import_job as tenant_get_import_job, list_import_jobs as tenant_list_import_jobs,
     import_document_path as tenant_import_document_path, create_analysis_job as tenant_create_analysis_job,
     get_analysis_job as tenant_get_analysis_job, run_analysis_job as tenant_run_analysis_job,
-    generate_links as tenant_generate_links, list_links as tenant_list_links, review_link as tenant_review_link,
+    generate_links as tenant_generate_links, list_links as tenant_list_links, count_links as tenant_count_links, review_link as tenant_review_link,
     preserve_source as tenant_preserve_source, list_sources as tenant_list_sources, get_source as tenant_get_source)
 from tenant_archive_store import count_conversations as tenant_count_conversations, source_coverage as tenant_source_coverage
 from tenant_archive_store import usage as tenant_usage
@@ -1282,7 +1282,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
 
-    def do_GET(self):
+    def _guarded(self, implementation):
+        """Run a request handler; an unexpected error becomes a clean 500, never a dropped connection."""
+        try:
+            implementation()
+        except (BrokenPipeError, ConnectionResetError):
+            raise
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            try:
+                self._send_json({"error": "Unexpected server error", "code": "internal_error", "type": type(exc).__name__}, 500)
+            except Exception:
+                pass
+
+    def do_GET(self): self._guarded(self._do_GET_impl)
+
+    def do_POST(self): self._guarded(self._do_POST_impl)
+
+    def _do_GET_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
         if path == "/api/v2/capabilities":
@@ -1449,6 +1467,19 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     else tenant_get_conversation(user["workspace_id"],conversation_id))
             self._send_json(result if result else {"error":"Conversation not found"},200 if result else 404)
             return
+        if path == "/api/v2/candidates/summary":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); status=(query.get("status") or ["pending"])[0]
+            if status not in ("pending","deferred","accepted","rejected"): self._send_json({"error":"Unknown review status"},400); return
+            self._send_json(candidate_facets(status) if user["workspace_id"]=="local" else tenant_candidate_facets(user["workspace_id"],status)); return
+        candidate_detail_match=re.fullmatch(r"/api/v2/candidates/([0-9a-f]{32})",path)
+        if candidate_detail_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            candidate_id=candidate_detail_match.group(1)
+            detail=(get_candidate_detail(candidate_id) if user["workspace_id"]=="local" else tenant_candidate_detail(user["workspace_id"],candidate_id))
+            self._send_json(detail if detail else {"error":"Candidate not found"},200 if detail else 404); return
         if path == "/api/v2/candidates":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -1457,10 +1488,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             try:
                 limit=max(1,min(int((query.get("limit") or ["250"])[0]),1000)); offset=max(0,int((query.get("offset") or ["0"])[0]))
             except ValueError: self._send_json({"error":"limit and offset must be integers"},400); return
+            if status not in ("pending","deferred","accepted","rejected"): self._send_json({"error":"Unknown review status"},400); return
+            filters={"kind":(query.get("kind") or [None])[0],"platform":(query.get("source") or [None])[0],
+                     "query":(query.get("q") or [None])[0],"sort":(query.get("sort") or ["newest"])[0]}
             if user["workspace_id"] == "local":
-                candidates=list_candidates(status,limit,offset); total=count_archive_candidates(status)
+                candidates=list_candidates(status,limit,offset,**filters); total=count_archive_candidates(status,filters["kind"],filters["platform"],filters["query"])
             else:
-                candidates=tenant_list_candidates(user["workspace_id"],status,limit,offset); total=tenant_count_candidates(user["workspace_id"],status)
+                candidates=tenant_list_candidates(user["workspace_id"],status,limit,offset,**filters)
+                total=tenant_count_candidates(user["workspace_id"],status,filters["kind"],filters["platform"],filters["query"])
             self._send_json({"candidates":candidates,"total":total,"limit":limit,"offset":offset,"has_more":offset+len(candidates)<total})
             return
         if path == "/api/v2/imports/jobs":
@@ -1487,8 +1522,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); status=(query.get("status") or ["pending"])[0]
-            links=(list_candidate_links(status) if user["workspace_id"]=="local" else tenant_list_links(user["workspace_id"],status))
-            self._send_json({"links":links}); return
+            try: limit=max(1,min(int((query.get("limit") or ["250"])[0]),1000)); offset=max(0,int((query.get("offset") or ["0"])[0]))
+            except ValueError: self._send_json({"error":"limit and offset must be integers"},400); return
+            if user["workspace_id"]=="local": links=list_candidate_links(status,limit,offset); total=count_candidate_links(status)
+            else: links=tenant_list_links(user["workspace_id"],status,limit,offset); total=tenant_count_links(user["workspace_id"],status)
+            self._send_json({"links":links,"total":total,"limit":limit,"offset":offset,"has_more":offset+len(links)<total}); return
         if path == "/api/v2/sources":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -2956,7 +2994,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "File Not Found")
 
-    def do_POST(self):
+    def _do_POST_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
         if path == "/mcp":
@@ -3627,6 +3665,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except KeyError as exc: self._send_json({"error":str(exc)},404)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
+            except RuntimeError as exc: self._send_json({"error":str(exc),"code":"conflict"},409)
             return
         resume_v2_match=re.fullmatch(r"/api/v2/seeds/([^/]+)/resume",path)
         if resume_v2_match:
