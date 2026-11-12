@@ -43,5 +43,22 @@ class SeedBridgeTests(unittest.TestCase):
         unchanged = connector_store.sync_connector(connected["connector"]["id"])
         self.assertEqual(unchanged["files_changed"], 0)
 
+    def test_real_codex_rollout_format_is_read(self):
+        src = self.root / "src"; src.mkdir()
+        lines = [{"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "caching question"}]}},
+                 {"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "answer"}]}}]
+        (src / "rollout.jsonl").write_text("\n".join(json.dumps(x) for x in lines))
+        preview = connector_store.preview_source("codex", str(src))
+        self.assertEqual(preview["items"][0]["message_count"], 2)
+
+    def test_links_pointing_outside_the_folder_are_never_read(self):
+        src = self.root / "src"; src.mkdir()
+        outside = self.root / "outside.md"; outside.write_text("OUTSIDE SECRET")
+        (src / "ok.md").write_text("fine")
+        try: (src / "link.md").symlink_to(outside)
+        except OSError: self.skipTest("symlinks unavailable")
+        preview = connector_store.preview_source("folder", str(src))
+        self.assertEqual([i["path"] for i in preview["items"]], ["ok.md"])
+
 
 if __name__ == "__main__": unittest.main()

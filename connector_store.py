@@ -141,7 +141,10 @@ def _jsonl_conversation(path,root,provider):
             if not isinstance(record,dict): continue
             session_id=session_id or record.get("sessionId") or record.get("session_id")
             cwd=cwd or record.get("cwd")
-            message=record.get("message") if isinstance(record.get("message"),dict) else record
+            payload=record.get("payload") if isinstance(record.get("payload"),dict) else None
+            if payload and payload.get("type")=="session_meta" or (payload and record.get("type")=="session_meta"):
+                session_id=session_id or payload.get("id"); cwd=cwd or payload.get("cwd")
+            message=record.get("message") if isinstance(record.get("message"),dict) else (payload if payload and payload.get("type")=="message" else record)
             role=message.get("role") or record.get("type") or "unknown"
             if role in {"human"}: role="user"
             if role not in {"user","assistant","system","tool"}: continue
@@ -159,6 +162,9 @@ def _candidate_files(root):
     files=[]
     for path in root.rglob("*"):
         if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES:
+            try: inside=root in path.resolve().parents
+            except OSError: inside=False
+            if not inside: continue   # a link that points outside the chosen folder is never read
             files.append(path)
             if len(files)>=10000: break
     return files

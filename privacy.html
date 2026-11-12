@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy — SeedReflections</title>
+  <meta name="description" content="How SeedReflections handles your conversations, documents, keys and account information.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#06080f;--bg-card:#0d1117;--bg-surface:#161b22;--border:#21262d;--border-light:#30363d;--text:#f0f6fc;--text2:#c9d1d9;--text3:#8b949e;--blue:#58a6ff;--cyan:#39d0d8;--green:#3fb950;--amber:#d29922;--red:#f85149}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text2);line-height:1.7;overflow-x:hidden}
+    a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+    :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+    .skip-link{position:absolute;left:12px;top:-60px;z-index:1000;background:var(--green);color:#000;font-weight:700;padding:10px 16px;border-radius:8px}.skip-link:focus{top:12px;text-decoration:none}
+    .site-header a,footer a{display:inline-flex;align-items:center;min-height:44px}
+    .doc{max-width:760px;margin:0 auto;padding:56px 5% 72px}
+    .doc h1{color:var(--text);font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-.5px;line-height:1.15;margin-bottom:8px}
+    .doc .meta{color:var(--text3);font-size:14px;margin-bottom:28px}
+    .doc h2{color:var(--text);font-size:20px;font-weight:700;margin:36px 0 8px}
+    .doc p,.doc li{font-size:16px}.doc p{margin-bottom:12px}.doc ul{margin:0 0 12px 22px}.doc li{margin-bottom:6px}
+    .doc strong{color:var(--text)}
+    .draft{background:var(--bg-card);border:1px solid var(--amber);border-radius:10px;padding:14px 16px;margin-bottom:28px;font-size:14px;color:var(--text2)}
+    .draft strong{color:var(--amber)}
+    mark{background:rgba(210,153,34,.18);color:var(--text);padding:0 4px;border-radius:4px}
+    footer{border-top:1px solid var(--border);padding:24px 5%;display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between;font-size:13px;color:var(--text3)}
+    footer div{display:flex;gap:16px;flex-wrap:wrap}
+  </style>
+  <link rel="stylesheet" href="assets/shell.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="nav-top">
+    <a href="index.html" class="nav-logo" aria-label="SeedReflections home">Seed<em>Reflections</em></a>
+    <div class="nav-top-right" id="nav-auth">
+      <a href="auth.html?mode=login" class="signin">Sign In</a>
+      <a href="auth.html?mode=signup" class="signup">Sign Up</a>
+    </div>
+  </div>
+</header>
+<main id="main" class="doc">
+<h1>Privacy</h1>
+<p class="meta">Effective November 12, 2026 · Last updated November 12, 2026</p>
+<div class="draft"><strong>Draft for review.</strong> Highlighted items are placeholders or points the founder must confirm. Have counsel review this page before it is published.</div>
+<p>SeedReflections (“we”, “us”) is operated by Moral Group, LLC, 2300 West Sahara, Suite 800, <mark>[CITY, STATE ZIP]</mark>. This page explains what information SeedReflections handles, why, and the choices you have. SeedReflections helps you bring your AI conversations and documents into one archive, find the ideas and decisions in them, and continue the work.</p>
+
+<h2>Two ways to run it</h2>
+<p><strong>Local mode:</strong> SeedReflections runs on your own computer. Your archive is stored on your device and is not sent to us.</p>
+<p><strong>Hosted mode:</strong> your archive is stored on our servers, in a workspace that is separated from other customers’ workspaces. The rest of this page applies mainly to hosted mode.</p>
+
+<h2>What we handle</h2>
+<ul>
+<li><strong>Account details:</strong> your name, email address and a password. Passwords are stored only as a salted one-way hash, never in readable form.</li>
+<li><strong>Content you bring in:</strong> conversations from ChatGPT, Claude, Gemini and other tools, documents, folders you connect, and anything you paste. This can be sensitive, and it can include other people’s information. You decide what to import.</li>
+<li><strong>What we derive from it:</strong> search indexes, candidate ideas and decisions, findings with links back to their source, and the work you save in a project.</li>
+<li><strong>AI provider keys you add:</strong> stored encrypted, never shown back to you, and used only to call the provider you chose.</li>
+<li><strong>Connection tokens</strong> for SeedBridge and agent access: stored as one-way digests. The secret itself is shown once, when you create it.</li>
+<li><strong>Technical and security logs:</strong> such as IP address, request times and errors, kept to run and protect the service.</li>
+<li><strong>Billing details,</strong> if paid plans are on: handled by Stripe. We do not receive or store your card number.</li>
+</ul>
+
+<h2>How we use it</h2>
+<ul>
+<li>To provide the features you use: import, search, review, the Workspace and connections.</li>
+<li>To keep the service secure and to prevent abuse.</li>
+<li>To contact you about your account or service changes.</li>
+</ul>
+<p>We do not sell your information and we do not show advertising. We do not use third-party analytics or advertising trackers on our pages.</p>
+<p><strong>No AI training.</strong> SeedReflections does not build, train or fine-tune AI models, and we do not use your content for that purpose. The AI models you use through SeedReflections belong to other companies. We do not control what they do with the text you send them, and their terms and privacy policies decide that, so check the policy of any provider you choose.</p>
+
+<h2>Who else receives data</h2>
+<ul>
+<li><strong>AI providers you choose.</strong> When you ask the Workspace assistant or another feature to use a model, the relevant text from your archive is sent to that provider (for example OpenAI, Anthropic or Google) under your own key or account, and their terms and privacy policy apply. If you pick a model running on your own machine, nothing leaves it.</li>
+<li><strong>Stripe,</strong> to process payments when enabled.</li>
+<li><strong>Our hosting provider</strong> <mark>[HOSTING PROVIDER]</mark>, which stores the data for us.</li>
+<li><strong>Google Fonts.</strong> Our pages load fonts from Google, which means your browser contacts Google when you visit.</li>
+<li>Authorities, when the law requires it.</li>
+</ul>
+
+<h2>SeedBridge and connections</h2>
+<p>SeedBridge reads only the folders you choose, in read-only mode, after you have reviewed a preview and consented. It does not change your files. Disconnecting a source stops future reading; conversations already imported stay in your archive until you delete them. Agent connections (MCP) can read your archive only with a token you create, and you can revoke it at any time.</p>
+<p>If we add new connections later, such as Google Drive or a browser extension, we will describe what they access on this page before they are available, and each will require your explicit permission.</p>
+
+<h2>Cookies and browser storage</h2>
+<p>We store your sign-in session and interface preferences (such as which panel is open) in your browser’s local storage. The admin sign-in uses a secure session cookie. We set no advertising cookies.</p>
+
+<h2>How long we keep it</h2>
+<p>We keep your content while your account is active. You can remove individual items inside the product, and you can delete your whole account yourself.</p>
+
+<h2>Deleting your account</h2>
+<p>In Settings, choose <strong>Delete account</strong>, enter your password and type DELETE. This permanently removes your account and everything in your own workspace: imported conversations and documents, uploaded source files, findings, ideas and decisions, saved work, stored AI provider keys, connection tokens and your sign-in sessions. It cannot be undone, so export anything you want to keep first. If you belong to a shared workspace you leave it, and if you are its only owner you must hand it over or remove the other members first. Copies in backups are removed on the normal backup rotation, about 30 days. Security and billing records may be kept longer where the law requires. Data you sent to an AI provider is held under that provider’s own policy, and you would need to ask them to delete it.</p>
+
+<h2>Your choices and rights</h2>
+<p>You can ask us to give you a copy of your data, correct it, or delete it, by deleting it yourself as described above or by writing to moralgroupllc@gmail.com. Depending on where you live, you may have further rights, such as objecting to processing or complaining to a data protection authority. You can export your work from the product at any time.</p>
+
+<h2>Security</h2>
+<p>We separate each workspace’s data, encrypt stored provider keys, hash passwords and tokens, and require HTTPS for hosted connections. No system is perfectly secure, and we cannot guarantee absolute security. Please keep your password and tokens private.</p>
+
+<h2>Children</h2>
+<p>SeedReflections is for people who are 13 or older. If you are under 18, use it only with the permission of a parent or guardian. We do not knowingly collect information from children under 13 and will delete it if we learn that we have. AI providers set their own age rules, which also apply when you use them.</p>
+
+<h2>Changes and contact</h2>
+<p>If we change this page in a way that matters, we will tell you in the product or by email before it takes effect. Questions: moralgroupllc@gmail.com.</p>
+</main>
+<footer>
+  <span>© 2026 Seed Reflections — Seed-Class Intelligence Architecture</span>
+  <div><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="index.html">Home</a></div>
+</footer>
+</body>
+</html>

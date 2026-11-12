@@ -184,3 +184,41 @@ def remove_member(workspace_id,user_id):
 
 def logout(token):
     with _connect() as db: db.execute("DELETE FROM runtime_sessions WHERE token_hash=?",(hashlib.sha256(str(token or '').encode()).hexdigest(),))
+
+
+def delete_account(user_id,password):
+    """Permanently delete a hosted account after re-checking its password.
+
+    A workspace the person is the only member of is erased completely. In a shared workspace
+    they only leave, unless they are its only owner, in which case they must hand it over or
+    remove the other members first. Returns what was done."""
+    from account_erasure import erase_workspace_data
+    initialize()
+    with _connect() as db:
+        user=db.execute("SELECT * FROM runtime_users WHERE id=?",(str(user_id),)).fetchone()
+        if not user or user['id']=='local-owner': raise ValueError('Account deletion is only available for hosted accounts')
+        if not _password_valid(str(password or ''),user['password_hash']): raise ValueError('The password is not correct')
+        erase,leave=[],[]
+        for membership in db.execute("SELECT workspace_id,role FROM runtime_memberships WHERE user_id=?",(user['id'],)).fetchall():
+            workspace=membership['workspace_id']
+            members=db.execute("SELECT COUNT(*) FROM runtime_memberships WHERE workspace_id=?",(workspace,)).fetchone()[0]
+            owners=db.execute("SELECT COUNT(*) FROM runtime_memberships WHERE workspace_id=? AND role='owner'",(workspace,)).fetchone()[0]
+            if members<=1: erase.append(workspace)
+            elif membership['role']=='owner' and owners<=1:
+                name=db.execute("SELECT name FROM runtime_workspaces WHERE id=?",(workspace,)).fetchone()['name']
+                raise ValueError(f'You are the only owner of the shared workspace "{name}". Make someone else an owner or remove its other members first.')
+            else: leave.append(workspace)
+    erased={}
+    for workspace in erase:
+        erased[workspace]=erase_workspace_data(workspace)
+    with _connect() as db:
+        for workspace in leave:
+            try: db.execute("DELETE FROM workspace_accounts WHERE workspace_id=? AND lower(email)=?",(workspace,user['email'].lower()))
+            except sqlite3.OperationalError: pass   # that table exists only once a workspace document has been saved
+        db.execute("DELETE FROM runtime_sessions WHERE user_id=?",(user['id'],))
+        db.execute("DELETE FROM runtime_invitations WHERE invited_by=? OR lower(email)=?",(user['id'],user['email'].lower()))
+        db.execute("DELETE FROM runtime_memberships WHERE user_id=?",(user['id'],))
+        db.execute("DELETE FROM runtime_users WHERE id=?",(user['id'],))
+        for workspace in erase:
+            db.execute("DELETE FROM runtime_workspaces WHERE id=?",(workspace,))
+    return {'deleted':True,'workspaces_erased':len(erase),'workspaces_left':len(leave),'records_removed':sum(sum(v.values()) for v in erased.values())}

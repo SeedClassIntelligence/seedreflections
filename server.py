@@ -34,7 +34,7 @@ from archive_store import get_conversation as get_archive_conversation
 from archive_store import raw_conversations as get_raw_archive_conversations
 from archive_store import list_imports as list_archive_imports
 from archive_store import create_import_job, update_import_job, get_import_job, list_import_jobs
-from archive_store import count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
+from archive_store import count_candidate_links, candidate_facets, get_candidate_detail, count_candidates as count_archive_candidates, export_local_backup_archive, preview_local_restore, apply_local_restore, RestoreError
 from archive_store import (analyze_conversation, list_candidates, review_candidate,
                            create_analysis_job, get_analysis_job, run_archive_analysis,
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
@@ -42,19 +42,19 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
 from document_ingest import import_document, import_document_path
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
-    logout as auth_logout, consume_auth_attempt, list_members as auth_list_members,
+    logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
     list_workspaces as auth_list_workspaces, create_invitation as auth_create_invitation,
     list_invitations as auth_list_invitations, accept_invitation as auth_accept_invitation,
     switch_workspace as auth_switch_workspace, update_member_role as auth_update_member_role,
     remove_member as auth_remove_member)
 from tenant_archive_store import (import_json as tenant_import_json, overview as tenant_archive_overview,
     list_conversations as tenant_list_conversations, get_conversation as tenant_get_conversation,
-    analyze as tenant_analyze, list_candidates as tenant_list_candidates, count_candidates as tenant_count_candidates, review as tenant_review,
+    analyze as tenant_analyze, list_candidates as tenant_list_candidates, count_candidates as tenant_count_candidates, candidate_facets as tenant_candidate_facets, get_candidate_detail as tenant_candidate_detail, review as tenant_review,
     create_import_job as tenant_create_import_job, update_import_job as tenant_update_import_job,
     get_import_job as tenant_get_import_job, list_import_jobs as tenant_list_import_jobs,
     import_document_path as tenant_import_document_path, create_analysis_job as tenant_create_analysis_job,
     get_analysis_job as tenant_get_analysis_job, run_analysis_job as tenant_run_analysis_job,
-    generate_links as tenant_generate_links, list_links as tenant_list_links, review_link as tenant_review_link,
+    generate_links as tenant_generate_links, list_links as tenant_list_links, count_links as tenant_count_links, review_link as tenant_review_link,
     preserve_source as tenant_preserve_source, list_sources as tenant_list_sources, get_source as tenant_get_source)
 from tenant_archive_store import count_conversations as tenant_count_conversations, source_coverage as tenant_source_coverage
 from tenant_archive_store import usage as tenant_usage
@@ -69,6 +69,15 @@ from integration_store import (create_integration as create_api_integration, lis
     authenticate as authenticate_api_integration, record_delivery as record_api_delivery,
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
+from model_invoke import complete as invoke_model, ModelCallError
+from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, merge_extras
+import work_sessions
+import work_context
+import agent_tokens
+import mcp_endpoint
+import time as _time_module
+import tenant_archive_store as _tenant_archive_module
+import archive_store as _local_archive_module
 from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential, local_backend_status as model_key_backend_status
 from tool_store import list_tools as list_workspace_tools, get_tool as get_workspace_tool, disconnect_tool as disconnect_workspace_tool
 
@@ -747,6 +756,110 @@ def runtime_model_catalog():
     for item in catalog: item["available"]=item["id"] in available_ids
     return catalog
 
+
+_AGENT_USAGE = {}
+MCP_RATE_LIMIT_PER_MINUTE = 60
+MCP_MAX_BODY_BYTES = 65536
+_MCP_CALLS = {}
+
+def mcp_rate_limited(token_id):
+    now=_time_module.monotonic(); window=[t for t in _MCP_CALLS.get(token_id,[]) if now-t<60]
+    if len(window)>=MCP_RATE_LIMIT_PER_MINUTE:
+        _MCP_CALLS[token_id]=window; return True
+    window.append(now); _MCP_CALLS[token_id]=window; return False
+
+def agent_daily_limit_reached(workspace_id):
+    """Optional per-workspace daily cap on assistant messages. 0 or unset means no cap. In-process counter."""
+    try: limit=int(os.environ.get("SEED_REFLECTIONS_AGENT_DAILY_LIMIT","0") or 0)
+    except ValueError: limit=0
+    if limit<=0: return False
+    key=(workspace_id,datetime.now().strftime("%Y-%m-%d"))
+    return _AGENT_USAGE.get(key,0)>=limit
+
+def agent_count_use(workspace_id):
+    key=(workspace_id,datetime.now().strftime("%Y-%m-%d"))
+    for old in [k for k in _AGENT_USAGE if k[1]!=key[1]]: _AGENT_USAGE.pop(old,None)
+    _AGENT_USAGE[key]=_AGENT_USAGE.get(key,0)+1
+
+def agent_runtime(user, body, task="chat"):
+    """Resolve the model for an assistant turn and say why not if it cannot run. Returns
+    (provider, api_url, api_key, model, reason); reason is None when a model can be called."""
+    overrides={"workspace_id":user["workspace_id"]}
+    if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
+    provider,api_url,api_key,model,_route=resolve_task_runtime(task,load_config(),overrides)
+    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status()
+    reason=None
+    if not ai_allowed: reason=ai_msg
+    elif not model or not (api_url if provider=="ollama" else api_key):
+        reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
+    elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
+    return provider,api_url,api_key,model,reason
+
+def save_assistant_draft(user, seed, session_id):
+    """Return a save(title, kind, body, refs) callback that stores a DRAFT artifact for the user to review."""
+    def save(title, kind, body, refs):
+        workspace=load_workspace(workspace_id=user["workspace_id"]); now=datetime.now().isoformat()
+        artifact={"artifact_id":uuid.uuid4().hex,"type":kind,"title":title,"content":body,"status":"draft",
+            "project_id":seed.get("project_id"),"conversation_ids":[r["conversation_id"] for r in refs],
+            "seed_ids":[seed["seed_id"]],"created_by":"assistant","origin":"assistant_draft","source_refs":refs,
+            "session_id":session_id,"created_at":now,"updated_at":now,"versions":[]}
+        workspace.setdefault("artifacts",[]).append(artifact)
+        save_workspace(workspace,user["workspace_id"],"artifact_drafted_by_assistant")
+        return artifact
+    return save
+
+WORK_REVISE_INTENT=re.compile(r"\b(revis|rewrite|rewrit|edit|update|shorten|tighten|expand|improve|change|fix|rework|reword|add |remove|trim)",re.I)
+WORK_DECISION_INTENT=re.compile(r"\b(decid|decision|record|log |commit to|agree|go with)",re.I)
+WORK_DRAFT_INTENT=re.compile(r"\b(draft|write|save|plan|brief|report|outline|summar|task|note|document|spec)",re.I)
+
+def work_proposal_view(proposal):
+    return {"id":proposal["id"],"kind":proposal["kind"],**proposal["payload"]}
+
+def work_seed_artifacts(workspace, seed_id):
+    return [a for a in workspace.get("artifacts",[]) if seed_id in (a.get("seed_ids") or [])]
+
+def apply_proposal(user, proposal, workspace):
+    """Apply an ACCEPTED proposal to the workspace. Returns (result_dict, http_status)."""
+    payload=proposal["payload"]; now=datetime.now().isoformat()
+    if proposal["kind"]=="decision":
+        seed=next((s for s in workspace.get("seeds",[]) if (s.get("seed_id") or s.get("id"))==proposal["seed_id"]),{})
+        refs=payload.get("source_refs") or []
+        decision={"decision_id":uuid.uuid4().hex,"project_id":seed.get("project_id"),"statement":payload["statement"],
+            "rationale":payload.get("rationale") or "","status":"active","seed_id":proposal["seed_id"],
+            "source_conversation_id":(refs[0]["conversation_id"] if refs else seed.get("source_conversation_id")),
+            "origin":"assistant_proposed","accepted_by":user["id"],"created_at":now}
+        workspace.setdefault("decisions",[]).append(decision)
+        save_workspace(workspace,user["workspace_id"],"decision_accepted_from_proposal")
+        return {"status":"accepted","decision":decision},200
+    if proposal["kind"]=="revision":
+        artifact=next((a for a in work_seed_artifacts(workspace,proposal["seed_id"]) if a.get("artifact_id")==payload.get("artifact_id")),None)
+        if not artifact: return {"error":"That artifact no longer exists for this idea."},404
+        if artifact.get("updated_at")!=payload.get("base_updated_at"):
+            return {"error":"This artifact changed after the revision was proposed. Dismiss it and ask again so your edits are not overwritten."},409
+        artifact.setdefault("versions",[]).append({"title":artifact.get("title"),"content":artifact.get("content"),"status":artifact.get("status"),"saved_at":now})
+        artifact["versions"]=artifact["versions"][-25:]
+        artifact["content"]=payload["content"]; artifact["updated_at"]=now; artifact["updated_by"]=user["id"]; artifact["updated_via"]="assistant_revision_accepted"
+        save_workspace(workspace,user["workspace_id"],"artifact_revised_from_proposal")
+        return {"status":"accepted","artifact":artifact},200
+    return {"error":"Unknown proposal type"},400
+
+class _AgentStores:
+    """Read-only archive access bound to ONE workspace, taken from the authenticated session."""
+    def __init__(self, workspace_id, workspace):
+        self._ws=workspace_id; self._workspace=workspace
+    def list_conversations(self, query="", limit=8):
+        if self._ws=="local": return _local_archive_module.list_conversations(query=query,limit=limit)
+        return _tenant_archive_module.list_conversations(self._ws,query=query,limit=limit)
+    def get_conversation(self, conversation_id):
+        if self._ws=="local": return _local_archive_module.get_conversation(conversation_id)
+        return _tenant_archive_module.get_conversation(self._ws,conversation_id)
+    def list_candidates(self, status="pending", limit=10):
+        if self._ws=="local": return _local_archive_module.list_candidates(status=status,limit=limit)
+        return _tenant_archive_module.list_candidates(self._ws,status=status,limit=limit)
+    def accepted_ideas(self, limit=10):
+        closed={"completed","done","archived","wilted"}
+        return [i for i in self._workspace.get("seeds",[]) if str(i.get("status","")).lower() not in closed][:limit]
+
 def resolve_task_runtime(task, cfg=None, settings=None):
     """Resolve an available task route and its matching provider connection."""
     cfg=cfg or load_config(); settings=settings or {}
@@ -1113,6 +1226,32 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if DEPLOYMENT_MODE == "local": return {"id":"local-owner","workspace_id":"local","role":"owner"}
         return auth_authenticate(self._bearer_token())
 
+    def _handle_mcp(self):
+        """MCP over HTTP: read-only tools for an outside assistant. Bearer agent token only."""
+        host=self.headers.get("Host","").lower(); origin=self.headers.get("Origin","").lower().rstrip("/")
+        if origin and origin not in ("http://"+host,"https://"+host):
+            self._send_json({"error":"Cross-origin requests are not accepted on /mcp"},403); return
+        auth=self.headers.get("Authorization","")
+        grant=agent_tokens.verify(auth[7:].strip()) if auth.lower().startswith("bearer ") else None
+        if not grant:
+            body=json.dumps({"error":"A valid agent token is required"}).encode()
+            self.send_response(401); self.send_header("Content-Type","application/json"); self.send_header("Content-Length",str(len(body)))
+            self.send_header("WWW-Authenticate",'Bearer realm="seedreflections"'); self.end_headers(); self.wfile.write(body); return
+        if mcp_rate_limited(grant["id"]):
+            self._send_json({"error":"Too many requests; slow down"},429); return
+        try: length=int(self.headers.get("Content-Length",0))
+        except ValueError: length=0
+        if length<=0 or length>MCP_MAX_BODY_BYTES:
+            self._send_json({"error":"Request body is empty or too large"},413 if length>MCP_MAX_BODY_BYTES else 400); return
+        try: payload=json.loads(self.rfile.read(length).decode("utf-8"))
+        except (ValueError,UnicodeDecodeError):
+            self._send_json({"jsonrpc":"2.0","id":None,"error":{"code":-32700,"message":"Parse error"}},400); return
+        workspace_id=grant["workspace_id"]
+        reply=mcp_endpoint.handle(payload,_AgentStores(workspace_id,load_workspace(workspace_id=workspace_id)))
+        if reply is None:
+            self.send_response(202); self.send_header("Content-Length","0"); self.end_headers(); return
+        self._send_json(reply)
+
     def _send_json(self, data, status=200):
         try:
             body = json.dumps(data).encode("utf-8")
@@ -1143,7 +1282,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
 
-    def do_GET(self):
+    def _guarded(self, implementation):
+        """Run a request handler; an unexpected error becomes a clean 500, never a dropped connection."""
+        try:
+            implementation()
+        except (BrokenPipeError, ConnectionResetError):
+            raise
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            try:
+                self._send_json({"error": "Unexpected server error", "code": "internal_error", "type": type(exc).__name__}, 500)
+            except Exception:
+                pass
+
+    def do_GET(self): self._guarded(self._do_GET_impl)
+
+    def do_POST(self): self._guarded(self._do_POST_impl)
+
+    def _do_GET_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
         if path == "/api/v2/capabilities":
@@ -1275,6 +1432,24 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings["model_key_storage"]=model_key_backend_status() if DEPLOYMENT_MODE=="local" else {"saved_keys":True,"backend":"aes256gcm_envelope","session_only_keys":False,"detail":"Saved keys are encrypted with per-credential data keys wrapped by the deployment master key."}
             self._send_json(settings)
             return
+        if path == "/api/v2/work/session":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            seed_id=(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("seed_id") or [""])[0]
+            workspace=load_workspace(workspace_id=user["workspace_id"])
+            seed=next((dict(item) for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==seed_id),None)
+            if not seed: self._send_json({"error":"Idea not found in this workspace"},404); return
+            seed.setdefault("seed_id",seed_id)
+            _text,report=work_context.assemble(_AgentStores(user["workspace_id"],workspace),workspace,seed)
+            self._send_json({"seed":{"seed_id":seed_id,"title":seed.get("title") or seed.get("intent")},
+                "turns":work_sessions.turns(user["workspace_id"],seed_id),"context":report,
+                "proposals":[work_proposal_view(p) for p in work_sessions.list_proposals(user["workspace_id"],seed_id)]}); return
+        if path == "/mcp":
+            self._send_json({"error":"This endpoint accepts POST only"},405); return
+        if path == "/api/v2/agent-tokens":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"tokens":agent_tokens.list_tokens(user["workspace_id"])}); return
         if path == "/api/v2/models":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -1292,6 +1467,19 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     else tenant_get_conversation(user["workspace_id"],conversation_id))
             self._send_json(result if result else {"error":"Conversation not found"},200 if result else 404)
             return
+        if path == "/api/v2/candidates/summary":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); status=(query.get("status") or ["pending"])[0]
+            if status not in ("pending","deferred","accepted","rejected"): self._send_json({"error":"Unknown review status"},400); return
+            self._send_json(candidate_facets(status) if user["workspace_id"]=="local" else tenant_candidate_facets(user["workspace_id"],status)); return
+        candidate_detail_match=re.fullmatch(r"/api/v2/candidates/([0-9a-f]{32})",path)
+        if candidate_detail_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            candidate_id=candidate_detail_match.group(1)
+            detail=(get_candidate_detail(candidate_id) if user["workspace_id"]=="local" else tenant_candidate_detail(user["workspace_id"],candidate_id))
+            self._send_json(detail if detail else {"error":"Candidate not found"},200 if detail else 404); return
         if path == "/api/v2/candidates":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -1300,10 +1488,14 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             try:
                 limit=max(1,min(int((query.get("limit") or ["250"])[0]),1000)); offset=max(0,int((query.get("offset") or ["0"])[0]))
             except ValueError: self._send_json({"error":"limit and offset must be integers"},400); return
+            if status not in ("pending","deferred","accepted","rejected"): self._send_json({"error":"Unknown review status"},400); return
+            filters={"kind":(query.get("kind") or [None])[0],"platform":(query.get("source") or [None])[0],
+                     "query":(query.get("q") or [None])[0],"sort":(query.get("sort") or ["newest"])[0]}
             if user["workspace_id"] == "local":
-                candidates=list_candidates(status,limit,offset); total=count_archive_candidates(status)
+                candidates=list_candidates(status,limit,offset,**filters); total=count_archive_candidates(status,filters["kind"],filters["platform"],filters["query"])
             else:
-                candidates=tenant_list_candidates(user["workspace_id"],status,limit,offset); total=tenant_count_candidates(user["workspace_id"],status)
+                candidates=tenant_list_candidates(user["workspace_id"],status,limit,offset,**filters)
+                total=tenant_count_candidates(user["workspace_id"],status,filters["kind"],filters["platform"],filters["query"])
             self._send_json({"candidates":candidates,"total":total,"limit":limit,"offset":offset,"has_more":offset+len(candidates)<total})
             return
         if path == "/api/v2/imports/jobs":
@@ -1330,8 +1522,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); status=(query.get("status") or ["pending"])[0]
-            links=(list_candidate_links(status) if user["workspace_id"]=="local" else tenant_list_links(user["workspace_id"],status))
-            self._send_json({"links":links}); return
+            try: limit=max(1,min(int((query.get("limit") or ["250"])[0]),1000)); offset=max(0,int((query.get("offset") or ["0"])[0]))
+            except ValueError: self._send_json({"error":"limit and offset must be integers"},400); return
+            if user["workspace_id"]=="local": links=list_candidate_links(status,limit,offset); total=count_candidate_links(status)
+            else: links=tenant_list_links(user["workspace_id"],status,limit,offset); total=tenant_count_links(user["workspace_id"],status)
+            self._send_json({"links":links,"total":total,"limit":limit,"offset":offset,"has_more":offset+len(links)<total}); return
         if path == "/api/v2/sources":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -2799,14 +2994,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "File Not Found")
 
-    def do_POST(self):
+    def _do_POST_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
+        if path == "/mcp":
+            self._handle_mcp(); return
         if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
         permission_exempt={"/api/v2/auth/signup","/api/v2/auth/login","/api/v2/integrations/import",
-            "/api/v2/integrations/ping","/api/v2/team/invitations/accept","/api/v2/workspaces/switch"}
+            "/api/v2/integrations/ping","/api/v2/team/invitations/accept","/api/v2/workspaces/switch","/api/v2/account/delete"}
         if path.startswith("/api/v2/") and path not in permission_exempt:
             permission_user=self._runtime_user()
             if permission_user and permission_user.get("role")=="viewer":
@@ -2956,7 +3153,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 else: result=tenant_import_json(integration["workspace_id"],payload,filename)
                 record_api_delivery(integration["id"])
                 self._send_json({"status":"imported","integration_id":integration["id"],"provider":integration["provider"],
-                    "conversation_count":len(result.get("conversations",[])),"message_count":result.get("message_count",0),
+                    "conversation_count":(result["conversations"] if isinstance(result.get("conversations"),int) else len(result.get("conversations") or [])),"message_count":result.get("message_count",0),
                     "reconciliation":result.get("reconciliation",{})},202)
             except (ValueError,TypeError) as exc:
                 record_api_delivery(integration["id"],exc); self._send_json({"error":str(exc)},400)
@@ -3046,6 +3243,18 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             try: self._send_json(auth_login(body.get("email"),body.get("password")))
             except ValueError as exc: self._send_json({"error":str(exc)},401)
+            return
+        if path == "/api/v2/account/delete":
+            if DEPLOYMENT_MODE == "local":
+                self._send_json({"error":"Local mode keeps your archive on this computer. Delete the data folder to remove it."},409); return
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if str(body.get("confirm") or "").strip()!="DELETE":
+                self._send_json({"error":"Type DELETE to confirm"},400); return
+            if not auth_request_allowed(f"{user['id']}:account-delete"):
+                self._send_json({"error":"Too many attempts. Try again later."},429); return
+            try: self._send_json(auth_delete_account(user["id"],body.get("password")))
+            except ValueError as exc: self._send_json({"error":str(exc)},400 if "password" not in str(exc).lower() else 403)
             return
         if path == "/api/v2/auth/logout":
             if DEPLOYMENT_MODE != "local": auth_logout(self._bearer_token())
@@ -3255,6 +3464,84 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"answer":f"Mapped this reflection into {created} review candidate{'s' if created != 1 else ''}. Open Idea Browser to confirm what should become part of your workspace.",
                 "candidates_created":created,"conversation_id":stored.get("id") or conversation_id},201)
             return
+        if path == "/api/v2/agent-tokens":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(agent_tokens.create_token(user["workspace_id"],body.get("name")),201)
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/agent-tokens/revoke":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            ok=agent_tokens.revoke_token(user["workspace_id"],body.get("id"))
+            self._send_json({"revoked":ok},200 if ok else 404); return
+        if path == "/api/v2/work/turn":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            ws_id=user["workspace_id"]; seed_id=str(body.get("seed_id") or ""); prompt=str(body.get("prompt") or "").strip()
+            if not seed_id or not prompt: self._send_json({"error":"seed_id and prompt are required"},400); return
+            workspace=load_workspace(workspace_id=ws_id)
+            seed=next((dict(item) for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==seed_id),None)
+            if not seed: self._send_json({"error":"Idea not found in this workspace"},404); return
+            seed.setdefault("seed_id",seed_id)
+            stores=_AgentStores(ws_id,workspace)
+            context_text,report=work_context.assemble(stores,workspace,seed)
+            history=[{"role":t["role"],"content":t["content"]} for t in work_sessions.turns(ws_id,seed_id,limit=12)]
+            session=work_sessions.add_turn(ws_id,seed_id,"user",prompt)
+            provider,api_url,api_key,model,reason=agent_runtime(user,body,"plan")
+            drafts=[]; proposals=[]; answer=None; meta=None
+            if reason is None:
+                try:
+                    agent_count_use(ws_id)
+                    allow_draft=bool(WORK_DRAFT_INTENT.search(prompt)); allow_rev=bool(WORK_REVISE_INTENT.search(prompt)); allow_dec=bool(WORK_DECISION_INTENT.search(prompt))
+                    def read_artifact(artifact_id):
+                        art=next((a for a in work_seed_artifacts(load_workspace(workspace_id=ws_id),seed_id) if a.get("artifact_id")==artifact_id),None)
+                        if not art: return {"error":"No such saved artifact for this idea."}
+                        return {"artifact_id":artifact_id,"title":art.get("title"),"type":art.get("type"),"status":art.get("status"),"content":str(art.get("content") or "")[:12000]}
+                    def propose(kind,payload,refs):
+                        if kind=="revision":
+                            art=next((a for a in work_seed_artifacts(load_workspace(workspace_id=ws_id),seed_id) if a.get("artifact_id")==payload["artifact_id"]),None)
+                            if not art: return {"error":"No such saved artifact for this idea."}
+                            payload={**payload,"title":art.get("title"),"before":str(art.get("content") or "")[:20000],"base_updated_at":art.get("updated_at")}
+                        else: payload={**payload,"source_refs":refs}
+                        return work_sessions.add_proposal(ws_id,seed_id,kind,payload)
+                    def extras(sources):
+                        parts=[]
+                        if allow_draft: parts.append(make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
+                        if allow_rev or allow_dec: parts.append(make_proposal_tools(read_artifact,propose,sources,proposals,allow_rev,allow_dec))
+                        return merge_extras(*parts)
+                    extra=extras if (allow_draft or allow_rev or allow_dec) else None
+                    result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
+                        context_text=context_text,extra_factory=extra,
+                        preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
+                    answer=result["answer"]
+                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"context":report,
+                          "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
+                          "proposals":[work_proposal_view(p) for p in proposals]}
+                except ModelCallError as exc: reason=str(exc)
+            if meta is None:
+                answer=(f"No model answered ({reason}). Here is what your project record holds for \"{report['idea']}\":\n\n"
+                        f"Intent: {seed.get('intent') or seed.get('summary') or 'not recorded'}\nNext action: {seed.get('next_action') or 'not recorded'}")
+                meta={"mode":"records_only","reason":reason,"context":report,"drafts":[],"proposals":[]}
+            work_sessions.add_turn(ws_id,seed_id,"assistant",answer,meta)
+            self._send_json({"answer":answer,"session_id":session["id"],**meta}); return
+        if path == "/api/v2/work/proposals/resolve":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            proposal=work_sessions.get_proposal(user["workspace_id"],body.get("id"))
+            if not proposal or proposal["status"]!="pending": self._send_json({"error":"No pending proposal with that id"},404); return
+            action=body.get("action")
+            if action not in {"accept","dismiss"}: self._send_json({"error":"action must be accept or dismiss"},400); return
+            if action=="dismiss":
+                work_sessions.resolve_proposal(user["workspace_id"],proposal["id"],"dismissed"); self._send_json({"status":"dismissed"}); return
+            result,status=apply_proposal(user,proposal,load_workspace(workspace_id=user["workspace_id"]))
+            if status==200: work_sessions.resolve_proposal(user["workspace_id"],proposal["id"],"accepted")
+            self._send_json(result,status); return
+        if path == "/api/v2/work/clear":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"cleared":work_sessions.clear(user["workspace_id"],str(body.get("seed_id") or ""))}); return
         if path == "/api/v2/chat":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -3263,6 +3550,21 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             workspace=load_workspace(workspace_id=user["workspace_id"])
             active_id=body.get("active_seed_id")
             seed=next((item for item in workspace.get("seeds",[]) if (item.get("seed_id") or item.get("id"))==active_id),None)
+            # Model-backed assistant: read-only tools over this workspace, bounded, budget-checked.
+            provider,api_url,api_key,model,reason=agent_runtime(user,body,"chat")
+            if reason is None:
+                try:
+                    agent_count_use(user["workspace_id"])
+                    result=run_agent(prompt,_AgentStores(user["workspace_id"],workspace),
+                        lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
+                        history=body.get("history") if isinstance(body.get("history"),list) else None,
+                        active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
+                    self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
+                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"]})
+                    return
+                except ModelCallError as exc:
+                    reason=str(exc)
             if seed:
                 title=seed.get("title") or str(seed.get("intent") or "this idea")[:80]
                 intent=seed.get("intent") or seed.get("summary") or "No intent has been recorded yet."
@@ -3274,7 +3576,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 open_seeds=[item for item in workspace.get("seeds",[]) if str(item.get("status","")).lower() not in {"completed","done","archived","wilted"}]
                 answer=(f"Your workspace currently has {len(open_seeds)} active confirmed idea{'s' if len(open_seeds) != 1 else ''}. "
                         "Choose one from the shelf to continue with its saved intent and source context, or import a conversation and map its ideas first.")
-            self._send_json({"answer":answer,"grounded":True,"active_seed_id":active_id})
+            self._send_json({"answer":answer,"grounded":True,"active_seed_id":active_id,"mode":"records_only","reason":reason})
             return
         if path == "/api/v2/analysis/run":
             user=self._runtime_user()
@@ -3363,6 +3665,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except KeyError as exc: self._send_json({"error":str(exc)},404)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
+            except RuntimeError as exc: self._send_json({"error":str(exc),"code":"conflict"},409)
             return
         resume_v2_match=re.fullmatch(r"/api/v2/seeds/([^/]+)/resume",path)
         if resume_v2_match:

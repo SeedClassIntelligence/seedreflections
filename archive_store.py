@@ -195,7 +195,7 @@ def _platform(data, filename):
         return "chatgpt"
     if "chat_messages" in sample:
         return "claude"
-    if "chunkedPrompt" in sample or "modelResponse" in sample or sample.get("platform") == "gemini":
+    if "chunkedPrompt" in sample or "modelResponse" in sample or "safeHtmlItem" in sample or str(sample.get("header", "")).lower().startswith("gemini"):
         return "gemini"
     if "rollout" in sample or "turns" in sample or sample.get("platform") == "codex":
         return "codex"
@@ -209,6 +209,34 @@ def _platform(data, filename):
     for provider, normalized in aliases.items():
         if provider in name: return normalized
     return "generic"
+
+
+def _source_id(raw, index):
+    """Use the export's own id; otherwise derive one from the content so separate files never collide."""
+    explicit = raw.get("id") or raw.get("uuid") or raw.get("conversation_id")
+    if explicit:
+        return str(explicit)
+    digest = hashlib.sha256(json.dumps(raw, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:12]
+    return f"conversation-{digest}"
+
+
+def _gemini_items(raw, source_id):
+    """Gemini AI Studio (chunkedPrompt.chunks) and Google Takeout activity entries."""
+    prompt = raw.get("chunkedPrompt")
+    if isinstance(prompt, dict) and isinstance(prompt.get("chunks"), list):
+        return [{"id": f"{source_id}-{i}", "role": "assistant" if str(c.get("role")).lower() == "model" else c.get("role") or "user",
+                 "content": c.get("text") or c.get("content")} for i, c in enumerate(prompt["chunks"]) if isinstance(c, dict) and not c.get("isThought")]
+    if "safeHtmlItem" in raw or str(raw.get("header", "")).lower().startswith("gemini"):
+        title = str(raw.get("title") or "")
+        asked = re.sub(r"^(Prompted|Asked|Said)\s+", "", title)
+        answer = " ".join(_text([h.get("html") if isinstance(h, dict) else h for h in raw.get("safeHtmlItem") or []]).split())
+        answer = re.sub(r"<[^>]+>", " ", answer)
+        answer = re.sub(r"\s+", " ", answer).strip()
+        items = [{"id": f"{source_id}-prompt", "role": "user", "content": asked, "created_at": raw.get("time")}]
+        if answer:
+            items.append({"id": f"{source_id}-response", "role": "assistant", "content": answer, "created_at": raw.get("time")})
+        return items
+    return None
 
 
 def _messages(raw, source_id):
@@ -236,7 +264,8 @@ def _messages(raw, source_id):
                 "created_at": _timestamp(message.get("create_time")),
             })
         return result
-    items = raw.get("chat_messages") or raw.get("messages") or raw.get("turns") or raw.get("items") or []
+    gemini = _gemini_items(raw, source_id)
+    items = gemini or raw.get("chat_messages") or raw.get("messages") or raw.get("turns") or raw.get("items") or []
     if not items and (raw.get("chunkedPrompt") is not None or raw.get("modelResponse") is not None):
         items = []
         if raw.get("chunkedPrompt") is not None:
@@ -295,7 +324,7 @@ def import_json(content, filename="export.json"):
         for index, raw in enumerate(data):
             if not isinstance(raw, dict):
                 continue
-            source_id = str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index + 1}")
+            source_id = _source_id(raw, index)
             title = str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index + 1}")
             messages = _messages(raw, source_id)
             raw_json = json.dumps(raw, ensure_ascii=False, sort_keys=True)
@@ -424,7 +453,7 @@ def import_json_path(path, filename="export.json"):
         db.execute("INSERT INTO imports VALUES(?,?,?,?,?,?,?)", (import_id, Path(filename).name, platform, digest, 0, 0, _now()))
         for index, raw in enumerate(itertools.chain([first], iterator)):
             if not isinstance(raw, dict): continue
-            source_id=str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index+1}")
+            source_id=_source_id(raw, index)
             title=str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index+1}")
             messages=_messages(raw, source_id); raw_json=json.dumps(raw,ensure_ascii=False,sort_keys=True)
             prior=db.execute("SELECT * FROM conversations WHERE source_id=? AND platform=? ORDER BY COALESCE(updated_at,created_at) DESC LIMIT 1",(source_id,platform)).fetchone()
@@ -651,11 +680,39 @@ _CANDIDATE_PATTERNS = [
     ("decision", re.compile(r"\b(?:we decided|decision:|we will use|we chose|i decided)\s+(.{12,400})", re.I)),
     ("requirement", re.compile(r"\b(?:must|needs? to|required to|requirement:)\s+(.{12,400})", re.I)),
     ("constraint", re.compile(r"\b(?:must not|cannot|never|constraint:)\s+(.{12,400})", re.I)),
-    ("task", re.compile(r"\b(?:next step|todo|need to|have to)\s+(.{12,400})", re.I)),
-    ("idea", re.compile(r"\b(?:i want to|we should|let's|idea:|what if we|could build)\s+(.{12,400})", re.I)),
+    ("task", re.compile(r"\b(?:next step|todo|need to|have to)\s*:?\s+(.{12,400})", re.I)),
+    ("idea", re.compile(r"\b(?:i want(?: to)?|we should|let's|idea:|what if we|could build)\s+(.{12,400})", re.I)),
     ("question", re.compile(r"\b(?:open question|we need to figure out|should we)\s+(.{12,400})", re.I)),
     ("abandoned", re.compile(r"\b(?:abandon|dropped|no longer|decided against|not pursuing)\s+(.{12,400})", re.I)),
 ]
+
+
+USER_ROLES = {"user", "human", "customer"}
+DETECTION_METHOD = "evidence_rules_v1"
+
+
+def detect_candidates(role, content, seen=None):
+    """The single phrase-rule detector shared by local and hosted analysis.
+
+    Pure: no database access. Returns dicts with kind, title, interpretation, excerpt,
+    confidence and rationale for each new phrase match in a user-authored message.
+    ``seen`` de-duplicates across the messages of one conversation."""
+    if str(role).lower() not in USER_ROLES:
+        return []
+    seen = set() if seen is None else seen
+    found = []
+    for kind, pattern in _CANDIDATE_PATTERNS:
+        for match in pattern.finditer(content or ""):
+            interpretation = re.split(r"[\n.!?](?:\s|$)", match.group(1).strip(), maxsplit=1)[0].strip()
+            key = re.sub(r"\W+", " ", interpretation.lower()).strip()
+            if len(key) < 12 or key in seen:
+                continue
+            seen.add(key); words = interpretation.split()
+            confidence = min(.9, .58 + min(len(interpretation), 180) / 1800 + (.08 if kind in {"decision", "constraint", "requirement"} else 0))
+            found.append({"kind": kind, "title": " ".join(words[:12]) + ("…" if len(words) > 12 else ""),
+                          "interpretation": interpretation, "excerpt": match.group(0)[:700], "confidence": round(confidence, 2),
+                          "rationale": f"Direct {kind} language found in a user-authored source message. Human confirmation required."})
+    return found
 
 
 def analyze_conversation(conversation_id):
@@ -672,19 +729,11 @@ def analyze_conversation(conversation_id):
             return {"created":0,"existing":existing,"abstained":False,"method":"evidence_rules_v1"}
         created=0; seen=set()
         for message in messages:
-            if message["role"].lower() not in {"user","human","customer"}: continue
-            for kind, pattern in _CANDIDATE_PATTERNS:
-                for match in pattern.finditer(message["content"]):
-                    interpretation = re.split(r"[\n.!?](?:\s|$)", match.group(1).strip(), maxsplit=1)[0].strip()
-                    key = re.sub(r"\W+"," ",interpretation.lower()).strip()
-                    if len(key)<12 or key in seen: continue
-                    seen.add(key); words=interpretation.split(); title=" ".join(words[:12])+("…" if len(words)>12 else "")
-                    confidence=min(.9,.58+min(len(interpretation),180)/1800+(.08 if kind in {"decision","constraint","requirement"} else 0))
-                    db.execute("INSERT INTO idea_candidates VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",(
-                        uuid.uuid4().hex,conversation_id,message["id"],kind,title,interpretation,match.group(0)[:700],round(confidence,2),
-                        f"Direct {kind} language found in a user-authored source message. Human confirmation required.",
-                        "evidence_rules_v1","pending",None,_now()))
-                    created+=1
+            for found in detect_candidates(message["role"], message["content"], seen):
+                db.execute("INSERT INTO idea_candidates VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",(
+                    uuid.uuid4().hex,conversation_id,message["id"],found["kind"],found["title"],found["interpretation"],found["excerpt"],found["confidence"],
+                    found["rationale"],DETECTION_METHOD,"pending",None,_now()))
+                created+=1
         db.execute("""INSERT OR REPLACE INTO conversation_analysis
           (conversation_id,method,status,candidate_count,analyzed_at) VALUES(?,?,?,?,?)""",
           (conversation_id,"evidence_rules_v1","mapped" if created else "no_explicit_evidence",created,_now()))
@@ -869,7 +918,13 @@ def generate_candidate_links(min_score=.18, min_shared=2):
     return {"created":created,"method":"lexical_overlap_v1"}
 
 
-def list_candidate_links(status="pending", limit=250):
+def count_candidate_links(status="pending"):
+    initialize()
+    with _connect() as db:
+        return db.execute("SELECT COUNT(*) FROM candidate_links WHERE status=?",(status,)).fetchone()[0]
+
+
+def list_candidate_links(status="pending", limit=250, offset=0):
     initialize()
     with _connect() as db:
         rows=db.execute("""SELECT l.*,a.title left_title,a.interpretation left_interpretation,
@@ -877,8 +932,8 @@ def list_candidate_links(status="pending", limit=250):
           bv.title right_conversation FROM candidate_links l
           JOIN idea_candidates a ON a.id=l.left_candidate_id JOIN conversations av ON av.id=a.conversation_id
           JOIN idea_candidates b ON b.id=l.right_candidate_id JOIN conversations bv ON bv.id=b.conversation_id
-          WHERE l.status=? ORDER BY l.score DESC,l.created_at DESC LIMIT ?""",
-          (status,max(1,min(int(limit),1000)))).fetchall()
+          WHERE l.status=? ORDER BY l.score DESC,l.created_at DESC,l.id LIMIT ? OFFSET ?""",
+          (status,max(1,min(int(limit),1000)),max(0,int(offset)))).fetchall()
     result=[]
     for row in rows:
         item=dict(row); item["shared_terms"]=json.loads(item.pop("shared_terms_json")); result.append(item)
@@ -895,32 +950,85 @@ def review_candidate_link(link_id, action):
     return dict(row) | {"status":new_status}
 
 
-def list_candidates(status="pending", limit=250, offset=0):
+CANDIDATE_STATUSES = ("pending", "deferred", "accepted", "rejected")
+
+
+def _candidate_filter(status, kind=None, platform=None, query=None):
+    clauses, params = ["c.status=?"], [status]
+    if kind:
+        clauses.append("c.kind=?"); params.append(kind)
+    if platform:
+        clauses.append("LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown'))=?"); params.append(str(platform).lower())
+    if query and str(query).strip():
+        like = f"%{str(query).strip()}%"
+        clauses.append("(c.title LIKE ? OR c.interpretation LIKE ? OR v.title LIKE ?)"); params += [like, like, like]
+    return " AND ".join(clauses), params
+
+
+def list_candidates(status="pending", limit=250, offset=0, kind=None, platform=None, query=None, sort="newest"):
     initialize()
+    where, params = _candidate_filter(status, kind, platform, query)
+    order = {"confidence": "c.confidence DESC,c.id", "oldest": "c.created_at ASC,c.id",
+             "reviewed": "c.reviewed_at DESC,c.id"}.get(sort, "c.created_at DESC,c.id")
     with _connect() as db:
-        rows=db.execute("""SELECT c.*,v.title conversation_title,v.platform,m.ordinal message_ordinal
+        rows=db.execute(f"""SELECT c.*,v.title conversation_title,v.platform,m.ordinal message_ordinal
           FROM idea_candidates c JOIN conversations v ON v.id=c.conversation_id
-          JOIN messages m ON m.id=c.message_id WHERE c.status=? ORDER BY c.created_at DESC,c.id LIMIT ? OFFSET ?""",
-          (status,max(1,min(int(limit),1000)),max(0,int(offset)))).fetchall()
+          JOIN messages m ON m.id=c.message_id WHERE {where} ORDER BY {order} LIMIT ? OFFSET ?""",
+          (*params,max(1,min(int(limit),1000)),max(0,int(offset)))).fetchall()
     return [dict(row) for row in rows]
 
 
-def count_candidates(status="pending"):
+def count_candidates(status="pending", kind=None, platform=None, query=None):
+    initialize()
+    where, params = _candidate_filter(status, kind, platform, query)
+    with _connect() as db:
+        return db.execute(f"""SELECT COUNT(*) FROM idea_candidates c JOIN conversations v ON v.id=c.conversation_id
+          WHERE {where}""", params).fetchone()[0]
+
+
+def candidate_facets(status="pending"):
+    """Counts the inbox needs: every review status, plus type and source breakdowns for one status."""
     initialize()
     with _connect() as db:
-        return db.execute("SELECT COUNT(*) FROM idea_candidates WHERE status=?",(status,)).fetchone()[0]
+        statuses={row[0]:row[1] for row in db.execute("SELECT status,COUNT(*) FROM idea_candidates GROUP BY status")}
+        kinds={row[0]:row[1] for row in db.execute("SELECT kind,COUNT(*) FROM idea_candidates WHERE status=? GROUP BY kind",(status,))}
+        sources={row[0]:row[1] for row in db.execute("""SELECT LOWER(COALESCE(NULLIF(TRIM(v.platform),''),'unknown')),COUNT(*)
+          FROM idea_candidates c JOIN conversations v ON v.id=c.conversation_id WHERE c.status=? GROUP BY 1""",(status,))}
+    return {"statuses":{name:statuses.get(name,0) for name in CANDIDATE_STATUSES},"kinds":kinds,"sources":sources}
+
+
+def get_candidate_detail(candidate_id, window=2):
+    """One candidate with the exact passage and the messages around it, so it can be judged in context."""
+    initialize(); window=max(0,min(int(window),6))
+    with _connect() as db:
+        row=db.execute("""SELECT c.*,v.title conversation_title,v.platform,v.created_at conversation_created_at,
+          m.ordinal message_ordinal,m.content excerpt_full FROM idea_candidates c
+          JOIN conversations v ON v.id=c.conversation_id JOIN messages m ON m.id=c.message_id WHERE c.id=?""",(candidate_id,)).fetchone()
+        if not row: return None
+        ordinal=row["message_ordinal"]
+        context=db.execute("""SELECT id,role,content,ordinal FROM messages WHERE conversation_id=? AND ordinal BETWEEN ? AND ? ORDER BY ordinal""",
+                           (row["conversation_id"],ordinal-window,ordinal+window)).fetchall()
+        total=db.execute("SELECT COUNT(*) FROM messages WHERE conversation_id=?",(row["conversation_id"],)).fetchone()[0]
+        related=db.execute("""SELECT COUNT(*) FROM candidate_links WHERE status='pending' AND (left_candidate_id=? OR right_candidate_id=?)""",
+                           (candidate_id,candidate_id)).fetchone()[0]
+    return {"candidate":dict(row),"context":[dict(item)|{"is_source":item["id"]==row["message_id"]} for item in context],
+            "message_total":total,"related_suggestions":related,"method":row["extraction_method"]}
 
 
 def review_candidate(candidate_id, action):
-    if action not in {"accept","reject","defer"}: raise ValueError("Review action must be accept, reject, or defer")
+    """accept / defer / reject from pending (or deferred); reopen returns a deferred or rejected item to pending.
+
+    Accepted items are not reopened here: accepting creates a decision or idea elsewhere in the workspace."""
+    if action not in {"accept","reject","defer","reopen"}: raise ValueError("Review action must be accept, reject, defer, or reopen")
     initialize()
+    allowed=("deferred","rejected") if action=="reopen" else ("pending","deferred")
     with _connect() as db:
-        row=db.execute("""SELECT c.*,v.title conversation_title,v.platform,m.source_id message_source_id
+        row=db.execute(f"""SELECT c.*,v.title conversation_title,v.platform,m.source_id message_source_id
           FROM idea_candidates c JOIN conversations v ON v.id=c.conversation_id
-          JOIN messages m ON m.id=c.message_id WHERE c.id=? AND c.status='pending'""",(candidate_id,)).fetchone()
-        if not row: raise ValueError("Pending candidate not found")
-        status={"accept":"accepted","reject":"rejected","defer":"deferred"}[action]
-        db.execute("UPDATE idea_candidates SET status=?,reviewed_at=? WHERE id=?",(status,_now(),candidate_id))
+          JOIN messages m ON m.id=c.message_id WHERE c.id=? AND c.status IN ({",".join("?"*len(allowed))})""",(candidate_id,*allowed)).fetchone()
+        if not row: raise ValueError("Candidate not found in a reviewable state")
+        status={"accept":"accepted","reject":"rejected","defer":"deferred","reopen":"pending"}[action]
+        db.execute("UPDATE idea_candidates SET status=?,reviewed_at=? WHERE id=?",(status,None if action=="reopen" else _now(),candidate_id))
     return dict(row) | {"status":status}
 
 
