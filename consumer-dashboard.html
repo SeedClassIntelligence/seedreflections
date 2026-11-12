@@ -1318,7 +1318,7 @@ body{background:#06080f;color:var(--text)}
 /* Phone: secondary destinations live behind "More" so every destination is reachable (the bar only fits four) */
 .app-more-tab,.app-more-sheet{display:none}
 @media (max-width:720px){
-  .app-primary-nav .app-primary-tab[data-primary="tools"],.app-primary-nav .app-primary-tab[data-primary="prompt"],.app-primary-nav .app-primary-tab[data-primary="settings"],.app-primary-nav a.app-primary-tab[href="/admin"]{display:none}
+  .app-primary-nav .app-primary-tab[data-primary="seedbridge"],.app-primary-nav .app-primary-tab[data-primary="tools"],.app-primary-nav .app-primary-tab[data-primary="prompt"],.app-primary-nav .app-primary-tab[data-primary="settings"],.app-primary-nav a.app-primary-tab[href="/admin"]{display:none}
   .app-more-tab{display:flex}
   .app-more-sheet:not([hidden]){display:grid;position:fixed;left:8px;right:8px;bottom:72px;z-index:60;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   .app-more-sheet button,.app-more-sheet a{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;background:none;border:0;border-radius:8px;color:var(--text);font:inherit;font-size:14px;text-decoration:none;text-align:left;cursor:pointer}
@@ -1346,6 +1346,14 @@ body{background:#06080f;color:var(--text)}
 .section-title,.journey-title{font-weight:800;letter-spacing:-.03em}
 .cockpit-panel-title{font-weight:700}
 button,select,input,textarea{font-family:inherit}
+.intake-card,.intake-grid>*{min-width:0;max-width:100%}
+@media(max-width:720px){.intake-grid{grid-template-columns:minmax(0,1fr)}.import-ledger-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.chat-input,#section-intake input,#section-intake select,#section-intake textarea{min-width:0;max-width:100%}
+@media(max-width:720px){
+  /* source forms stack on phones; the bottom bar shares the width so "More" stays on screen */
+  #section-intake div[style*="grid-template-columns:minmax("]{grid-template-columns:minmax(0,1fr)!important}
+  .app-primary-nav .app-primary-tab{flex:1 1 0;min-width:0;padding:7px 2px}
+}
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   /* keep colour and opacity feedback, drop movement */
@@ -1446,6 +1454,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   <button class="library-view-tab" data-library="artifacts" onclick="switchDashTab('artifacts')">Work artifacts</button>
 </div>
   <button class="app-primary-tab" data-primary="overview" onclick="switchDashTab('overview')"><span class="nav-glyph" aria-hidden="true">⌁</span><span class="nav-label">Overview</span></button>
+  <button class="app-primary-tab" data-primary="seedbridge" onclick="openWorkspaceSources('folder')"><span class="nav-glyph" aria-hidden="true">⇄</span><span class="nav-label">SeedBridge</span></button>
   <button class="app-primary-tab" data-primary="tools" onclick="openToolsManager()"><span class="nav-glyph" aria-hidden="true">⌘</span><span class="nav-label">Tools</span></button>
   <button class="app-primary-tab" data-primary="prompt" onclick="switchDashTab('prompt')"><span class="nav-glyph" aria-hidden="true">#</span><span class="nav-label">Prompt Engine</span></button>
   <button class="app-primary-tab" data-primary="settings" onclick="switchDashTab('account')"><span class="nav-glyph" aria-hidden="true">⚙</span><span class="nav-label">Settings</span></button>
@@ -1456,6 +1465,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 </div>
 
 <div id="app-more-sheet" class="app-more-sheet" role="menu" aria-label="More destinations" hidden>
+  <button role="menuitem" onclick="moreNavGo(function(){openWorkspaceSources('folder')})"><span class="nav-glyph" aria-hidden="true">⇄</span>SeedBridge</button>
   <button role="menuitem" onclick="moreNavGo(function(){openToolsManager()})"><span class="nav-glyph" aria-hidden="true">⌘</span>Tools</button>
   <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('prompt')})"><span class="nav-glyph" aria-hidden="true">#</span>Prompt Engine</button>
   <button role="menuitem" onclick="moreNavGo(function(){switchDashTab('account')})"><span class="nav-glyph" aria-hidden="true">⚙</span>Settings</button>
