@@ -30,14 +30,14 @@
   });
 
   $('read').addEventListener('click', async function () {
-    setError(''); setStatus(''); show('preview', false); captured = null;
+    setError(''); setStatus(''); show('preview', false); show('diag-box', false); captured = null;
     try {
       var tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       var tab = tabs[0]; if (!tab) throw new Error('No active tab.');
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['lib/extract.js'] });
       var run = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: function () { return globalThis.__seedExtract.extract(document, location); } });
       var result = run && run[0] && run[0].result;
-      if (!result || !result.ok) { setError((result && result.message) || 'This page could not be read.'); return; }
+      if (!result || !result.ok) { setError((result && result.message) || 'This page could not be read.'); if (result && result.platform) show('diag-box', true); return; }
       captured = result;
       $('p-title').textContent = result.title;
       $('p-meta').textContent = result.messages.length + ' messages from ' + result.platform;
@@ -45,6 +45,14 @@
       $('p-notice').textContent = result.notice;
       show('preview', true);
     } catch (e) { setError('This page could not be read. Open a supported conversation (ChatGPT, Claude or Gemini) and try again.'); }
+  });
+
+  $('diag').addEventListener('click', async function () {
+    try {
+      var tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      var run = await chrome.scripting.executeScript({ target: { tabId: tabs[0].id }, func: function () { return globalThis.__seedExtract.diagnose(document, location); } });
+      await navigator.clipboard.writeText(run[0].result); setStatus('Copied. Paste it into your message.');
+    } catch (e) { setError('Could not copy the report.'); }
   });
 
   $('send').addEventListener('click', async function () {

@@ -69,7 +69,29 @@
     };
   }
 
-  var api = { extract: extract, siteFor: siteFor };
+  // A report of the page's structure for fixing a reader when a site changes. It lists tag names, attribute
+  // names and counts only. It never includes any message text, titles or addresses beyond the host.
+  function diagnose(doc, loc) {
+    function tally(list, limit) {
+      var counts = {}; list.forEach(function (k) { counts[k] = (counts[k] || 0) + 1; });
+      return Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, limit)
+        .map(function (k) { return k + ' x' + counts[k]; });
+    }
+    var all = Array.prototype.slice.call(doc.querySelectorAll('*'));
+    var probes = ['[data-message-author-role]', '[data-testid="user-message"]', '.font-claude-response', '.font-claude-message',
+      '[data-testid="assistant-message"]', 'user-query', 'model-response', 'message-content'];
+    var report = {
+      host: loc.hostname, supported: !!siteFor(loc.hostname),
+      readerProbes: probes.map(function (q) { return q + ' => ' + doc.querySelectorAll(q).length; }),
+      customElements: tally(all.map(function (e) { return e.tagName.toLowerCase(); }).filter(function (t) { return t.indexOf('-') !== -1; }), 25),
+      dataTestIds: tally(all.map(function (e) { return e.getAttribute('data-testid'); }).filter(Boolean), 30),
+      authorRoles: tally(all.map(function (e) { return e.getAttribute('data-message-author-role'); }).filter(Boolean), 10),
+      fontClasses: tally(all.reduce(function (a, e) { (e.className && e.className.split ? e.className.split(/\s+/) : []).forEach(function (c) { if (/^font-/.test(c)) a.push(c); }); return a; }, []), 15)
+    };
+    return JSON.stringify(report, null, 2);
+  }
+
+  var api = { extract: extract, siteFor: siteFor, diagnose: diagnose };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof globalThis !== 'undefined') globalThis.__seedExtract = api;
 })();

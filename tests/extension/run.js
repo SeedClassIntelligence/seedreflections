@@ -29,6 +29,9 @@ const results = []; const check = (name, ok, detail) => results.push({ name, ok:
   check('gemini reads both roles', gm.ok && gm.messages.length === 2 && gm.messages[1].role === 'assistant' && gm.messages[1].text.includes('Tuesday: hosting'), JSON.stringify(gm));
   check('gemini generic title falls back to the first question', gm.title === 'Plan my launch week', gm.title);
 
+  const rep = await page.evaluate((f) => { document.title = f.title; document.body.innerHTML = f.html; return globalThis.__seedExtract.diagnose(document, { hostname: f.host }); }, fixtures.chatgpt);
+  check('layout report lists structure but none of the message text or title', rep.includes('data-message-author-role') && !/Start at|beta pricing|Pricing plan|Why three/.test(rep), rep);
+
   const em = await read('empty'); check('empty page is refused with a reason', !em.ok && em.reason === 'no_messages', JSON.stringify(em));
   const ot = await read('other'); check('unsupported site is refused', !ot.ok && ot.reason === 'unsupported_site', JSON.stringify(ot));
 
