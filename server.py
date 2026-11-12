@@ -3115,7 +3115,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 else: result=tenant_import_json(integration["workspace_id"],payload,filename)
                 record_api_delivery(integration["id"])
                 self._send_json({"status":"imported","integration_id":integration["id"],"provider":integration["provider"],
-                    "conversation_count":len(result.get("conversations",[])),"message_count":result.get("message_count",0),
+                    "conversation_count":(result["conversations"] if isinstance(result.get("conversations"),int) else len(result.get("conversations") or [])),"message_count":result.get("message_count",0),
                     "reconciliation":result.get("reconciliation",{})},202)
             except (ValueError,TypeError) as exc:
                 record_api_delivery(integration["id"],exc); self._send_json({"error":str(exc)},400)

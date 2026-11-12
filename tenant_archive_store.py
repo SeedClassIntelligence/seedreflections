@@ -3,7 +3,7 @@ import base64, hashlib, hmac, itertools, json, mimetypes, re, shutil, sqlite3, t
 from contextlib import contextmanager
 from pathlib import Path
 
-from archive_store import DB_PATH, _messages, _now, _platform, _timestamp, iter_json_array
+from archive_store import DB_PATH, _messages, _now, _platform, _source_id, _timestamp, iter_json_array
 from workspace_store import load_workspace, save_workspace, save_workspace_in_transaction
 
 
@@ -92,7 +92,7 @@ def import_json(workspace_id, content, filename="export.json"):
         for index, raw in enumerate(data):
             if not isinstance(raw, dict):
                 continue
-            source_id = str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index+1}")
+            source_id = _source_id(raw, index)
             title = str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index+1}")
             messages = _messages(raw, source_id)
             existing = db.execute("SELECT id FROM tenant_conversations WHERE workspace_id=? AND platform=? AND source_id=?",
@@ -499,7 +499,7 @@ def import_json_path(workspace_id, path, filename="export.json"):
         db.execute("INSERT INTO tenant_imports VALUES(?,?,?,?,?,?,?,?)",(import_id,workspace_id,Path(filename).name,platform,digest,0,0,_now()))
         for index,raw in enumerate(itertools.chain([first],iterator)):
             if not isinstance(raw,dict): continue
-            source_id=str(raw.get("id") or raw.get("uuid") or raw.get("conversation_id") or f"conversation-{index+1}")
+            source_id=_source_id(raw, index)
             title=str(raw.get("title") or raw.get("name") or raw.get("subject") or f"Conversation {index+1}")
             messages=_messages(raw,source_id); existing=db.execute(
                 "SELECT id FROM tenant_conversations WHERE workspace_id=? AND platform=? AND source_id=?",(workspace_id,platform,source_id)).fetchone()

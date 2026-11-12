@@ -157,6 +157,21 @@ class UnifiedRuntimeTests(unittest.TestCase):
             self.assertEqual(data["mode"],"local"); self.assertTrue(data["hosted_archive_ingestion"])
         finally: runtime.close()
 
+    def test_hosted_companion_delivery_lands_in_the_owners_workspace_only(self):
+        runtime=UnifiedRuntime("hosted")
+        try:
+            _,first=runtime.request("POST","/api/v2/auth/signup",{"name":"Owner","email":"own@example.com","password":"strong-password-123"})
+            _,second=runtime.request("POST","/api/v2/auth/signup",{"name":"Other","email":"oth@example.com","password":"strong-password-456"})
+            _,made=runtime.request("POST","/api/v2/integrations",{"name":"SeedBridge","provider":"codex"},token=first["access_token"])
+            status,delivered=runtime.request("POST","/api/v2/integrations/import",{"conversation":{"id":"s1","title":"From bridge","messages":[
+                {"id":"m1","role":"user","content":"Delivered by the desktop companion."}]}},token=made["token"])
+            self.assertEqual((status,delivered["conversation_count"]),(202,1))
+            _,mine=runtime.request("GET","/api/v2/conversations",token=first["access_token"])
+            _,theirs=runtime.request("GET","/api/v2/conversations",token=second["access_token"])
+            self.assertEqual([c["title"] for c in mine["conversations"]],["From bridge"])
+            self.assertEqual(theirs["conversations"],[])
+        finally: runtime.close()
+
     def test_hosted_archives_are_isolated_by_workspace(self):
         runtime=UnifiedRuntime("hosted")
         try:
