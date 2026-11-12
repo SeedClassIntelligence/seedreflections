@@ -95,6 +95,14 @@ class SessionStoreTests(unittest.TestCase):
         self.assertTrue(work_sessions.clear("ws-a", "s1"))
         self.assertEqual(work_sessions.turns("ws-a", "s1"), [])
 
+    def test_proposals_are_scoped_to_their_workspace(self):
+        proposal = work_sessions.add_proposal("ws-a", "s1", "decision", {"statement": "x"})
+        self.assertIsNone(work_sessions.get_proposal("ws-b", proposal["id"]))
+        self.assertFalse(work_sessions.resolve_proposal("ws-b", proposal["id"], "accepted"))
+        self.assertEqual(work_sessions.list_proposals("ws-b", "s1"), [])
+        self.assertTrue(work_sessions.resolve_proposal("ws-a", proposal["id"], "accepted"))
+        self.assertFalse(work_sessions.resolve_proposal("ws-a", proposal["id"], "accepted"))
+
     def test_old_turns_are_trimmed(self):
         with patch.object(work_sessions, "MAX_TURNS_KEPT", 5):
             for index in range(9):
@@ -214,6 +222,91 @@ class WorkTurnHttpTests(unittest.TestCase):
         self.assertIn("Fortnightly default", data["answer"])
         self.assertEqual(self.workspace["artifacts"], [])
         self.assertEqual(len(self.call("GET", "/api/v2/work/session?seed_id=s1")[1]["turns"]), 2)
+
+    # ── proposals: revisions and decisions need the user's acceptance ──
+    def add_artifacts(self):
+        self.workspace["artifacts"] = [
+            {"artifact_id": "a1", "type": "plan", "title": "Pilot plan", "content": "1. Pick offices.", "status": "draft",
+             "seed_ids": ["s1"], "updated_at": "2026-01-01T00:00:00", "versions": []},
+            {"artifact_id": "a2", "type": "plan", "title": "Someone else's plan", "content": "secret", "status": "draft",
+             "seed_ids": ["other"], "updated_at": "2026-01-01T00:00:00", "versions": []}]
+
+    def revision_turn(self, artifact_id="a1", content="1. Pick five offices."):
+        return self.run_turn("Rewrite the plan to be shorter", [
+            json.dumps({"tool": "read_saved_artifact", "args": {"artifact_id": artifact_id}}),
+            json.dumps({"tool": "propose_revision", "args": {"artifact_id": artifact_id, "content": content, "summary": "Shortened"}}),
+            json.dumps({"answer": "I proposed a shorter version."})])
+
+    def resolve(self, proposal_id, action):
+        return self.call("POST", "/api/v2/work/proposals/resolve", {"id": proposal_id, "action": action})
+
+    def test_a_revision_is_only_a_proposal_until_the_user_accepts_it(self):
+        self.add_artifacts()
+        status, data, _ = self.revision_turn()
+        self.assertEqual(data["proposals"][0]["kind"], "revision")
+        self.assertEqual(self.workspace["artifacts"][0]["content"], "1. Pick offices.")          # untouched
+        pending = self.call("GET", "/api/v2/work/session?seed_id=s1")[1]["proposals"]
+        self.assertEqual((pending[0]["content"], pending[0]["before"]), ("1. Pick five offices.", "1. Pick offices."))
+        code, accepted = self.resolve(data["proposals"][0]["id"], "accept")
+        self.assertEqual(code, 200)
+        artifact = self.workspace["artifacts"][0]
+        self.assertEqual(artifact["content"], "1. Pick five offices.")
+        self.assertEqual(artifact["versions"][-1]["content"], "1. Pick offices.")               # the old text is kept
+        self.assertEqual(artifact["updated_via"], "assistant_revision_accepted")
+        self.assertEqual(self.resolve(data["proposals"][0]["id"], "accept")[0], 404)             # cannot be applied twice
+        self.assertEqual(self.call("GET", "/api/v2/work/session?seed_id=s1")[1]["proposals"], [])
+
+    def test_an_accept_never_overwrites_edits_made_after_the_proposal(self):
+        self.add_artifacts()
+        _, data, _ = self.revision_turn()
+        self.workspace["artifacts"][0].update({"content": "My own newer edit", "updated_at": "2026-02-02T00:00:00"})
+        code, body = self.resolve(data["proposals"][0]["id"], "accept")
+        self.assertEqual(code, 409)
+        self.assertIn("changed", body["error"])
+        self.assertEqual(self.workspace["artifacts"][0]["content"], "My own newer edit")
+
+    def test_dismissing_leaves_the_artifact_alone(self):
+        self.add_artifacts()
+        _, data, _ = self.revision_turn()
+        self.assertEqual(self.resolve(data["proposals"][0]["id"], "dismiss")[1]["status"], "dismissed")
+        self.assertEqual(self.workspace["artifacts"][0]["content"], "1. Pick offices.")
+        self.assertEqual(self.resolve(data["proposals"][0]["id"], "accept")[0], 404)
+
+    def test_another_ideas_artifact_cannot_be_read_or_revised(self):
+        self.add_artifacts()
+        _, data, seen = self.revision_turn(artifact_id="a2", content="hijack")
+        self.assertEqual(data["proposals"], [])
+        self.assertNotIn("secret", json.dumps(seen))                                             # never even read
+        self.assertEqual(self.workspace["artifacts"][1]["content"], "secret")
+
+    def test_a_decision_is_only_made_when_the_user_accepts_it(self):
+        _, data, _ = self.run_turn("Record that we decided to go with fortnightly", [
+            json.dumps({"tool": "propose_decision", "args": {"statement": "Launch with fortnightly", "rationale": "Less churn"}}),
+            json.dumps({"answer": "I proposed it for you to confirm."})])
+        self.assertEqual(data["proposals"][0]["kind"], "decision")
+        self.assertEqual(self.workspace.get("decisions"), [])
+        code, accepted = self.resolve(data["proposals"][0]["id"], "accept")
+        decision = self.workspace["decisions"][0]
+        self.assertEqual((code, decision["statement"], decision["status"], decision["origin"]),
+                         (200, "Launch with fortnightly", "active", "assistant_proposed"))
+        self.assertEqual(decision["source_conversation_id"], self.conversation_id)
+        self.assertEqual(decision["seed_id"], "s1")
+
+    def test_proposal_tools_are_not_offered_without_a_matching_request_and_are_capped(self):
+        _, data, seen = self.run_turn("How is it going?", [
+            json.dumps({"tool": "propose_decision", "args": {"statement": "sneaky"}}), json.dumps({"answer": "fine"})])
+        self.assertEqual(data["proposals"], [])
+        self.assertNotIn("propose_decision(", seen[0][0]["content"])
+        make = json.dumps({"tool": "propose_decision", "args": {"statement": "d"}})
+        _, data, _ = self.run_turn("Record three decisions", [make, make, make, json.dumps({"answer": "done"})])
+        self.assertEqual(len(data["proposals"]), 2)
+
+    def test_start_fresh_also_drops_pending_proposals(self):
+        self.add_artifacts()
+        self.revision_turn()
+        self.call("POST", "/api/v2/work/clear", {"seed_id": "s1"})
+        self.assertEqual(self.call("GET", "/api/v2/work/session?seed_id=s1")[1]["proposals"], [])
+
 
     def test_clear_removes_the_saved_conversation(self):
         self.run_turn("hello", [json.dumps({"answer": "hi"})])

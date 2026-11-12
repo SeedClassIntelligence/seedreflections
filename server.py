@@ -70,7 +70,7 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
-from workspace_agent import run_agent, make_draft_tool
+from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, merge_extras
 import work_sessions
 import work_context
 import agent_tokens
@@ -808,7 +808,40 @@ def save_assistant_draft(user, seed, session_id):
         return artifact
     return save
 
+WORK_REVISE_INTENT=re.compile(r"\b(revis|rewrite|rewrit|edit|update|shorten|tighten|expand|improve|change|fix|rework|reword|add |remove|trim)",re.I)
+WORK_DECISION_INTENT=re.compile(r"\b(decid|decision|record|log |commit to|agree|go with)",re.I)
 WORK_DRAFT_INTENT=re.compile(r"\b(draft|write|save|plan|brief|report|outline|summar|task|note|document|spec)",re.I)
+
+def work_proposal_view(proposal):
+    return {"id":proposal["id"],"kind":proposal["kind"],**proposal["payload"]}
+
+def work_seed_artifacts(workspace, seed_id):
+    return [a for a in workspace.get("artifacts",[]) if seed_id in (a.get("seed_ids") or [])]
+
+def apply_proposal(user, proposal, workspace):
+    """Apply an ACCEPTED proposal to the workspace. Returns (result_dict, http_status)."""
+    payload=proposal["payload"]; now=datetime.now().isoformat()
+    if proposal["kind"]=="decision":
+        seed=next((s for s in workspace.get("seeds",[]) if (s.get("seed_id") or s.get("id"))==proposal["seed_id"]),{})
+        refs=payload.get("source_refs") or []
+        decision={"decision_id":uuid.uuid4().hex,"project_id":seed.get("project_id"),"statement":payload["statement"],
+            "rationale":payload.get("rationale") or "","status":"active","seed_id":proposal["seed_id"],
+            "source_conversation_id":(refs[0]["conversation_id"] if refs else seed.get("source_conversation_id")),
+            "origin":"assistant_proposed","accepted_by":user["id"],"created_at":now}
+        workspace.setdefault("decisions",[]).append(decision)
+        save_workspace(workspace,user["workspace_id"],"decision_accepted_from_proposal")
+        return {"status":"accepted","decision":decision},200
+    if proposal["kind"]=="revision":
+        artifact=next((a for a in work_seed_artifacts(workspace,proposal["seed_id"]) if a.get("artifact_id")==payload.get("artifact_id")),None)
+        if not artifact: return {"error":"That artifact no longer exists for this idea."},404
+        if artifact.get("updated_at")!=payload.get("base_updated_at"):
+            return {"error":"This artifact changed after the revision was proposed. Dismiss it and ask again so your edits are not overwritten."},409
+        artifact.setdefault("versions",[]).append({"title":artifact.get("title"),"content":artifact.get("content"),"status":artifact.get("status"),"saved_at":now})
+        artifact["versions"]=artifact["versions"][-25:]
+        artifact["content"]=payload["content"]; artifact["updated_at"]=now; artifact["updated_by"]=user["id"]; artifact["updated_via"]="assistant_revision_accepted"
+        save_workspace(workspace,user["workspace_id"],"artifact_revised_from_proposal")
+        return {"status":"accepted","artifact":artifact},200
+    return {"error":"Unknown proposal type"},400
 
 class _AgentStores:
     """Read-only archive access bound to ONE workspace, taken from the authenticated session."""
@@ -1391,7 +1424,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             seed.setdefault("seed_id",seed_id)
             _text,report=work_context.assemble(_AgentStores(user["workspace_id"],workspace),workspace,seed)
             self._send_json({"seed":{"seed_id":seed_id,"title":seed.get("title") or seed.get("intent")},
-                "turns":work_sessions.turns(user["workspace_id"],seed_id),"context":report}); return
+                "turns":work_sessions.turns(user["workspace_id"],seed_id),"context":report,
+                "proposals":[work_proposal_view(p) for p in work_sessions.list_proposals(user["workspace_id"],seed_id)]}); return
         if path == "/mcp":
             self._send_json({"error":"This endpoint accepts POST only"},405); return
         if path == "/api/v2/agent-tokens":
@@ -3405,26 +3439,55 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             history=[{"role":t["role"],"content":t["content"]} for t in work_sessions.turns(ws_id,seed_id,limit=12)]
             session=work_sessions.add_turn(ws_id,seed_id,"user",prompt)
             provider,api_url,api_key,model,reason=agent_runtime(user,body,"plan")
-            drafts=[]; answer=None; meta=None
+            drafts=[]; proposals=[]; answer=None; meta=None
             if reason is None:
                 try:
                     agent_count_use(ws_id)
-                    extra=((lambda sources: make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
-                           if WORK_DRAFT_INTENT.search(prompt) else None)
+                    allow_draft=bool(WORK_DRAFT_INTENT.search(prompt)); allow_rev=bool(WORK_REVISE_INTENT.search(prompt)); allow_dec=bool(WORK_DECISION_INTENT.search(prompt))
+                    def read_artifact(artifact_id):
+                        art=next((a for a in work_seed_artifacts(load_workspace(workspace_id=ws_id),seed_id) if a.get("artifact_id")==artifact_id),None)
+                        if not art: return {"error":"No such saved artifact for this idea."}
+                        return {"artifact_id":artifact_id,"title":art.get("title"),"type":art.get("type"),"status":art.get("status"),"content":str(art.get("content") or "")[:12000]}
+                    def propose(kind,payload,refs):
+                        if kind=="revision":
+                            art=next((a for a in work_seed_artifacts(load_workspace(workspace_id=ws_id),seed_id) if a.get("artifact_id")==payload["artifact_id"]),None)
+                            if not art: return {"error":"No such saved artifact for this idea."}
+                            payload={**payload,"title":art.get("title"),"before":str(art.get("content") or "")[:20000],"base_updated_at":art.get("updated_at")}
+                        else: payload={**payload,"source_refs":refs}
+                        return work_sessions.add_proposal(ws_id,seed_id,kind,payload)
+                    def extras(sources):
+                        parts=[]
+                        if allow_draft: parts.append(make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
+                        if allow_rev or allow_dec: parts.append(make_proposal_tools(read_artifact,propose,sources,proposals,allow_rev,allow_dec))
+                        return merge_extras(*parts)
+                    extra=extras if (allow_draft or allow_rev or allow_dec) else None
                     result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
                         context_text=context_text,extra_factory=extra,
                         preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
                     record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
                     answer=result["answer"]
                     meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"context":report,
-                          "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts]}
+                          "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
+                          "proposals":[work_proposal_view(p) for p in proposals]}
                 except ModelCallError as exc: reason=str(exc)
             if meta is None:
                 answer=(f"No model answered ({reason}). Here is what your project record holds for \"{report['idea']}\":\n\n"
                         f"Intent: {seed.get('intent') or seed.get('summary') or 'not recorded'}\nNext action: {seed.get('next_action') or 'not recorded'}")
-                meta={"mode":"records_only","reason":reason,"context":report,"drafts":[]}
+                meta={"mode":"records_only","reason":reason,"context":report,"drafts":[],"proposals":[]}
             work_sessions.add_turn(ws_id,seed_id,"assistant",answer,meta)
             self._send_json({"answer":answer,"session_id":session["id"],**meta}); return
+        if path == "/api/v2/work/proposals/resolve":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            proposal=work_sessions.get_proposal(user["workspace_id"],body.get("id"))
+            if not proposal or proposal["status"]!="pending": self._send_json({"error":"No pending proposal with that id"},404); return
+            action=body.get("action")
+            if action not in {"accept","dismiss"}: self._send_json({"error":"action must be accept or dismiss"},400); return
+            if action=="dismiss":
+                work_sessions.resolve_proposal(user["workspace_id"],proposal["id"],"dismissed"); self._send_json({"status":"dismissed"}); return
+            result,status=apply_proposal(user,proposal,load_workspace(workspace_id=user["workspace_id"]))
+            if status==200: work_sessions.resolve_proposal(user["workspace_id"],proposal["id"],"accepted")
+            self._send_json(result,status); return
         if path == "/api/v2/work/clear":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return

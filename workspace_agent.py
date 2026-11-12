@@ -200,6 +200,74 @@ def make_draft_tool(save_draft, sources, drafts):
                       "Save a draft plan, brief, report, task_set or note for the user to review. Use only when asked to write something up.")]}
 
 
+MAX_PROPOSALS_PER_RUN = 2
+
+
+def make_proposal_tools(read_artifact, propose, sources, proposals, allow_revision, allow_decision):
+    """Tools that suggest changes the USER must accept: a revision of a saved artifact, or a decision.
+    Nothing is applied here. `propose(kind, payload, refs)` files a pending proposal and returns it."""
+    tools, schemas, help_lines = {}, {}, []
+
+    def refs():
+        return [{"conversation_id": s["conversation_id"], "title": s["title"], "messages": list(s["messages"])}
+                for s in sources.values()]
+
+    if allow_revision:
+        def read_saved(artifact_id=""):
+            return read_artifact(str(artifact_id))
+
+        def propose_revision(artifact_id="", content="", summary=""):
+            if len(proposals) >= MAX_PROPOSALS_PER_RUN:
+                return {"error": "The proposal limit for this turn has been reached."}
+            content = str(content or "").strip()
+            if not content:
+                return {"error": "The full revised content is required."}
+            made = propose("revision", {"artifact_id": str(artifact_id), "content": content[:20000],
+                                        "summary": _clip(" ".join(str(summary or "").split()), 300)}, refs())
+            if "error" in made:
+                return made
+            proposals.append(made)
+            return {"proposed": True, "note": "Filed for the user to accept or dismiss. The saved artifact is unchanged until they accept."}
+
+        tools.update({"read_saved_artifact": read_saved, "propose_revision": propose_revision})
+        schemas.update({
+            "read_saved_artifact": {"description": "Read one saved artifact for this idea.", "inputSchema": {
+                "type": "object", "properties": {"artifact_id": {"type": "string"}}, "required": ["artifact_id"]}},
+            "propose_revision": {"description": "Suggest a revision of a saved artifact.", "inputSchema": {
+                "type": "object", "properties": {"artifact_id": {"type": "string"}, "content": {"type": "string"},
+                                                 "summary": {"type": "string"}}, "required": ["artifact_id", "content"]}}})
+        help_lines += [("read_saved_artifact", "artifact_id:str", "Read a saved artifact for this idea (ids are in the project context)."),
+                       ("propose_revision", "artifact_id:str, content:str, summary:str",
+                        "Suggest a revision. Give the FULL revised content and a one-line summary of what changed. The user accepts or dismisses it; nothing changes until they accept.")]
+    if allow_decision:
+        def propose_decision(statement="", rationale=""):
+            if len(proposals) >= MAX_PROPOSALS_PER_RUN:
+                return {"error": "The proposal limit for this turn has been reached."}
+            statement = _clip(" ".join(str(statement or "").split()), 300)
+            if not statement:
+                return {"error": "A decision statement is required."}
+            made = propose("decision", {"statement": statement, "rationale": _clip(" ".join(str(rationale or "").split()), 600)}, refs())
+            if "error" in made:
+                return made
+            proposals.append(made)
+            return {"proposed": True, "note": "Filed for the user to accept or dismiss. Only the user can make it a decision."}
+
+        tools["propose_decision"] = propose_decision
+        schemas["propose_decision"] = {"description": "Suggest a decision for the user to confirm.", "inputSchema": {
+            "type": "object", "properties": {"statement": {"type": "string"}, "rationale": {"type": "string"}}, "required": ["statement"]}}
+        help_lines.append(("propose_decision", "statement:str, rationale:str",
+                           "Suggest a decision the user seems to have reached. Only the user can make it a decision; use it only when they ask you to record one."))
+    return {"tools": tools, "schemas": schemas, "help": help_lines}
+
+
+def merge_extras(*extras):
+    merged = {"tools": {}, "schemas": {}, "help": []}
+    for extra in extras:
+        if extra:
+            merged["tools"].update(extra["tools"]); merged["schemas"].update(extra["schemas"]); merged["help"] += extra["help"]
+    return merged
+
+
 def run_agent(prompt, stores, complete, history=None, active_idea=None, max_steps=MAX_STEPS,
               context_text=None, extra_factory=None, preload_sources=None):
     """Run the assistant. `complete(messages)` returns {"text","prompt_tokens","completion_tokens"}.

@@ -1349,6 +1349,7 @@ button,select,input,textarea{font-family:inherit}
 .intake-card,.intake-grid>*{min-width:0;max-width:100%}
 @media(max-width:720px){.intake-grid{grid-template-columns:minmax(0,1fr)}.import-ledger-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .chat-input,#section-intake input,#section-intake select,#section-intake textarea{min-width:0;max-width:100%}
+.chat-bubble.system.work-turn,.work-proposal{text-transform:none!important;letter-spacing:0!important;font-family:inherit!important}
 .work-context{text-transform:none!important;letter-spacing:0!important;font-family:inherit!important;font-size:13px!important;line-height:1.6;color:var(--text-secondary)!important}
 @media(max-width:720px){
   /* source forms stack on phones; the bottom bar shares the width so "More" stays on screen */
@@ -4831,11 +4832,59 @@ async function loadWorkSession(seedId) {
       bubble.classList.add('work-turn');
       if (t.role === 'assistant') appendDraftButtons(bubble, (t.meta || {}).drafts);
     });
+    if ((data.proposals || []).length) {
+      var waiting = appendChat('Waiting for your decision:', 'system'); waiting.classList.add('work-turn');
+      renderProposals(waiting, data.proposals);
+    }
   } catch (e) { /* the studio still works without the preview */ }
 }
 async function startFreshWorkSession(seedId) {
   await productFetch('/work/clear', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ seed_id: seedId }) });
   loadWorkSession(seedId);
+}
+
+function renderProposals(parent, proposals) {
+  (proposals || []).forEach(function(p) {
+    var card = document.createElement('div'); card.className = 'work-proposal';
+    card.style.cssText = 'border:1px solid var(--border-bright);border-radius:8px;padding:12px;margin-top:10px;background:var(--bg-elevated);text-align:left';
+    var head = document.createElement('div'); head.style.fontWeight = '700'; head.style.marginBottom = '6px';
+    var body = document.createElement('div'); body.style.cssText = 'font-size:13px;color:var(--text-secondary);white-space:pre-wrap';
+    if (p.kind === 'revision') {
+      head.textContent = 'Proposed revision to "' + p.title + '"';
+      body.textContent = p.summary || 'The assistant suggests a revised version.';
+      var det = document.createElement('details'); det.style.marginTop = '8px';
+      var sum = document.createElement('summary'); sum.textContent = 'See the proposed text'; det.appendChild(sum);
+      var now = document.createElement('div'); now.style.cssText = 'margin-top:8px;font-size:12px;color:var(--text-muted)'; now.textContent = 'Current';
+      var nowPre = document.createElement('pre'); nowPre.style.cssText = 'white-space:pre-wrap;margin:4px 0 8px'; nowPre.textContent = p.before || '';
+      var next = document.createElement('div'); next.style.cssText = 'font-size:12px;color:var(--text-muted)'; next.textContent = 'Proposed';
+      var nextPre = document.createElement('pre'); nextPre.style.cssText = 'white-space:pre-wrap;margin:4px 0 0'; nextPre.textContent = p.content || '';
+      [now, nowPre, next, nextPre].forEach(function(e){ det.appendChild(e); });
+      body.appendChild(det);
+    } else {
+      head.textContent = 'Proposed decision';
+      body.textContent = p.statement + (p.rationale ? '\nWhy: ' + p.rationale : '');
+    }
+    var row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;margin-top:10px';
+    var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn btn-primary btn-sm';
+    yes.textContent = p.kind === 'revision' ? 'Apply this revision' : 'Record this decision';
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-ghost btn-sm'; no.textContent = 'Dismiss';
+    yes.onclick = function() { resolveProposal(p, 'accept', card); };
+    no.onclick = function() { resolveProposal(p, 'dismiss', card); };
+    row.appendChild(yes); row.appendChild(no);
+    [head, body, row].forEach(function(e){ card.appendChild(e); });
+    parent.appendChild(card);
+  });
+}
+async function resolveProposal(p, action, card) {
+  try {
+    var resp = await productFetch('/work/proposals/resolve', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: p.id, action: action }) });
+    var data = await resp.json();
+    var msg = !resp.ok ? (data.error || 'Could not apply this.') :
+      action === 'dismiss' ? 'Dismissed. Nothing was changed.' :
+      p.kind === 'revision' ? 'Revision applied. The previous version is kept in the artifact history.' : 'Recorded as a decision.';
+    card.textContent = msg;
+    if (resp.ok && action === 'accept' && p.kind === 'revision' && typeof loadArtifacts === 'function') loadArtifacts();
+  } catch (e) { card.textContent = 'Could not reach the server. Nothing was changed.'; }
 }
 async function sendWorkTurn(msg, thinkingBubble) {
   var resp = await productFetch('/work/turn', { method: 'POST', headers: {'Content-Type':'application/json'},
@@ -4846,6 +4895,7 @@ async function sendWorkTurn(msg, thinkingBubble) {
   var bubble = appendChat(workReplyText(data.answer, data), 'assistant');
   bubble.classList.add('work-turn');
   appendDraftButtons(bubble, data.drafts);
+  renderProposals(bubble, data.proposals);
 }
 
 var CHAT_HISTORY = [];

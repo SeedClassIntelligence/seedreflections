@@ -32,7 +32,11 @@ def _connect():
         CREATE TABLE IF NOT EXISTS work_turns(
             id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL REFERENCES work_sessions(id) ON DELETE CASCADE,
             role TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL, meta TEXT NOT NULL DEFAULT '{}');
-        CREATE INDEX IF NOT EXISTS work_turns_session ON work_turns(session_id, id);""")
+        CREATE INDEX IF NOT EXISTS work_turns_session ON work_turns(session_id, id);
+        CREATE TABLE IF NOT EXISTS work_proposals(
+            id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, seed_id TEXT NOT NULL, kind TEXT NOT NULL,
+            payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, resolved_at TEXT);
+        CREATE INDEX IF NOT EXISTS work_proposals_seed ON work_proposals(workspace_id, seed_id, status);""")
     db.execute("PRAGMA foreign_keys=ON")
     return db
 
@@ -73,4 +77,40 @@ def add_turn(workspace_id, seed_id, role, content, meta=None):
 
 def clear(workspace_id, seed_id):
     with closing(_connect()) as db, db:
+        db.execute("DELETE FROM work_proposals WHERE workspace_id=? AND seed_id=? AND status='pending'", (workspace_id, seed_id))
         return db.execute("DELETE FROM work_sessions WHERE workspace_id=? AND seed_id=?", (workspace_id, seed_id)).rowcount > 0
+
+
+def add_proposal(workspace_id, seed_id, kind, payload):
+    """File something the assistant suggests. It stays pending until the user accepts or dismisses it."""
+    proposal = {"id": uuid.uuid4().hex, "workspace_id": workspace_id, "seed_id": seed_id, "kind": kind,
+                "payload": payload, "status": "pending", "created_at": _now()}
+    with closing(_connect()) as db, db:
+        db.execute("INSERT INTO work_proposals(id,workspace_id,seed_id,kind,payload,status,created_at) VALUES(?,?,?,?,?,?,?)",
+                   (proposal["id"], workspace_id, seed_id, kind, json.dumps(payload, ensure_ascii=False), "pending", proposal["created_at"]))
+    return proposal
+
+
+def _proposal(row):
+    return {"id": row["id"], "workspace_id": row["workspace_id"], "seed_id": row["seed_id"], "kind": row["kind"],
+            "payload": json.loads(row["payload"]), "status": row["status"], "created_at": row["created_at"]}
+
+
+def list_proposals(workspace_id, seed_id, status="pending"):
+    with closing(_connect()) as db:
+        rows = db.execute("SELECT * FROM work_proposals WHERE workspace_id=? AND seed_id=? AND status=? ORDER BY created_at",
+                          (workspace_id, seed_id, status)).fetchall()
+    return [_proposal(r) for r in rows]
+
+
+def get_proposal(workspace_id, proposal_id):
+    with closing(_connect()) as db:
+        row = db.execute("SELECT * FROM work_proposals WHERE id=? AND workspace_id=?", (str(proposal_id), workspace_id)).fetchone()
+    return _proposal(row) if row else None
+
+
+def resolve_proposal(workspace_id, proposal_id, status):
+    """Mark a pending proposal accepted or dismissed. Returns False if it was not pending (or not this workspace's)."""
+    with closing(_connect()) as db, db:
+        return db.execute("UPDATE work_proposals SET status=?, resolved_at=? WHERE id=? AND workspace_id=? AND status='pending'",
+                          (status, _now(), str(proposal_id), workspace_id)).rowcount == 1

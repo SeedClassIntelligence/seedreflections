@@ -87,7 +87,7 @@ def assemble(stores, workspace, seed):
 
     saved = [a for a in workspace.get("artifacts", []) if seed.get("seed_id") in (a.get("seed_ids") or [])][:5]
     if saved:
-        lines += ["", "WORK ALREADY SAVED FOR THIS IDEA"] + [f"- {_clip(a.get('title'), 120)} ({a.get('type')}, {a.get('status')})" for a in saved]
+        lines += ["", "WORK ALREADY SAVED FOR THIS IDEA"] + [f"- {_clip(a.get('title'), 120)} ({a.get('type')}, {a.get('status')}, id: {a.get('artifact_id')})" for a in saved]
     report["artifacts"] = len(saved)
 
     text = "\n".join(lines)
