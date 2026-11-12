@@ -71,6 +71,9 @@ from integration_store import (create_integration as create_api_integration, lis
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
 from workspace_agent import run_agent
+import agent_tokens
+import mcp_endpoint
+import time as _time_module
 import tenant_archive_store as _tenant_archive_module
 import archive_store as _local_archive_module
 from secret_store import set_credential as store_model_credential, get_credential as load_model_credential, credential_status as model_credential_status, delete_credential as delete_model_credential, local_backend_status as model_key_backend_status
@@ -753,6 +756,15 @@ def runtime_model_catalog():
 
 
 _AGENT_USAGE = {}
+MCP_RATE_LIMIT_PER_MINUTE = 60
+MCP_MAX_BODY_BYTES = 65536
+_MCP_CALLS = {}
+
+def mcp_rate_limited(token_id):
+    now=_time_module.monotonic(); window=[t for t in _MCP_CALLS.get(token_id,[]) if now-t<60]
+    if len(window)>=MCP_RATE_LIMIT_PER_MINUTE:
+        _MCP_CALLS[token_id]=window; return True
+    window.append(now); _MCP_CALLS[token_id]=window; return False
 
 def agent_daily_limit_reached(workspace_id):
     """Optional per-workspace daily cap on assistant messages. 0 or unset means no cap. In-process counter."""
@@ -1150,6 +1162,32 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if DEPLOYMENT_MODE == "local": return {"id":"local-owner","workspace_id":"local","role":"owner"}
         return auth_authenticate(self._bearer_token())
 
+    def _handle_mcp(self):
+        """MCP over HTTP: read-only tools for an outside assistant. Bearer agent token only."""
+        host=self.headers.get("Host","").lower(); origin=self.headers.get("Origin","").lower().rstrip("/")
+        if origin and origin not in ("http://"+host,"https://"+host):
+            self._send_json({"error":"Cross-origin requests are not accepted on /mcp"},403); return
+        auth=self.headers.get("Authorization","")
+        grant=agent_tokens.verify(auth[7:].strip()) if auth.lower().startswith("bearer ") else None
+        if not grant:
+            body=json.dumps({"error":"A valid agent token is required"}).encode()
+            self.send_response(401); self.send_header("Content-Type","application/json"); self.send_header("Content-Length",str(len(body)))
+            self.send_header("WWW-Authenticate",'Bearer realm="seedreflections"'); self.end_headers(); self.wfile.write(body); return
+        if mcp_rate_limited(grant["id"]):
+            self._send_json({"error":"Too many requests; slow down"},429); return
+        try: length=int(self.headers.get("Content-Length",0))
+        except ValueError: length=0
+        if length<=0 or length>MCP_MAX_BODY_BYTES:
+            self._send_json({"error":"Request body is empty or too large"},413 if length>MCP_MAX_BODY_BYTES else 400); return
+        try: payload=json.loads(self.rfile.read(length).decode("utf-8"))
+        except (ValueError,UnicodeDecodeError):
+            self._send_json({"jsonrpc":"2.0","id":None,"error":{"code":-32700,"message":"Parse error"}},400); return
+        workspace_id=grant["workspace_id"]
+        reply=mcp_endpoint.handle(payload,_AgentStores(workspace_id,load_workspace(workspace_id=workspace_id)))
+        if reply is None:
+            self.send_response(202); self.send_header("Content-Length","0"); self.end_headers(); return
+        self._send_json(reply)
+
     def _send_json(self, data, status=200):
         try:
             body = json.dumps(data).encode("utf-8")
@@ -1312,6 +1350,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             settings["model_key_storage"]=model_key_backend_status() if DEPLOYMENT_MODE=="local" else {"saved_keys":True,"backend":"aes256gcm_envelope","session_only_keys":False,"detail":"Saved keys are encrypted with per-credential data keys wrapped by the deployment master key."}
             self._send_json(settings)
             return
+        if path == "/mcp":
+            self._send_json({"error":"This endpoint accepts POST only"},405); return
+        if path == "/api/v2/agent-tokens":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json({"tokens":agent_tokens.list_tokens(user["workspace_id"])}); return
         if path == "/api/v2/models":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -2839,6 +2883,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
+        if path == "/mcp":
+            self._handle_mcp(); return
         if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
@@ -3292,6 +3338,17 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"answer":f"Mapped this reflection into {created} review candidate{'s' if created != 1 else ''}. Open Idea Browser to confirm what should become part of your workspace.",
                 "candidates_created":created,"conversation_id":stored.get("id") or conversation_id},201)
             return
+        if path == "/api/v2/agent-tokens":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(agent_tokens.create_token(user["workspace_id"],body.get("name")),201)
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/agent-tokens/revoke":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            ok=agent_tokens.revoke_token(user["workspace_id"],body.get("id"))
+            self._send_json({"revoked":ok},200 if ok else 404); return
         if path == "/api/v2/chat":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
