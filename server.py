@@ -41,6 +41,7 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
                            list_candidate_links, review_candidate_link)
 from document_ingest import import_document, import_document_path
 import web_fetch
+import google_drive
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
     logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
@@ -798,6 +799,27 @@ def agent_runtime(user, body, task="chat"):
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
     return provider,api_url,api_key,model,reason
 
+def google_redirect_uri(handler):
+    if DEPLOYMENT_MODE=="local": return f"http://127.0.0.1:{handler.server.server_address[1]}/api/v2/google/callback"
+    return PUBLIC_ORIGIN+"/api/v2/google/callback"
+
+def drive_importer(user):
+    """Run one Drive file through the normal document import for this workspace, bounded by the hosted storage quota."""
+    ws=user["workspace_id"]
+    def run(filename,content):
+        if ws!="local":
+            if tenant_usage(ws)["source_bytes"]+len(content)>HOSTED_STORAGE_BYTES: raise ValueError("Workspace storage quota exceeded")
+        UPLOAD_JOBS_DIR.mkdir(parents=True,exist_ok=True)
+        handle=tempfile.NamedTemporaryFile(prefix="drive-",suffix=Path(filename).suffix,dir=UPLOAD_JOBS_DIR,delete=False)
+        with handle: handle.write(content)
+        try:
+            if ws=="local": return import_document_path(handle.name,filename)
+            result=tenant_import_document_path(ws,handle.name,filename)
+            tenant_preserve_source(ws,result["import_id"],handle.name,filename,result.get("coverage") or {})
+            return result
+        finally: Path(handle.name).unlink(missing_ok=True)
+    return run
+
 def web_page_text(page):
     """Readable text of a fetched page, for the assistant."""
     if page["kind"]=="application/pdf":
@@ -1360,6 +1382,26 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not user: self._send_json({"error":"Authentication required"},401); return
             self._send_json({"integrations":list_api_integrations(user["workspace_id"]),
                 "import_endpoint":"/api/v2/integrations/import","authentication":"Bearer connection token"})
+            return
+        if path == "/api/v2/google/callback":
+            query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            def back(**params):
+                self.send_response(302); self.send_header("Location","/consumer-dashboard.html?"+urllib.parse.urlencode(params)); self.send_header("Cache-Control","no-store"); self.end_headers()
+            if (query.get("error") or [""])[0]: back(google="denied"); return
+            try:
+                google_drive.complete_authorization((query.get("state") or [""])[0],(query.get("code") or [""])[0],google_redirect_uri(self),DEPLOYMENT_MODE)
+                back(google="connected")
+            except (google_drive.DriveError,RuntimeError) as exc: back(google="error",reason=str(exc)[:160])
+            return
+        if path == "/api/v2/google/status":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json(google_drive.status(user["workspace_id"])); return
+        if path == "/api/v2/google/folders":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.list_folders(user["workspace_id"],(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("parent") or ["root"])[0],DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
             return
         if path == "/api/v2/tools":
             user=self._runtime_user()
@@ -3121,6 +3163,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(created,201)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/google/preview":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.preview(user["workspace_id"],body.get("folder_id"),body.get("folder_name"),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/google/connect-folder":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.connect_preview(user["workspace_id"],body.get("preview_id"),body.get("consent"),drive_importer(user),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
+        drive_sync_match=re.fullmatch(r"/api/v2/google/sources/([^/]+)/sync",path)
+        if drive_sync_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.sync(user["workspace_id"],urllib.parse.unquote(drive_sync_match.group(1)),drive_importer(user),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
         tool_connect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/connect",path)
         if tool_connect_match:
             user=self._runtime_user()
@@ -3132,12 +3193,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not catalog["provider_configured"]:
                 self._send_json({"error":"This connection is available but its provider authentication has not been configured for this deployment.",
                     "code":"provider_configuration_required","tool":catalog},503); return
+            if tool_id=="google_drive":
+                try: self._send_json({"authorization_url":google_drive.begin_authorization(user["workspace_id"],google_redirect_uri(self))}); return
+                except google_drive.DriveError as exc: self._send_json({"error":str(exc)},503); return
             self._send_json({"error":"Provider authorization is configured, but the OAuth handoff is not enabled in this build.",
                 "code":"authorization_handoff_unavailable","tool":catalog},501); return
         tool_disconnect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/disconnect",path)
         if tool_disconnect_match:
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
+            if urllib.parse.unquote(tool_disconnect_match.group(1))=="google_drive": google_drive.disconnect(user["workspace_id"])
             try: self._send_json({"tool":disconnect_workspace_tool(user["workspace_id"],urllib.parse.unquote(tool_disconnect_match.group(1)))})
             except KeyError as exc: self._send_json({"error":str(exc)},404)
             return
