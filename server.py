@@ -40,6 +40,7 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
                            list_candidate_links, review_candidate_link)
 from document_ingest import import_document, import_document_path
+import web_fetch
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
     logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
@@ -84,6 +85,8 @@ from tool_store import list_tools as list_workspace_tools, get_tool as get_works
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
 DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower()
 if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("Invalid SEED_REFLECTIONS_MODE")
+# Local mode only: lets someone on their own machine add pages from their own network. Hosted mode ignores it.
+WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
 HOST = os.environ.get("SEED_REFLECTIONS_HOST","127.0.0.1" if DEPLOYMENT_MODE=="local" else "0.0.0.0")
 PUBLIC_ORIGIN = os.environ.get("SEED_REFLECTIONS_PUBLIC_ORIGIN","*" if DEPLOYMENT_MODE=="local" else "").rstrip("/")
 MAX_UPLOAD_BYTES = int(os.environ.get("SEED_REFLECTIONS_MAX_UPLOAD_BYTES", str(2 * 1024 * 1024 * 1024)))
@@ -3264,6 +3267,30 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if path == "/api/v2/auth/logout":
             if DEPLOYMENT_MODE != "local": auth_logout(self._bearer_token())
             self._send_json({"status":"local_session" if DEPLOYMENT_MODE=="local" else "signed_out"})
+            return
+        if path == "/api/v2/web/import":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if not auth_request_allowed(f"{user['id']}:web-import"):
+                self._send_json({"error":"Too many web pages added in a short time. Try again shortly."},429); return
+            try:
+                page=web_fetch.fetch_page(body.get("url"),allow_private=WEB_ALLOW_PRIVATE)
+                filename,content=web_fetch.as_document(page)
+            except web_fetch.FetchError as exc: self._send_json({"error":str(exc)},400); return
+            if user["workspace_id"]!="local":
+                current=tenant_usage(user["workspace_id"])
+                if current["source_bytes"]+len(content)>HOSTED_STORAGE_BYTES:
+                    self._send_json({"error":"Workspace storage quota exceeded","limit_bytes":HOSTED_STORAGE_BYTES,"used_bytes":current["source_bytes"]},413); return
+            UPLOAD_JOBS_DIR.mkdir(parents=True,exist_ok=True)
+            handle=tempfile.NamedTemporaryFile(prefix="web-",suffix=Path(filename).suffix,dir=UPLOAD_JOBS_DIR,delete=False)
+            with handle: handle.write(content)
+            if user["workspace_id"]=="local":
+                job_id=create_import_job(filename); target=process_import_job; args=(job_id,filename,handle.name)
+            else:
+                job=tenant_create_import_job(user["workspace_id"],filename); job_id=job["id"]
+                target=process_tenant_import_job; args=(user["workspace_id"],job_id,filename,handle.name)
+            threading.Thread(target=target,args=args,daemon=True).start()
+            self._send_json({"status":"accepted","job_id":job_id,"title":page["title"],"address":page["final_url"],"filename":filename},202)
             return
         if path == "/api/v2/imports":
             user=self._runtime_user()

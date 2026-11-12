@@ -1547,6 +1547,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
       <button class="source-method active" data-source-method="upload" onclick="showSourceMethod('upload')">Upload export</button>
       <button class="source-method" data-source-method="paste" onclick="showSourceMethod('paste')">Paste conversation</button>
       <button class="source-method" data-source-method="folder" onclick="showSourceMethod('folder')">SeedBridge</button>
+      <button class="source-method" data-source-method="web" onclick="showSourceMethod('web')">Web page</button>
       <button class="source-method" data-source-method="api" onclick="showSourceMethod('api')">Connect API</button>
     </div>
     <div class="intake-grid">
@@ -1567,6 +1568,13 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         <input id="paste-conversation-title" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" placeholder="Give this conversation a title" aria-label="Conversation title">
         <textarea id="paste-conversation-text" class="intake-textarea" placeholder="Paste the conversation or working notes here..." aria-label="Conversation text"></textarea>
         <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="importPastedConversation()">Map this conversation →</button>
+      </div>
+      <div class="intake-card source-method-panel" data-source-panel="web">
+        <h3>Add a web page</h3>
+        <p>Paste the address of one public page. SeedReflections fetches that page once, keeps its address and the time it was retrieved, and adds it to your archive as a source you can search and cite. Pages on private or internal networks, and files over 3 MB, are refused.</p>
+        <input id="web-import-url" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" type="url" inputmode="url" placeholder="https://example.com/article" aria-label="Web page address" autocomplete="off">
+        <button class="btn btn-primary" id="web-import-go" style="width:100%" onclick="importWebPage()">Add this page →</button>
+        <div id="web-import-error" role="alert" style="font-size:12.5px;color:var(--red);margin-top:8px"></div>
       </div>
       <div class="intake-card source-method-panel" data-source-panel="folder">
         <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
@@ -3104,6 +3112,21 @@ async function waitForImportJob(jobId, thinkingBubble) {
     if (job.status === 'failed') throw new Error(job.error || 'Import failed');
     await new Promise(function(resolve){ setTimeout(resolve, 500); });
   }
+}
+
+async function importWebPage() {
+  var input = document.getElementById('web-import-url'), button = document.getElementById('web-import-go'), error = document.getElementById('web-import-error');
+  var url = input.value.trim(); error.textContent = '';
+  if (!url) { error.textContent = 'Enter the address of a web page.'; input.focus(); return; }
+  button.disabled = true; button.textContent = 'Fetching…';
+  try {
+    var response = await productFetch('/web/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url: url})});
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'That page could not be added.');
+    await waitForImportJob(data.job_id, null);
+    input.value = ''; showToast('Added "' + (data.title || data.address) + '" with its address and retrieval time.');
+  } catch (e) { error.textContent = e.message || 'That page could not be added.'; }
+  button.disabled = false; button.textContent = 'Add this page →';
 }
 
 async function loadAllSeeds() {
