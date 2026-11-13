@@ -42,9 +42,11 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
 from document_ingest import import_document, import_document_path
 import web_fetch
 import google_drive
+import mailer
+import auth_store as _auth_store
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
-    logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
+    logout as auth_logout, delete_account as auth_delete_account, create_password_reset as auth_create_password_reset, reset_password as auth_reset_password, consume_auth_attempt, list_members as auth_list_members,
     list_workspaces as auth_list_workspaces, create_invitation as auth_create_invitation,
     list_invitations as auth_list_invitations, accept_invitation as auth_accept_invitation,
     switch_workspace as auth_switch_workspace, update_member_role as auth_update_member_role,
@@ -171,6 +173,8 @@ def production_readiness():
     admin_ok=DEPLOYMENT_MODE=="local" or (admin_password!="changeme" and len(admin_password)>=12)
     check("admin_password",admin_ok,"local runtime" if DEPLOYMENT_MODE=="local" else
           ("admin password configured" if admin_ok else "ADMIN_PASSWORD is unset, default, or shorter than 12 characters"))
+    check("password_reset_email",DEPLOYMENT_MODE=="local" or mailer.configured(),"local runtime" if DEPLOYMENT_MODE=="local" else
+          ("outgoing email configured" if mailer.configured() else "SMTP is not configured, so password reset cannot send email"))
     return {"ready":all(item["passed"] for item in checks),"mode":DEPLOYMENT_MODE,"checks":checks,"time":datetime.now().isoformat()}
 
 
@@ -3349,6 +3353,27 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error":"Too many attempts. Try again later."},429); return
             try: self._send_json(auth_delete_account(user["id"],body.get("password")))
             except ValueError as exc: self._send_json({"error":str(exc)},400 if "password" not in str(exc).lower() else 403)
+            return
+        if path == "/api/v2/auth/forgot":
+            if DEPLOYMENT_MODE == "local": self._send_json({"error":"Local mode has no passwords to reset."},409); return
+            email=str(body.get("email") or "").strip().lower()
+            if not auth_request_allowed(f"{self._client_ip()}:forgot") or not auth_request_allowed(f"{email[:120]}:forgot-email"):
+                self._send_json({"error":"Too many requests. Try again later."},429); return
+            if not mailer.configured(): self._send_json({"error":"Password reset email is not set up on this server. Contact the administrator."},503); return
+            made=auth_create_password_reset(email)
+            if made:   # sent in the background so the answer takes the same time whether or not the account exists
+                link=PUBLIC_ORIGIN+"/auth.html?mode=reset#token="+made["token"]
+                def send_reset():
+                    try: mailer.send(made["email"],"Reset your SeedReflections password",
+                        f"Hello {made['name']},\n\nSomeone asked to reset the password for your SeedReflections account. Open this link within {_auth_store.RESET_MINUTES} minutes to choose a new one:\n\n{link}\n\nIf this was not you, ignore this email. Your password has not changed.\n\nSeedReflections")
+                    except mailer.MailError as exc: print("Password reset email failed:",exc)
+                threading.Thread(target=send_reset,daemon=True).start()
+            self._send_json({"status":"If that email has an account, a reset link is on its way."}); return
+        if path == "/api/v2/auth/reset":
+            if DEPLOYMENT_MODE == "local": self._send_json({"error":"Local mode has no passwords to reset."},409); return
+            if not auth_request_allowed(f"{self._client_ip()}:reset"): self._send_json({"error":"Too many attempts. Try again later."},429); return
+            try: self._send_json(auth_reset_password(body.get("token"),body.get("password")))
+            except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
         if path == "/api/v2/auth/logout":
             if DEPLOYMENT_MODE != "local": auth_logout(self._bearer_token())
