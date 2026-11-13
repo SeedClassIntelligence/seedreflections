@@ -1837,7 +1837,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
           <select id="artifact-status" aria-label="Artifact status"><option value="draft">Draft</option><option value="active">Active</option><option value="complete">Complete</option><option value="archived">Archived</option></select>
         </div>
         <textarea id="artifact-content" rows="17" style="width:100%;box-sizing:border-box;margin-top:10px;font-family:inherit" placeholder="Write the durable work product here…" aria-label="Artifact content"></textarea>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="exportCurrentArtifact()">Export Markdown</button><button class="btn btn-primary btn-sm" onclick="saveCurrentArtifact()">Save artifact</button></div>
+        <div id="artifact-signature" role="status" style="font-size:12.5px;color:var(--text-muted);margin-top:10px"></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="exportCurrentArtifact()">Export Markdown</button><button class="btn btn-ghost btn-sm" onclick="signCurrentArtifact()" title="Opens Seed Signature in a window. Upload the exported file there to sign it.">Sign with Seed Signature</button><button class="btn btn-primary btn-sm" onclick="saveCurrentArtifact()">Save artifact</button></div>
       </div>
     </div>
   </div>
@@ -2526,7 +2527,6 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Seed Signature SDK widget script -->
-<script src="/sdk/seed-signature-widget.js" defer></script>
 <!-- Platform credentials & endpoints loader -->
 <script src="js/platform.js?v=1.0.3"></script>
 
@@ -5924,13 +5924,58 @@ async function loadArtifacts(){
   var list=document.getElementById('artifact-list');list.innerHTML=WORK_ARTIFACTS.map(function(a){return '<button class="btn btn-ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" onclick="editArtifact(\''+a.artifact_id+'\')"><strong>'+escapeHtml(a.title)+'</strong><div style="font-size:12px;color:var(--text-muted)">'+escapeHtml(a.type.replace('_',' '))+' · '+escapeHtml(a.status)+'</div></button>';}).join('')||'<div style="font-size:12px;color:var(--text-muted)">No artifacts yet.</div>';
 }
 function newArtifactDraft(){document.getElementById('artifact-id').value='';document.getElementById('artifact-type').value='plan';document.getElementById('artifact-title').value='';document.getElementById('artifact-status').value='draft';document.getElementById('artifact-content').value='';document.getElementById('artifact-type').disabled=false;}
-function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;}
+function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;renderArtifactSignature(a);}
 async function saveCurrentArtifact(){
   var id=document.getElementById('artifact-id').value,payload={type:document.getElementById('artifact-type').value,title:document.getElementById('artifact-title').value.trim(),status:document.getElementById('artifact-status').value,content:document.getElementById('artifact-content').value.trim(),conversation_ids:activeWorkingThreadId?[activeWorkingThreadId]:[],seed_ids:activeFocusSeedId?[activeFocusSeedId]:[]};
   try{var response=await productFetch(id?'/artifacts/'+encodeURIComponent(id):'/artifacts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);document.getElementById('artifact-id').value=result.artifact.artifact_id;showToast('Work artifact saved.');await loadArtifacts();editArtifact(result.artifact.artifact_id);}catch(e){showToast(e.message||'Artifact could not be saved');}
 }
 async function exportCurrentArtifact(){var id=document.getElementById('artifact-id').value;if(!id){showToast('Save the artifact before exporting.');return;}var response=await productFetch('/artifacts/'+encodeURIComponent(id)+'/export'),data=await response.json();if(!response.ok){showToast(data.error);return;}var blob=new Blob([data.markdown],{type:'text/markdown'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.artifact.title||'artifact').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.md';a.click();URL.revokeObjectURL(a.href);}
 
+
+/* ── Seed Signature: sign a work artifact ──────────────────────────── */
+function renderArtifactSignature(a) {
+  var box = document.getElementById('artifact-signature'); if (!box) return;
+  var sig = a && a.signature;
+  if (!sig) { box.textContent = ''; return; }
+  var link = sig.certificate_url ? ' · <a href="' + escHtml(sig.certificate_url) + '" target="_blank" rel="noopener noreferrer">Certificate</a>' : '';
+  box.innerHTML = (sig.status === 'edited_since'
+    ? '<strong style="color:var(--amber)">Signed, then edited.</strong> The text changed after it was signed, so the certificate no longer matches it. Sign it again.'
+    : '<strong style="color:var(--green)">Signed with Seed Signature.</strong>') + ' ID ' + escHtml(sig.signature_id) + link;
+}
+var SEED_SIGNATURE_SDK_LOADED = null;
+function loadSeedSignatureSdk(url) {
+  if (window.SeedSignature) return Promise.resolve();
+  if (!SEED_SIGNATURE_SDK_LOADED) SEED_SIGNATURE_SDK_LOADED = new Promise(function(resolve, reject){
+    var el = document.createElement('script'); el.src = url; el.onload = resolve; el.onerror = function(){ SEED_SIGNATURE_SDK_LOADED = null; reject(new Error('The Seed Signature widget could not be loaded.')); };
+    document.head.appendChild(el);
+  });
+  return SEED_SIGNATURE_SDK_LOADED;
+}
+async function signCurrentArtifact() {
+  var id = document.getElementById('artifact-id').value;
+  if (!id) { showToast('Save the artifact before signing it.'); return; }
+  try {
+    var status = await (await productFetch('/seed-signature/status')).json();
+    if (!status.configured) { showToast('Seed Signature is not connected on this deployment yet.'); return; }
+    var response = await productFetch('/seed-signature/session', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({content_type: 'text', title: document.getElementById('artifact-title').value.trim()})});
+    var session = await response.json(); if (!response.ok) throw new Error(session.error || 'Signing could not start.');
+    await loadSeedSignatureSdk(session.sdkUrl);
+    window.SeedSignature.openSignModal({
+      sessionToken: session.sessionToken, widgetUrl: session.widgetUrl,
+      onComplete: async function(result) {
+        try {
+          var saved = await productFetch('/artifacts/' + encodeURIComponent(id) + '/signature', {method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({signature_id: result.signatureId, certificate_url: result.certificateUrl || ''})});
+          var data = await saved.json(); if (!saved.ok) throw new Error(data.error || 'The signature could not be saved.');
+          showToast('Signed. The certificate is saved with this work.'); await loadArtifacts(); editArtifact(id);
+        } catch (e) { showToast(e.message || 'The signature could not be saved.'); }
+      },
+      onError: function(err) { showToast((err && err.error) || 'Signing failed.'); },
+      onCancel: function() {}
+    });
+  } catch (e) { showToast(e.message || 'Signing could not start.'); }
+}
 
 /* ── Connect your own assistant (MCP tokens) ───────────────────────── */
 /* ── Account deletion (hosted accounts only) ───────────────────────── */
