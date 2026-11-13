@@ -88,6 +88,10 @@ DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower
 if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("Invalid SEED_REFLECTIONS_MODE")
 # Local mode only: lets someone on their own machine add pages from their own network. Hosted mode ignores it.
 WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
+# Behind the Caddy proxy every connection arrives from the proxy, so sign-in rate limits would be shared by all
+# visitors. With this switch on (hosted only) the real address comes from the proxy's X-Forwarded-For, and only
+# when the connection itself comes from a private or loopback address, so a visitor cannot forge it.
+TRUST_PROXY = DEPLOYMENT_MODE != "local" and os.environ.get("SEED_REFLECTIONS_TRUST_PROXY") == "1"
 HOST = os.environ.get("SEED_REFLECTIONS_HOST","127.0.0.1" if DEPLOYMENT_MODE=="local" else "0.0.0.0")
 PUBLIC_ORIGIN = os.environ.get("SEED_REFLECTIONS_PUBLIC_ORIGIN","*" if DEPLOYMENT_MODE=="local" else "").rstrip("/")
 MAX_UPLOAD_BYTES = int(os.environ.get("SEED_REFLECTIONS_MAX_UPLOAD_BYTES", str(2 * 1024 * 1024 * 1024)))
@@ -1230,6 +1234,16 @@ def static_file_path(relative, internal=False):
 
 
 class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
+
+    def _client_ip(self):
+        peer=self.client_address[0]
+        if not TRUST_PROXY: return peer
+        try:
+            import ipaddress
+            if not (ipaddress.ip_address(peer).is_private or ipaddress.ip_address(peer).is_loopback): return peer
+            forwarded=[part.strip() for part in self.headers.get("X-Forwarded-For","").split(",") if part.strip()]
+            return str(ipaddress.ip_address(forwarded[-1])) if forwarded else peer
+        except ValueError: return peer
 
     def _local_request_allowed(self):
         if DEPLOYMENT_MODE!="local": return True
@@ -3310,7 +3324,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
         if path == "/api/v2/auth/signup":
-            if not auth_request_allowed(f"{self.client_address[0]}:signup"):
+            if not auth_request_allowed(f"{self._client_ip()}:signup"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             if DEPLOYMENT_MODE == "local": self._send_json({"error":"Local mode uses the device owner and does not require an account"},409); return
             try:
@@ -3319,7 +3333,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             except ValueError as exc: self._send_json({"error":str(exc)},409 if "exists" in str(exc) else 400)
             return
         if path == "/api/v2/auth/login":
-            if not auth_request_allowed(f"{self.client_address[0]}:login"):
+            if not auth_request_allowed(f"{self._client_ip()}:login"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             try: self._send_json(auth_login(body.get("email"),body.get("password")))
             except ValueError as exc: self._send_json({"error":str(exc)},401)

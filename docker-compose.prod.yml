@@ -4,7 +4,11 @@ services:
     restart: unless-stopped
     expose:
       - "8476"
+    # Secrets (ADMIN_PASSWORD, SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY, Google and Stripe values) come from .env,
+    # which is never committed. The explicit settings below always win over anything in .env.
+    env_file: .env
     environment:
+      SEED_REFLECTIONS_TRUST_PROXY: "1"
       SEED_REFLECTIONS_MODE: hosted
       SEED_REFLECTIONS_HOST: 0.0.0.0
       SEED_REFLECTIONS_PORT: 8476

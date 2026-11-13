@@ -6,6 +6,8 @@ Use `start.bat` or `docker compose up --build`. This path binds the product dire
 
 ## Hosted runtime
 
+For a step-by-step guide to a small Linux server with your own domain, setup, update and backup scripts, see `docs/DEPLOY_SMALL_SERVER.md`.
+
 The production Compose overlay keeps the Python service on a private container network and exposes only Caddy. Caddy obtains and renews TLS certificates, redirects HTTP to HTTPS, enforces the proxy upload boundary, and adds transport security headers.
 
 1. Point the chosen DNS name at the host.
