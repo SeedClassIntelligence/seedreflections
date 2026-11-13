@@ -17,12 +17,25 @@ from archive_store import find_source_import, import_json, import_json_path, imp
 
 
 class _HTMLText(HTMLParser):
+    """Visible text only: the contents of scripts, styles and similar elements are not document text."""
+    _SKIP = {"script", "style", "noscript", "template", "svg", "head"}
+
     def __init__(self):
         super().__init__()
         self.parts = []
+        self._skipping = 0
+        self._title = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._SKIP:
+            self._skipping += 1
+
+    def handle_endtag(self, tag):
+        if tag in self._SKIP and self._skipping:
+            self._skipping -= 1
 
     def handle_data(self, data):
-        if data.strip():
+        if not self._skipping and data.strip():
             self.parts.append(data.strip())
 
 

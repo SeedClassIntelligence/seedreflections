@@ -1547,6 +1547,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
       <button class="source-method active" data-source-method="upload" onclick="showSourceMethod('upload')">Upload export</button>
       <button class="source-method" data-source-method="paste" onclick="showSourceMethod('paste')">Paste conversation</button>
       <button class="source-method" data-source-method="folder" onclick="showSourceMethod('folder')">SeedBridge</button>
+      <button class="source-method" data-source-method="web" onclick="showSourceMethod('web')">Web page</button>
+      <button class="source-method" data-source-method="drive" onclick="showSourceMethod('drive'); loadDrivePanel()">Google Drive</button>
       <button class="source-method" data-source-method="api" onclick="showSourceMethod('api')">Connect API</button>
     </div>
     <div class="intake-grid">
@@ -1567,6 +1569,26 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         <input id="paste-conversation-title" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" placeholder="Give this conversation a title" aria-label="Conversation title">
         <textarea id="paste-conversation-text" class="intake-textarea" placeholder="Paste the conversation or working notes here..." aria-label="Conversation text"></textarea>
         <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="importPastedConversation()">Map this conversation →</button>
+      </div>
+      <div class="intake-card source-method-panel" data-source-panel="web">
+        <h3>Add a web page</h3>
+        <p>Paste the address of one public page. SeedReflections fetches that page once, keeps its address and the time it was retrieved, and adds it to your archive as a source you can search and cite. Pages on private or internal networks, and files over 3 MB, are refused.</p>
+        <input id="web-import-url" class="chat-input" style="width:100%;box-sizing:border-box;margin-bottom:8px" type="url" inputmode="url" placeholder="https://example.com/article" aria-label="Web page address" autocomplete="off">
+        <button class="btn btn-primary" id="web-import-go" style="width:100%" onclick="importWebPage()">Add this page →</button>
+        <div id="web-import-error" role="alert" style="font-size:12.5px;color:var(--red);margin-top:8px"></div>
+      </div>
+      <div class="intake-card source-method-panel" data-source-panel="drive">
+        <h3>Import from Google Drive</h3>
+        <p>Read-only. You sign in on Google's own page, choose one folder, and review the file list before anything is imported. SeedReflections never sees your Google password, and disconnecting removes its access; documents already imported stay in your archive.</p>
+        <div id="drive-status" role="status" style="font-size:13px;margin-bottom:10px"></div>
+        <div id="drive-browser" hidden>
+          <div id="drive-path" style="font-size:12.5px;color:var(--text-muted);margin-bottom:6px"></div>
+          <div id="drive-folders" style="display:grid;gap:6px;margin-bottom:10px"></div>
+          <button class="btn btn-primary" id="drive-choose" style="width:100%" onclick="previewDriveFolder()">Review this folder →</button>
+        </div>
+        <div id="drive-preview" hidden style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:14px"></div>
+        <div id="drive-sources" style="margin-top:12px"></div>
+        <div id="drive-error" role="alert" style="font-size:12.5px;color:var(--red);margin-top:8px"></div>
       </div>
       <div class="intake-card source-method-panel" data-source-panel="folder">
         <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
@@ -2676,7 +2698,17 @@ async function loadConnectedSources() {
       (data.discovered || []).forEach(function(source){
         (source.paths || []).forEach(function(path){ found.push('<button class="btn btn-ghost btn-sm" data-provider="'+escHtml(source.provider)+'" data-path="'+escHtml(path)+'" onclick="selectDetectedSource(this)">'+escHtml(source.name)+' detected</button>'); });
       });
-      discovery.innerHTML=found.length ? '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><strong>Sources found:</strong>'+found.join('')+'</div>' : 'No supported application folder was detected automatically. Paste the specific conversation-data folder path below.';
+      var looked=[];
+      (data.discovered || []).forEach(function(source){
+        (source.checked || []).forEach(function(c){
+          looked.push('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:3px 0"><span style="min-width:110px">'+escHtml(source.name)+'</span><code style="word-break:break-all">'+escHtml(c.path)+'</code><span>'+(c.exists ? '✓ found' : 'not found')+'</span>'+
+            (c.exists ? '' : '<button class="btn btn-ghost btn-sm" data-provider="'+escHtml(source.provider)+'" data-path="'+escHtml(c.path)+'" onclick="selectDetectedSource(this)">Use this path anyway</button>')+'</div>');
+        });
+      });
+      discovery.innerHTML=(found.length ? '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><strong>Sources found:</strong>'+found.join('')+'</div>'
+        : '<strong>Nothing was found automatically.</strong> That usually means those tools were never used on this computer, or their history lives on the web (for example claude.ai or ChatGPT). For web history, use <strong>Upload export</strong> instead.')+
+        '<details style="margin-top:8px"'+(found.length ? '' : ' open')+'><summary style="cursor:pointer">Where SeedBridge looked on this computer</summary><div style="margin-top:6px">'+looked.join('')+
+        '<div style="margin-top:6px">If you keep a project somewhere else, paste its folder path below. Windows folders such as <code>.claude</code> and <code>.codex</code> are hidden; paste <code>%USERPROFILE%\\.claude\\projects</code> into File Explorer\u2019s address bar to open one.</div></div></details>';
     }
     var connectors=data.connectors || [];
     if (!connectors.length) { list.innerHTML='<div style="font-size:12px;color:var(--text-muted)">No AI applications connected yet.</div>'; return; }
@@ -3104,6 +3136,103 @@ async function waitForImportJob(jobId, thinkingBubble) {
     if (job.status === 'failed') throw new Error(job.error || 'Import failed');
     await new Promise(function(resolve){ setTimeout(resolve, 500); });
   }
+}
+
+/* ── Google Drive source ─────────────────────────────────────────── */
+var DRIVE = {parent:'root', trail:[{id:'root',name:'My Drive'}], preview:null};
+async function driveApi(path, options) {
+  var response = await productFetch(path, options); var data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Google Drive request failed.');
+  return data;
+}
+async function loadDrivePanel() {
+  var box = document.getElementById('drive-status'), err = document.getElementById('drive-error'); err.textContent = '';
+  try {
+    var st = await driveApi('/google/status');
+    document.getElementById('drive-browser').hidden = !st.connected;
+    if (!st.configured) { box.innerHTML = 'Google Drive is not set up for this deployment yet. The deployment owner needs to add a Google client ID and secret.'; return; }
+    if (!st.connected) { box.innerHTML = '<button class="btn btn-primary" onclick="connectWorkspaceTool(\'google_drive\')">Connect Google Drive</button>'; renderDriveSources(st.sources); return; }
+    box.innerHTML = 'Connected as <strong>' + escHtml(st.account || 'your Google account') + '</strong> · <button class="btn btn-ghost btn-sm" onclick="disconnectDrive()">Disconnect</button>';
+    renderDriveSources(st.sources); await loadDriveFolders(DRIVE.parent);
+  } catch (e) { err.textContent = e.message; }
+}
+async function loadDriveFolders(parent) {
+  var err = document.getElementById('drive-error'); err.textContent = '';
+  try {
+    var data = await driveApi('/google/folders?parent=' + encodeURIComponent(parent));
+    DRIVE.parent = parent;
+    document.getElementById('drive-path').textContent = 'Folder: ' + DRIVE.trail.map(function(t){ return t.name; }).join(' / ');
+    var list = document.getElementById('drive-folders');
+    list.innerHTML = (DRIVE.trail.length > 1 ? '<button class="btn btn-ghost btn-sm" style="justify-content:flex-start" onclick="driveUp()">↑ Up one level</button>' : '') +
+      (data.folders.length ? data.folders.map(function(f){ return '<button class="btn btn-ghost btn-sm" style="justify-content:flex-start" data-id="' + escHtml(f.id) + '" data-name="' + escHtml(f.name) + '" onclick="driveOpen(this)">📁 ' + escHtml(f.name) + '</button>'; }).join('') : '<div style="font-size:12.5px;color:var(--text-muted)">No folders here.</div>');
+  } catch (e) { err.textContent = e.message; }
+}
+function driveOpen(button) { DRIVE.trail.push({id: button.dataset.id, name: button.dataset.name}); loadDriveFolders(button.dataset.id); }
+function driveUp() { DRIVE.trail.pop(); loadDriveFolders(DRIVE.trail[DRIVE.trail.length - 1].id); }
+async function previewDriveFolder() {
+  var err = document.getElementById('drive-error'), box = document.getElementById('drive-preview'); err.textContent = '';
+  var current = DRIVE.trail[DRIVE.trail.length - 1];
+  if (current.id === 'root') { err.textContent = 'Open a folder first. Whole-Drive import is not offered.'; return; }
+  try {
+    var p = await driveApi('/google/preview', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({folder_id: current.id, folder_name: current.name})});
+    DRIVE.preview = p; var sk = p.skipped || {};
+    box.hidden = false;
+    box.innerHTML = '<strong>Review before importing: ' + escHtml(p.folder_name) + '</strong>' +
+      '<div style="font-size:12.5px;color:var(--text-muted);margin:6px 0">' + p.files.length + ' readable file(s). Skipped: ' + (sk.unsupported || 0) + ' unsupported type, ' + (sk.too_large || 0) + ' over 25 MB' + (sk.over_limit ? ', ' + sk.over_limit + ' beyond the 500-file limit' : '') + '.</div>' +
+      '<div style="max-height:220px;overflow:auto;font-size:12.5px">' + (p.files.map(function(f){ return '<div style="padding:4px 0;border-top:1px solid var(--border)">' + escHtml(f.path) + '</div>'; }).join('') || 'Nothing readable in this folder.') + '</div>' +
+      '<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin-top:10px"><input type="checkbox" id="drive-consent"> <span>Allow SeedReflections to read the files in this folder, now and when I sync it again. It never changes or deletes anything in Drive.</span></label>' +
+      '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary" ' + (p.files.length ? '' : 'disabled') + ' onclick="confirmDriveImport()">Import these files</button><button class="btn btn-ghost" onclick="document.getElementById(\'drive-preview\').hidden=true">Cancel</button></div>';
+  } catch (e) { err.textContent = e.message; }
+}
+async function confirmDriveImport() {
+  var err = document.getElementById('drive-error'); err.textContent = '';
+  if (!document.getElementById('drive-consent').checked) { err.textContent = 'Tick the box to allow read-only access to this folder.'; return; }
+  try {
+    var r = await driveApi('/google/connect-folder', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({preview_id: DRIVE.preview.preview_id, consent: true})});
+    document.getElementById('drive-preview').hidden = true;
+    showToast(r.files_imported + ' file(s) imported' + (r.files_failed ? ', ' + r.files_failed + ' failed' : '') + '.');
+    await loadArchiveThreads(); await loadImportLedger(); await loadDrivePanel();
+  } catch (e) { err.textContent = e.message; }
+}
+function renderDriveSources(sources) {
+  document.getElementById('drive-sources').innerHTML = (sources || []).map(function(s){
+    return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px"><span>📁 ' + escHtml(s.folder_name) + ' · ' + escHtml(s.status) + (s.last_sync_at ? ' · ' + escHtml(s.last_sync_at.slice(0,16).replace('T',' ')) : '') + '</span><button class="btn btn-ghost btn-sm" onclick="syncDriveSource(\'' + escHtml(s.id) + '\')">Sync now</button></div>';
+  }).join('');
+}
+async function syncDriveSource(id) {
+  var err = document.getElementById('drive-error'); err.textContent = '';
+  try { var r = await driveApi('/google/sources/' + encodeURIComponent(id) + '/sync', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    showToast(r.files_imported + ' changed file(s) imported.'); await loadArchiveThreads(); await loadImportLedger(); await loadDrivePanel(); } catch (e) { err.textContent = e.message; }
+}
+async function disconnectDrive() {
+  if (!confirm('Disconnect Google Drive? Access is revoked at Google. Documents already imported stay in your archive.')) return;
+  try { await productFetch('/tools/google_drive/disconnect', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}); DRIVE.trail = [{id:'root',name:'My Drive'}]; DRIVE.parent = 'root'; document.getElementById('drive-preview').hidden = true; await loadDrivePanel(); } catch (e) { document.getElementById('drive-error').textContent = e.message; }
+}
+(function handleGoogleReturn() {
+  var q = new URLSearchParams(location.search), g = q.get('google'); if (!g) return;
+  history.replaceState(null, '', location.pathname);
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      if (g === 'connected') { showToast('Google Drive connected.'); openWorkspaceSources('drive'); loadDrivePanel(); }
+      else if (g === 'denied') showToast('Google Drive was not connected: access was not allowed.');
+      else showToast('Google Drive could not be connected: ' + (q.get('reason') || 'try again.'));
+    }, 600);
+  });
+})();
+
+async function importWebPage() {
+  var input = document.getElementById('web-import-url'), button = document.getElementById('web-import-go'), error = document.getElementById('web-import-error');
+  var url = input.value.trim(); error.textContent = '';
+  if (!url) { error.textContent = 'Enter the address of a web page.'; input.focus(); return; }
+  button.disabled = true; button.textContent = 'Fetching…';
+  try {
+    var response = await productFetch('/web/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url: url})});
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'That page could not be added.');
+    await waitForImportJob(data.job_id, null);
+    input.value = ''; showToast('Added "' + (data.title || data.address) + '" with its address and retrieval time.');
+  } catch (e) { error.textContent = e.message || 'That page could not be added.'; }
+  button.disabled = false; button.textContent = 'Add this page →';
 }
 
 async function loadAllSeeds() {
@@ -5015,7 +5144,9 @@ function workReplyText(content, meta) {
   if (meta.mode === 'model' && meta.sources && meta.sources.length) {
     var read = meta.sources.filter(function(src){ return src.messages && src.messages.length; });
     if (read.length) out += '\n\nSources: ' + read.slice(0, 5).map(function(src){ return src.title + ' (message ' + src.messages.slice(0, 3).join(', ') + ')'; }).join('; ');
-  } else if (meta.mode === 'records_only' && meta.reason) {
+  }
+  if (meta.web_sources && meta.web_sources.length) out += '\n\nWeb pages read: ' + meta.web_sources.map(function(w){ return w.title + ' <' + w.url + '> retrieved ' + w.retrieved_at; }).join('; ');
+  if (meta.mode === 'records_only' && meta.reason) {
     out += '\n\nNo model answered this one: ' + meta.reason;
   }
   return out;
@@ -5184,6 +5315,7 @@ async function sendChatInput() {
       } else if (data.mode === 'records_only' && data.reason) {
         reply += '\n\nNo model answered this one: ' + data.reason;
       }
+      if (data.web_sources && data.web_sources.length) reply += '\n\nWeb pages read: ' + data.web_sources.map(function(w){ return w.title + ' <' + w.url + '> retrieved ' + w.retrieved_at; }).join('; ');
       appendChat(reply, 'assistant');
       CHAT_HISTORY.push({ role: 'user', content: msg }, { role: 'assistant', content: data.answer || '' });
     } catch (e) {

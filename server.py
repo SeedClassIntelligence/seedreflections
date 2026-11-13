@@ -40,6 +40,8 @@ from archive_store import (analyze_conversation, list_candidates, review_candida
                            archive_analysis_overview, source_coverage as archive_source_coverage, generate_candidate_links,
                            list_candidate_links, review_candidate_link)
 from document_ingest import import_document, import_document_path
+import web_fetch
+import google_drive
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
     logout as auth_logout, delete_account as auth_delete_account, consume_auth_attempt, list_members as auth_list_members,
@@ -70,7 +72,7 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
-from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, merge_extras
+from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, make_web_tool, merge_extras, user_urls
 import work_sessions
 import work_context
 import agent_tokens
@@ -84,6 +86,12 @@ from tool_store import list_tools as list_workspace_tools, get_tool as get_works
 PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
 DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower()
 if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("Invalid SEED_REFLECTIONS_MODE")
+# Local mode only: lets someone on their own machine add pages from their own network. Hosted mode ignores it.
+WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
+# Behind the Caddy proxy every connection arrives from the proxy, so sign-in rate limits would be shared by all
+# visitors. With this switch on (hosted only) the real address comes from the proxy's X-Forwarded-For, and only
+# when the connection itself comes from a private or loopback address, so a visitor cannot forge it.
+TRUST_PROXY = DEPLOYMENT_MODE != "local" and os.environ.get("SEED_REFLECTIONS_TRUST_PROXY") == "1"
 HOST = os.environ.get("SEED_REFLECTIONS_HOST","127.0.0.1" if DEPLOYMENT_MODE=="local" else "0.0.0.0")
 PUBLIC_ORIGIN = os.environ.get("SEED_REFLECTIONS_PUBLIC_ORIGIN","*" if DEPLOYMENT_MODE=="local" else "").rstrip("/")
 MAX_UPLOAD_BYTES = int(os.environ.get("SEED_REFLECTIONS_MAX_UPLOAD_BYTES", str(2 * 1024 * 1024 * 1024)))
@@ -795,6 +803,34 @@ def agent_runtime(user, body, task="chat"):
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
     return provider,api_url,api_key,model,reason
 
+def google_redirect_uri(handler):
+    if DEPLOYMENT_MODE=="local": return f"http://127.0.0.1:{handler.server.server_address[1]}/api/v2/google/callback"
+    return PUBLIC_ORIGIN+"/api/v2/google/callback"
+
+def drive_importer(user):
+    """Run one Drive file through the normal document import for this workspace, bounded by the hosted storage quota."""
+    ws=user["workspace_id"]
+    def run(filename,content):
+        if ws!="local":
+            if tenant_usage(ws)["source_bytes"]+len(content)>HOSTED_STORAGE_BYTES: raise ValueError("Workspace storage quota exceeded")
+        UPLOAD_JOBS_DIR.mkdir(parents=True,exist_ok=True)
+        handle=tempfile.NamedTemporaryFile(prefix="drive-",suffix=Path(filename).suffix,dir=UPLOAD_JOBS_DIR,delete=False)
+        with handle: handle.write(content)
+        try:
+            if ws=="local": return import_document_path(handle.name,filename)
+            result=tenant_import_document_path(ws,handle.name,filename)
+            tenant_preserve_source(ws,result["import_id"],handle.name,filename,result.get("coverage") or {})
+            return result
+        finally: Path(handle.name).unlink(missing_ok=True)
+    return run
+
+def web_page_text(page):
+    """Readable text of a fetched page, for the assistant."""
+    if page["kind"]=="application/pdf":
+        from document_ingest import extract_document
+        return extract_document(page["body"],"page.pdf")["text"]
+    return web_fetch.as_document(page)[1].decode("utf-8","replace")
+
 def save_assistant_draft(user, seed, session_id):
     """Return a save(title, kind, body, refs) callback that stores a DRAFT artifact for the user to review."""
     def save(title, kind, body, refs):
@@ -1199,13 +1235,28 @@ def static_file_path(relative, internal=False):
 
 class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
+    def _client_ip(self):
+        peer=self.client_address[0]
+        if not TRUST_PROXY: return peer
+        try:
+            import ipaddress
+            if not (ipaddress.ip_address(peer).is_private or ipaddress.ip_address(peer).is_loopback): return peer
+            forwarded=[part.strip() for part in self.headers.get("X-Forwarded-For","").split(",") if part.strip()]
+            return str(ipaddress.ip_address(forwarded[-1])) if forwarded else peer
+        except ValueError: return peer
+
     def _local_request_allowed(self):
         if DEPLOYMENT_MODE!="local": return True
         listener_port=self.server.server_address[1]
         allowed_hosts={f"127.0.0.1:{listener_port}",f"localhost:{listener_port}",f"[::1]:{listener_port}"}
         host=self.headers.get("Host","").lower()
         origin=self.headers.get("Origin","").lower().rstrip("/")
-        if host not in allowed_hosts or (origin and origin != "http://"+host):
+        # The browser extension posts from a chrome-extension:// origin. It is let through only for the two
+        # connection-token routes, only with a Bearer token present, and still only on a loopback Host.
+        extension_delivery=(origin.startswith(("chrome-extension://","moz-extension://")) and host in allowed_hosts
+            and self.path.split("?")[0] in {"/api/v2/integrations/import","/api/v2/integrations/ping"}
+            and self.headers.get("Authorization","").lower().startswith("bearer "))
+        if host not in allowed_hosts or (origin and origin != "http://"+host and not extension_delivery):
             self._send_json({"error":"Local requests require a loopback Host and matching Origin"},403)
             return False
         return True
@@ -1345,6 +1396,26 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not user: self._send_json({"error":"Authentication required"},401); return
             self._send_json({"integrations":list_api_integrations(user["workspace_id"]),
                 "import_endpoint":"/api/v2/integrations/import","authentication":"Bearer connection token"})
+            return
+        if path == "/api/v2/google/callback":
+            query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            def back(**params):
+                self.send_response(302); self.send_header("Location","/consumer-dashboard.html?"+urllib.parse.urlencode(params)); self.send_header("Cache-Control","no-store"); self.end_headers()
+            if (query.get("error") or [""])[0]: back(google="denied"); return
+            try:
+                google_drive.complete_authorization((query.get("state") or [""])[0],(query.get("code") or [""])[0],google_redirect_uri(self),DEPLOYMENT_MODE)
+                back(google="connected")
+            except (google_drive.DriveError,RuntimeError) as exc: back(google="error",reason=str(exc)[:160])
+            return
+        if path == "/api/v2/google/status":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            self._send_json(google_drive.status(user["workspace_id"])); return
+        if path == "/api/v2/google/folders":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.list_folders(user["workspace_id"],(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("parent") or ["root"])[0],DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
             return
         if path == "/api/v2/tools":
             user=self._runtime_user()
@@ -3106,6 +3177,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(created,201)
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/google/preview":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.preview(user["workspace_id"],body.get("folder_id"),body.get("folder_name"),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
+        if path == "/api/v2/google/connect-folder":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.connect_preview(user["workspace_id"],body.get("preview_id"),body.get("consent"),drive_importer(user),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
+        drive_sync_match=re.fullmatch(r"/api/v2/google/sources/([^/]+)/sync",path)
+        if drive_sync_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json(google_drive.sync(user["workspace_id"],urllib.parse.unquote(drive_sync_match.group(1)),drive_importer(user),DEPLOYMENT_MODE))
+            except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
+            return
         tool_connect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/connect",path)
         if tool_connect_match:
             user=self._runtime_user()
@@ -3117,12 +3207,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not catalog["provider_configured"]:
                 self._send_json({"error":"This connection is available but its provider authentication has not been configured for this deployment.",
                     "code":"provider_configuration_required","tool":catalog},503); return
+            if tool_id=="google_drive":
+                try: self._send_json({"authorization_url":google_drive.begin_authorization(user["workspace_id"],google_redirect_uri(self))}); return
+                except google_drive.DriveError as exc: self._send_json({"error":str(exc)},503); return
             self._send_json({"error":"Provider authorization is configured, but the OAuth handoff is not enabled in this build.",
                 "code":"authorization_handoff_unavailable","tool":catalog},501); return
         tool_disconnect_match=re.fullmatch(r"/api/v2/tools/([^/]+)/disconnect",path)
         if tool_disconnect_match:
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
+            if urllib.parse.unquote(tool_disconnect_match.group(1))=="google_drive": google_drive.disconnect(user["workspace_id"])
             try: self._send_json({"tool":disconnect_workspace_tool(user["workspace_id"],urllib.parse.unquote(tool_disconnect_match.group(1)))})
             except KeyError as exc: self._send_json({"error":str(exc)},404)
             return
@@ -3230,7 +3324,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             except ValueError as exc: self._send_json({"error":str(exc)},400)
             return
         if path == "/api/v2/auth/signup":
-            if not auth_request_allowed(f"{self.client_address[0]}:signup"):
+            if not auth_request_allowed(f"{self._client_ip()}:signup"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             if DEPLOYMENT_MODE == "local": self._send_json({"error":"Local mode uses the device owner and does not require an account"},409); return
             try:
@@ -3239,7 +3333,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             except ValueError as exc: self._send_json({"error":str(exc)},409 if "exists" in str(exc) else 400)
             return
         if path == "/api/v2/auth/login":
-            if not auth_request_allowed(f"{self.client_address[0]}:login"):
+            if not auth_request_allowed(f"{self._client_ip()}:login"):
                 self._send_json({"error":"Too many authentication attempts. Try again later."},429); return
             try: self._send_json(auth_login(body.get("email"),body.get("password")))
             except ValueError as exc: self._send_json({"error":str(exc)},401)
@@ -3259,6 +3353,30 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
         if path == "/api/v2/auth/logout":
             if DEPLOYMENT_MODE != "local": auth_logout(self._bearer_token())
             self._send_json({"status":"local_session" if DEPLOYMENT_MODE=="local" else "signed_out"})
+            return
+        if path == "/api/v2/web/import":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if not auth_request_allowed(f"{user['id']}:web-import"):
+                self._send_json({"error":"Too many web pages added in a short time. Try again shortly."},429); return
+            try:
+                page=web_fetch.fetch_page(body.get("url"),allow_private=WEB_ALLOW_PRIVATE)
+                filename,content=web_fetch.as_document(page)
+            except web_fetch.FetchError as exc: self._send_json({"error":str(exc)},400); return
+            if user["workspace_id"]!="local":
+                current=tenant_usage(user["workspace_id"])
+                if current["source_bytes"]+len(content)>HOSTED_STORAGE_BYTES:
+                    self._send_json({"error":"Workspace storage quota exceeded","limit_bytes":HOSTED_STORAGE_BYTES,"used_bytes":current["source_bytes"]},413); return
+            UPLOAD_JOBS_DIR.mkdir(parents=True,exist_ok=True)
+            handle=tempfile.NamedTemporaryFile(prefix="web-",suffix=Path(filename).suffix,dir=UPLOAD_JOBS_DIR,delete=False)
+            with handle: handle.write(content)
+            if user["workspace_id"]=="local":
+                job_id=create_import_job(filename); target=process_import_job; args=(job_id,filename,handle.name)
+            else:
+                job=tenant_create_import_job(user["workspace_id"],filename); job_id=job["id"]
+                target=process_tenant_import_job; args=(user["workspace_id"],job_id,filename,handle.name)
+            threading.Thread(target=target,args=args,daemon=True).start()
+            self._send_json({"status":"accepted","job_id":job_id,"title":page["title"],"address":page["final_url"],"filename":filename},202)
             return
         if path == "/api/v2/imports":
             user=self._runtime_user()
@@ -3505,18 +3623,20 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                             payload={**payload,"title":art.get("title"),"before":str(art.get("content") or "")[:20000],"base_updated_at":art.get("updated_at")}
                         else: payload={**payload,"source_refs":refs}
                         return work_sessions.add_proposal(ws_id,seed_id,kind,payload)
+                    web_pages=[]; allowed_urls=user_urls(prompt,history)
                     def extras(sources):
                         parts=[]
                         if allow_draft: parts.append(make_draft_tool(save_assistant_draft(user,seed,session["id"]),sources,drafts))
                         if allow_rev or allow_dec: parts.append(make_proposal_tools(read_artifact,propose,sources,proposals,allow_rev,allow_dec))
+                        if allowed_urls: parts.append(make_web_tool(lambda u: web_fetch.fetch_page(u,allow_private=WEB_ALLOW_PRIVATE),web_page_text,allowed_urls,web_pages))
                         return merge_extras(*parts)
-                    extra=extras if (allow_draft or allow_rev or allow_dec) else None
+                    extra=extras if (allow_draft or allow_rev or allow_dec or allowed_urls) else None
                     result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
                         context_text=context_text,extra_factory=extra,
                         preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
                     record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
                     answer=result["answer"]
-                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"context":report,
+                    meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages,"context":report,
                           "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
                           "proposals":[work_proposal_view(p) for p in proposals]}
                 except ModelCallError as exc: reason=str(exc)
@@ -3555,13 +3675,16 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if reason is None:
                 try:
                     agent_count_use(user["workspace_id"])
+                    chat_history=body.get("history") if isinstance(body.get("history"),list) else None
+                    web_pages=[]; allowed_urls=user_urls(prompt,chat_history)
+                    web_extra=((lambda sources: merge_extras(make_web_tool(lambda u: web_fetch.fetch_page(u,allow_private=WEB_ALLOW_PRIVATE),web_page_text,allowed_urls,web_pages))) if allowed_urls else None)
                     result=run_agent(prompt,_AgentStores(user["workspace_id"],workspace),
                         lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
-                        history=body.get("history") if isinstance(body.get("history"),list) else None,
+                        history=chat_history,extra_factory=web_extra,
                         active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
                     record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
                     self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
-                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"]})
+                        "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages})
                     return
                 except ModelCallError as exc:
                     reason=str(exc)
