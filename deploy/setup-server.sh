@@ -64,6 +64,13 @@ if [ ! -f .env ]; then
 SEED_REFLECTIONS_DOMAIN=$DOMAIN
 ADMIN_PASSWORD=$ADMIN_PW
 SEED_REFLECTIONS_CREDENTIAL_MASTER_KEY=$MASTER
+# Outgoing email for password reset (required). Fill these in, then run deploy/update.sh or restart the app.
+SEED_REFLECTIONS_SMTP_HOST=
+SEED_REFLECTIONS_SMTP_PORT=465
+SEED_REFLECTIONS_SMTP_SECURITY=ssl
+SEED_REFLECTIONS_SMTP_USER=
+SEED_REFLECTIONS_SMTP_PASSWORD=
+SEED_REFLECTIONS_SMTP_FROM=SeedReflections <noreply@${DOMAIN#*.}>
 # Add later, only when you are ready: Google Drive and billing.
 SEED_REFLECTIONS_GOOGLE_CLIENT_ID=
 SEED_REFLECTIONS_GOOGLE_CLIENT_SECRET=
@@ -90,7 +97,8 @@ echo
 echo "Done. Next:"
 echo "  1. Make sure the DNS record for $DOMAIN points to this server's IP address."
 echo "  2. Open https://$DOMAIN (the certificate is fetched automatically; allow a minute)."
-echo "  3. Readiness check:  curl -s https://$DOMAIN/api/v2/readiness"
+echo "  3. Fill in the SMTP_ lines in $APP/.env (a mailbox for password-reset email), then: cd $APP && docker compose -f docker-compose.prod.yml up -d"
+echo "  4. Readiness check:  curl -s https://$DOMAIN/api/v2/readiness   (every check must pass)"
 if [ "${NEW_ENV:-0}" = 1 ]; then
   echo
   echo "Your generated secrets are in $APP/.env (readable only by root). Save a copy of that file somewhere safe."

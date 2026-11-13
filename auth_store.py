@@ -28,6 +28,8 @@ def initialize():
         CREATE TABLE IF NOT EXISTS runtime_invitations(id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL REFERENCES runtime_workspaces(id) ON DELETE CASCADE,
           email TEXT NOT NULL,role TEXT NOT NULL,token_hash TEXT NOT NULL UNIQUE,invited_by TEXT NOT NULL,
           expires_at TEXT NOT NULL,accepted_at TEXT,created_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS runtime_password_resets(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires_at TEXT NOT NULL,
+          used_at TEXT,created_at TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS runtime_auth_attempts_window ON runtime_auth_attempts(attempt_key,attempted_at);
         CREATE INDEX IF NOT EXISTS runtime_invitations_email ON runtime_invitations(email,accepted_at);
         """)
@@ -215,6 +217,7 @@ def delete_account(user_id,password):
         for workspace in leave:
             try: db.execute("DELETE FROM workspace_accounts WHERE workspace_id=? AND lower(email)=?",(workspace,user['email'].lower()))
             except sqlite3.OperationalError: pass   # that table exists only once a workspace document has been saved
+        db.execute("DELETE FROM runtime_password_resets WHERE user_id=?",(user['id'],))
         db.execute("DELETE FROM runtime_sessions WHERE user_id=?",(user['id'],))
         db.execute("DELETE FROM runtime_invitations WHERE invited_by=? OR lower(email)=?",(user['id'],user['email'].lower()))
         db.execute("DELETE FROM runtime_memberships WHERE user_id=?",(user['id'],))
@@ -222,3 +225,32 @@ def delete_account(user_id,password):
         for workspace in erase:
             db.execute("DELETE FROM runtime_workspaces WHERE id=?",(workspace,))
     return {'deleted':True,'workspaces_erased':len(erase),'workspaces_left':len(leave),'records_removed':sum(sum(v.values()) for v in erased.values())}
+
+
+RESET_MINUTES=60
+
+def create_password_reset(email):
+    """Start a reset for the account with this email. Returns {'token','name','email'}, or None when there is no such account
+    (the caller must answer the same way either way). Only the digest of the token is stored; older links stop working."""
+    initialize(); email=str(email or '').strip().lower()
+    with _connect() as db:
+        user=db.execute("SELECT id,name,email,password_hash FROM runtime_users WHERE email=? AND id!='local-owner'",(email,)).fetchone()
+        if not user or not user['password_hash']: return None
+        token=secrets.token_urlsafe(32); now=datetime.now(timezone.utc)
+        db.execute("DELETE FROM runtime_password_resets WHERE user_id=?",(user['id'],))
+        db.execute("INSERT INTO runtime_password_resets VALUES(?,?,?,?,?)",(hashlib.sha256(token.encode()).hexdigest(),user['id'],
+            (now+timedelta(minutes=RESET_MINUTES)).isoformat(),None,now.replace(microsecond=0).isoformat()))
+    return {'token':token,'name':user['name'],'email':user['email']}
+
+def reset_password(token,new_password):
+    """Set a new password from a reset link. Single use. Signs the account out everywhere."""
+    initialize(); new_password=str(new_password or '')
+    if len(new_password)<12: raise ValueError('A password of at least 12 characters is required')
+    digest=hashlib.sha256(str(token or '').encode()).hexdigest()
+    with _connect() as db:
+        row=db.execute("SELECT * FROM runtime_password_resets WHERE token_hash=?",(digest,)).fetchone()
+        if not row or row['used_at'] or row['expires_at']<=datetime.now(timezone.utc).isoformat(): raise ValueError('This reset link is invalid or has expired. Ask for a new one.')
+        db.execute("UPDATE runtime_users SET password_hash=? WHERE id=?",(_password_hash(new_password),row['user_id']))
+        db.execute("UPDATE runtime_password_resets SET used_at=? WHERE token_hash=?",(_now(),digest))
+        db.execute("DELETE FROM runtime_sessions WHERE user_id=?",(row['user_id'],))
+    return {'password_changed':True}

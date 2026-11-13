@@ -202,11 +202,36 @@
     </form>
 
     <!-- ── FORGOT PASSWORD FORM ── -->
-    <form id="form-forgot" role="tabpanel" aria-labelledby="tab-login" onsubmit="return false" style="display:none">
-      <div style="margin-bottom:20px">
+    <form id="form-forgot" role="tabpanel" aria-labelledby="tab-login" onsubmit="doForgot(event)" style="display:none">
+      <div style="margin-bottom:16px">
         <h3 style="font-size:16px;margin-bottom:8px">Reset your password</h3>
-        <p style="font-size:13px;color:var(--text3)"><strong>Password reset by email isn't available yet.</strong> If you can't sign in, ask your administrator to reset your password.</p>
+        <p style="font-size:13px;color:var(--text3)">Enter your account email. If it matches an account, we send a link that lets you choose a new password. The link works once and expires in 60 minutes.</p>
       </div>
+      <div class="field">
+        <label for="forgot-email">Email</label>
+        <input type="email" id="forgot-email" placeholder="you@company.com" autocomplete="email" required>
+      </div>
+      <button type="submit" class="btn-submit" id="forgot-btn">Send reset link →</button>
+      <div class="footer-link" style="margin-top:16px">
+        <a href="#" onclick="switchTab('login');return false">← Back to log in</a>
+      </div>
+    </form>
+
+    <!-- ── CHOOSE A NEW PASSWORD (opened from the emailed link) ── -->
+    <form id="form-reset" role="tabpanel" aria-labelledby="tab-login" onsubmit="doReset(event)" style="display:none">
+      <div style="margin-bottom:16px">
+        <h3 style="font-size:16px;margin-bottom:8px">Choose a new password</h3>
+        <p style="font-size:13px;color:var(--text3)">Use at least 12 characters. You will be signed out everywhere else.</p>
+      </div>
+      <div class="field">
+        <label for="reset-password">New password</label>
+        <input type="password" id="reset-password" autocomplete="new-password" minlength="12" required>
+      </div>
+      <div class="field">
+        <label for="reset-password2">Repeat the new password</label>
+        <input type="password" id="reset-password2" autocomplete="new-password" minlength="12" required>
+      </div>
+      <button type="submit" class="btn-submit" id="reset-btn">Save new password →</button>
       <div class="footer-link" style="margin-top:16px">
         <a href="#" onclick="switchTab('login');return false">← Back to log in</a>
       </div>
@@ -220,6 +245,7 @@
   let selectedAccountType = 'consumer';
   let nextUrl = '/consumer';
   let hasExplicitNext = false;
+  let resetToken = '';
 
   function getDashboardForRole(user) {
     if (!user) return '/consumer';
@@ -257,7 +283,13 @@
       hasExplicitNext = true;
     }
 
-    if (mode === 'admin') {
+    if (mode === 'reset') {
+      // The token is in the #fragment, which is never sent to any server. Keep it in memory and remove it from the address bar.
+      resetToken = new URLSearchParams(location.hash.slice(1)).get('token') || '';
+      history.replaceState(null, '', location.pathname + '?mode=reset');
+      switchTab('reset');
+      if (!resetToken) showError('This reset link is incomplete. Ask for a new one from the log in page.');
+    } else if (mode === 'admin') {
       switchTab('admin');
     } else if (mode === 'signup') {
       switchTab('signup');
@@ -300,10 +332,11 @@
     document.getElementById('form-signup').style.display  = tab === 'signup'  ? '' : 'none';
     document.getElementById('form-admin').style.display   = tab === 'admin'   ? '' : 'none';
     document.getElementById('form-forgot').style.display  = tab === 'forgot'  ? '' : 'none';
+    document.getElementById('form-reset').style.display   = tab === 'reset'   ? '' : 'none';
     ['login','signup','admin'].forEach(function (t) {
       const b = document.getElementById('tab-' + t);
       if (!b) return;
-      const on = (tab === t) || (tab === 'forgot' && t === 'login');
+      const on = (tab === t) || ((tab === 'forgot' || tab === 'reset') && t === 'login');
       b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
     });
     clearMessages();
@@ -356,9 +389,36 @@
 
   function showForgot(e) {
     e.preventDefault();
-    document.getElementById('form-login').style.display  = 'none';
-    document.getElementById('form-forgot').style.display = '';
-    clearMessages();
+    var typed = document.getElementById('login-email').value.trim();
+    switchTab('forgot');
+    if (typed) document.getElementById('forgot-email').value = typed;
+    document.getElementById('forgot-email').focus();
+  }
+
+  async function doForgot(e) {
+    e.preventDefault(); clearMessages();
+    var btn = document.getElementById('forgot-btn'); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      var res = await fetch('/api/v2/auth/forgot', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email: document.getElementById('forgot-email').value.trim()})});
+      var data = await res.json();
+      if (!res.ok) showError(data.error || 'The reset link could not be sent.'); else showSuccess(data.status);
+    } catch (err) { showError('Could not reach the server. Try again.'); }
+    btn.disabled = false; btn.textContent = 'Send reset link →';
+  }
+
+  async function doReset(e) {
+    e.preventDefault(); clearMessages();
+    var a = document.getElementById('reset-password').value, b = document.getElementById('reset-password2').value;
+    if (a !== b) { showError('The two passwords do not match.'); return; }
+    if (a.length < 12) { showError('Use at least 12 characters.'); return; }
+    var btn = document.getElementById('reset-btn'); btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      var res = await fetch('/api/v2/auth/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: resetToken, password: a})});
+      var data = await res.json();
+      if (!res.ok) { showError(data.error || 'The password could not be changed.'); btn.disabled = false; btn.textContent = 'Save new password →'; return; }
+      resetToken = ''; document.getElementById('reset-password').value = ''; document.getElementById('reset-password2').value = '';
+      switchTab('login'); showSuccess('Your password was changed. Log in with the new one.');
+    } catch (err) { showError('Could not reach the server. Try again.'); btn.disabled = false; btn.textContent = 'Save new password →'; }
   }
 
   // ── Plan selection ────────────────────────────────────────────────────────────
