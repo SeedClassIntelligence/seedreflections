@@ -80,15 +80,21 @@ def adapter_catalog():
         "canonical_contract_version":"1.0","availability":"operational"} for provider,definition in PROVIDERS.items()]
 
 def discover():
+    """Report where each tool usually keeps its history and whether that folder exists on this computer."""
     found=[]
     for provider,definition in PROVIDERS.items():
         if provider=="folder": continue
-        paths=[]
-        for candidate in definition["paths"]:
+        paths=[]; checked=[]
+        candidates=list(definition["paths"])
+        if provider=="claude_code" and os.environ.get("CLAUDE_CONFIG_DIR"): candidates.insert(0,Path(os.environ["CLAUDE_CONFIG_DIR"])/"projects")
+        for candidate in candidates:
             try:
-                if str(candidate) not in {".",""} and candidate.is_dir(): paths.append(str(candidate.resolve()))
+                if not candidate.is_absolute(): continue          # an unset variable leaves a relative stub; never look in the working folder
+                exists=candidate.is_dir()
+                checked.append({"path":str(candidate),"exists":exists})
+                if exists: paths.append(str(candidate.resolve()))
             except OSError: pass
-        found.append({"provider":provider,"name":definition["name"],"detected":bool(paths),"paths":paths})
+        found.append({"provider":provider,"name":definition["name"],"detected":bool(paths),"paths":paths,"checked":checked})
     return found
 
 def list_connectors(workspace_id="local"):

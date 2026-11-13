@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,23 @@ class SeedBridgeTests(unittest.TestCase):
         except OSError: self.skipTest("symlinks unavailable")
         preview = connector_store.preview_source("folder", str(src))
         self.assertEqual([i["path"] for i in preview["items"]], ["ok.md"])
+
+    def test_discovery_reports_where_it_looked_and_ignores_unset_variable_stubs(self):
+        home = self.root / "home"; (home / ".claude" / "projects").mkdir(parents=True)
+        original = dict(connector_store.PROVIDERS)
+        providers = {"codex": {"name": "Codex", "paths": [home / ".codex" / "sessions"]},
+                     "claude_code": {"name": "Claude Code", "paths": [home / ".claude" / "projects"]},
+                     "cursor": {"name": "Cursor", "paths": [Path("") / "Cursor"]},       # what an unset APPDATA leaves behind
+                     "folder": {"name": "Folder", "paths": []}}
+        previous = Path.cwd(); (self.root / "Cursor").mkdir(); os.chdir(self.root)        # a look-alike folder in the working directory
+        try:
+            with patch.dict(connector_store.PROVIDERS, providers, clear=True):
+                found = {item["provider"]: item for item in connector_store.discover()}
+        finally:
+            os.chdir(previous)
+        self.assertEqual((found["claude_code"]["detected"], found["codex"]["detected"]), (True, False))
+        self.assertEqual(found["codex"]["checked"], [{"path": str(home / ".codex" / "sessions"), "exists": False}])
+        self.assertEqual((found["cursor"]["detected"], found["cursor"]["checked"]), (False, []))
 
 
 if __name__ == "__main__": unittest.main()
