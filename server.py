@@ -43,6 +43,8 @@ from document_ingest import import_document, import_document_path
 import web_fetch
 import google_drive
 import mailer
+from html import escape as _esc
+import seed_signature
 import auth_store as _auth_store
 from workspace_store import load_workspace, save_workspace, storage_status, create_empty_workspace, accept_tenant_candidate
 from auth_store import (signup as auth_signup, login as auth_login, authenticate as auth_authenticate,
@@ -89,6 +91,11 @@ PORT = int(os.environ.get("SEED_REFLECTIONS_PORT", "8476"))
 DEPLOYMENT_MODE = os.environ.get("SEED_REFLECTIONS_MODE", "local").strip().lower()
 if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("Invalid SEED_REFLECTIONS_MODE")
 # Local mode only: lets someone on their own machine add pages from their own network. Hosted mode ignores it.
+# The built-in "signing" screens below only simulate a signature (a hash, not a real one). They are off unless someone
+# running locally turns them on for a demo, and they never run in hosted or enterprise mode. Real signing goes through
+# the Seed Signature authority (seed_signature.py).
+LOCAL_SIGNING_DEMO = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_LOCAL_SIGNING_DEMO") == "1"
+LEGACY_SIGNING_PATHS = {"/api/seed/create","/api/v1/api/seed/create","/api/v1/seed/create","/widget/sign","/widget/sign/submit","/sdk/seed-signature-widget.js"}
 WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
 # Behind the Caddy proxy every connection arrives from the proxy, so sign-in rate limits would be shared by all
 # visitors. With this switch on (hosted only) the real address comes from the proxy's X-Forwarded-For, and only
@@ -1358,6 +1365,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
     def _do_GET_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
+        if (path in LEGACY_SIGNING_PATHS and not LOCAL_SIGNING_DEMO) or (path.startswith("/seeds/verify/") and DEPLOYMENT_MODE != "local"):
+            self._send_json({"error":"Not found"},404); return
         if path == "/api/v2/capabilities":
             self._send_json({"mode":DEPLOYMENT_MODE,"billing":os.environ.get("SEED_REFLECTIONS_BILLING_ENABLED","0")=="1",
                 "external_ai":os.environ.get("SEED_REFLECTIONS_EXTERNAL_AI_ENABLED","0")=="1",
@@ -1421,6 +1430,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             try: self._send_json(google_drive.list_folders(user["workspace_id"],(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("parent") or ["root"])[0],DEPLOYMENT_MODE))
             except google_drive.DriveError as exc: self._send_json({"error":str(exc)},400)
             return
+        if path == "/api/v2/seed-signature/status":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: self._send_json({"configured":seed_signature.configured(),"authority":seed_signature.authority_origin() if seed_signature.configured() else None})
+            except seed_signature.SignatureError as exc: self._send_json({"configured":False,"error":str(exc)})
+            return
         if path == "/api/v2/tools":
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
@@ -1477,6 +1492,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             query=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query); artifact_type=(query.get("type") or [""])[0]
             artifacts=workspace.get("artifacts",[])
             if artifact_type: artifacts=[item for item in artifacts if item.get("type")==artifact_type]
+            artifacts=[({**item,"signature":{**item["signature"],"status":"matches" if item["signature"].get("content_sha256")==seed_signature.content_digest(item.get("content")) else "edited_since"}} if isinstance(item.get("signature"),dict) else item) for item in artifacts]
             self._send_json({"artifacts":artifacts,"total":len(artifacts)}); return
         artifact_export_match=re.fullmatch(r"/api/v2/artifacts/([^/]+)/export",path)
         if artifact_export_match:
@@ -1994,7 +2010,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
   </div>
   
   <div class="input-label">Verify Seed Intent Content</div>
-  <div class="content-box">\"{seed_content}\"</div>
+  <div class="content-box">\"{_esc(str(seed_content))}\"</div>
   
   <div class="input-group">
     <div class="input-label">Enter Signing Passphrase</div>
@@ -2161,13 +2177,13 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
     <p>This cryptographic signature record guarantees the authorship and content integrity of the original intent seed.</p>
     
     <div class="field-label">Signature ID</div>
-    <div class="field-value" style="color:#bc8cff;font-weight:bold;">{sig_id}</div>
+    <div class="field-value" style="color:#bc8cff;font-weight:bold;">{_esc(sig_id)}</div>
     
     <div class="field-label">Original Seed Intent</div>
-    <div class="field-value">"{content_text}"</div>
+    <div class="field-value">"{_esc(str(content_text))}"</div>
     
     <div class="field-label">Verification Timestamp</div>
-    <div class="field-value">{date_str}</div>
+    <div class="field-value">{_esc(str(date_str))}</div>
     
     <div class="field-label">Attributed Lineage Authority</div>
     <div class="field-value" style="color:#3fb950;">Seed-Class Intelligence Architecture (SCIA v4.0)</div>
@@ -2243,7 +2259,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
   <div class="cert">
     <div class="badge">✕ WARNING: INVALID SIGNATURE</div>
     <h1>Attribution Check Failed</h1>
-    <p>The cryptographic signature ID <strong>{sig_id}</strong> is invalid or does not match any authenticated record in our provenance registry. The content lineage has been compromised or modified.</p>
+    <p>The cryptographic signature ID <strong>{_esc(sig_id)}</strong> is invalid or does not match any authenticated record in our provenance registry. The content lineage has been compromised or modified.</p>
   </div>
 </body>
 </html>
@@ -3072,6 +3088,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
     def _do_POST_impl(self):
         if not self._local_request_allowed(): return
         path = self.path.split("?")[0]
+        if (path in LEGACY_SIGNING_PATHS and not LOCAL_SIGNING_DEMO) or (path.startswith("/seeds/verify/") and DEPLOYMENT_MODE != "local"):
+            self._send_json({"error":"Not found"},404); return
         if path == "/mcp":
             self._handle_mcp(); return
         if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
@@ -3282,6 +3300,25 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 "seed_ids":list(body.get("seed_ids") or []),"created_by":user["id"],"created_at":now,"updated_at":now,"versions":[]}
             workspace=load_workspace(workspace_id=user["workspace_id"]); workspace.setdefault("artifacts",[]).append(artifact)
             save_workspace(workspace,user["workspace_id"],"artifact_created"); self._send_json({"artifact":artifact},201); return
+        if path == "/api/v2/seed-signature/session":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            if not auth_request_allowed(f"{user['id']}:signature-session"): self._send_json({"error":"Too many signing sessions in a short time. Try again shortly."},429); return
+            try: self._send_json(seed_signature.create_session(user["id"],body.get("content_type") or "text",body.get("title") or ""))
+            except seed_signature.SignatureError as exc: self._send_json({"error":str(exc)},503)
+            return
+        artifact_signature_match=re.fullmatch(r"/api/v2/artifacts/([^/]+)/signature",path)
+        if artifact_signature_match:
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            try: signature_id,certificate_url=seed_signature.validate_result(body.get("signature_id"),body.get("certificate_url"))
+            except seed_signature.SignatureError as exc: self._send_json({"error":str(exc)},400); return
+            artifact_id=urllib.parse.unquote(artifact_signature_match.group(1)); workspace=load_workspace(workspace_id=user["workspace_id"])
+            artifact=next((item for item in workspace.get("artifacts",[]) if item.get("artifact_id")==artifact_id),None)
+            if not artifact: self._send_json({"error":"Artifact not found"},404); return
+            artifact["signature"]={"signature_id":signature_id,"certificate_url":certificate_url,"signed_at":datetime.now().isoformat(),"signed_by":user["id"],
+                "content_sha256":seed_signature.content_digest(artifact.get("content"))}
+            save_workspace(workspace,user["workspace_id"],"artifact_signed"); self._send_json({"artifact":artifact}); return
         artifact_update_match=re.fullmatch(r"/api/v2/artifacts/([^/]+)",path)
         if artifact_update_match:
             user=self._runtime_user()
@@ -4431,7 +4468,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             if not seed_id or not content:
                 self._send_json({"error": "Missing seed_id or content"}, 400)
                 return
-            token = f"tok_{os.urandom(8).hex()}"
+            token = f"tok_{os.urandom(16).hex()}"
+            if len(SIGNATURE_SESSIONS) >= 500: SIGNATURE_SESSIONS.pop(next(iter(SIGNATURE_SESSIONS)))
             SIGNATURE_SESSIONS[token] = {
                 "seed_id": seed_id,
                 "content": content,
@@ -5220,34 +5258,9 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
         # ── API Endpoint: Generate Widget Session Token ──
         elif path == "/api/v1/seed-signature/session":
-            api_url = CONFIG["SEED_SIGNATURE_API_URL"].rstrip("/")
-            api_key = CONFIG["SEED_SIGNATURE_API_KEY"]
-
-            if not api_key:
-                self._send_json({"error": "Seed Signature API key is unconfigured on this platform"}, 402)
-                return
-
-            req_data = json.dumps({"platform": "Seed Reflection standalone"}).encode("utf-8")
-            req = urllib.request.Request(
-                f"{api_url}/session",
-                data=req_data,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}"
-                },
-                method="POST"
-            )
-
-            try:
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    session_data = json.loads(resp.read().decode("utf-8"))
-                    self._send_json(session_data, 200)
-            except URLError as e:
-                print(f"Seed Signature authority unreachable: {e}")
-                self._send_json({
-                    "error": "Seed Signature service unavailable",
-                    "message": "Failed to connect to the external signing authority."
-                }, 503)
+            # Local-mode compatibility route. It now speaks the real partner contract through seed_signature.py.
+            try: self._send_json(seed_signature.create_session("local-owner",body.get("content_type") or "text",body.get("title") or ""))
+            except seed_signature.SignatureError as exc: self._send_json({"error":str(exc)},503)
             return
 
         # ── API Endpoint: Save Seed Signature ──
