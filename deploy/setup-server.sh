@@ -59,6 +59,8 @@ if [ ! -f .env ]; then
   echo "==> Creating .env with generated secrets"
   ADMIN_PW="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
   MASTER="$(openssl rand 32 | base64 | tr '+/' '-_')"
+  # seedreflections.com -> mail domain seedreflections.com; app.example.com -> example.com
+  if [ "$(printf %s "$DOMAIN" | tr -cd . | wc -c)" -ge 2 ]; then MAIL_DOMAIN="${DOMAIN#*.}"; else MAIL_DOMAIN="$DOMAIN"; fi
   umask 077
   cat > .env <<ENV
 SEED_REFLECTIONS_DOMAIN=$DOMAIN
@@ -70,7 +72,7 @@ SEED_REFLECTIONS_SMTP_PORT=465
 SEED_REFLECTIONS_SMTP_SECURITY=ssl
 SEED_REFLECTIONS_SMTP_USER=
 SEED_REFLECTIONS_SMTP_PASSWORD=
-SEED_REFLECTIONS_SMTP_FROM=SeedReflections <noreply@${DOMAIN#*.}>
+SEED_REFLECTIONS_SMTP_FROM=SeedReflections <noreply@${MAIL_DOMAIN}>
 # Seed Signature (signing). Fill in after the platform key is issued; see docs/SEED_SIGNATURE.md.
 SEED_SIGNATURE_API_URL=
 SEED_SIGNATURE_PLATFORM_API_KEY=
