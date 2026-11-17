@@ -20,6 +20,8 @@ The intended model layer prioritizes affordable open models, permits configured 
 
 The intended tool layer should accommodate services such as Gmail and Google Drive and later plugins or MCP-style adapters through one coherent connection and permission model. Work returned by a tool should become a traceable project source or artifact, not disappear in a transient chat. Preserve human control over external writes and actions with real blast radius. Treat these as product requirements to finish, not as claims that the current build satisfies them.
 
+**Founder connector decision:** implement the provider-neutral OAuth/MCP connection architecture in [CONNECTOR_ARCHITECTURE.md](CONNECTOR_ARCHITECTURE.md). Claude is one provider and MCP client compatibility target. The platform must support other commercial and open-source services through adapters and the appropriate authentication method for each. Do not implement a Claude-only OAuth path or imply that a generic OAuth sign-in grants access to every provider's private chat history.
+
 ## Product objective and intended journey
 
 The current product definition is [PRODUCT_CAPABILITIES_AND_TIERS.md](PRODUCT_CAPABILITIES_AND_TIERS.md). Use it as the product and public-claims baseline, then verify its assertions against code and a running deployment.
