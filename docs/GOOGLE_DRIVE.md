@@ -19,6 +19,14 @@ Sources → **Google Drive** (or Tools → Connect). They sign in on Google's ow
 - If Google reports access removed, the connection is cleared and the user is told to reconnect.
 - Hosted storage quota applies to every imported file.
 
+## Using your Google Cloud project `seedreflections` (project ID `seedreflections`)
+In the Google Cloud console, with that project selected:
+1. **APIs & Services → Library**: enable the **Google Drive API**.
+2. **APIs & Services → OAuth consent screen**: app name SeedReflections, support email `moralgroupllc@gmail.com`, homepage `https://seedreflections.com`, privacy `https://seedreflections.com/privacy.html`, terms `https://seedreflections.com/terms.html`, authorized domain `seedreflections.com`. Add the scopes `openid`, `email` and `.../auth/drive.readonly`. Add yourself and your testers as **test users**.
+3. **Credentials → Create credentials → OAuth client ID → Web application**. Authorized redirect URI: `https://seedreflections.com/api/v2/google/callback` (add `http://127.0.0.1:8476/api/v2/google/callback` for a local install).
+4. Put the client ID and secret in the server's `.env` as `SEED_REFLECTIONS_GOOGLE_CLIENT_ID` and `SEED_REFLECTIONS_GOOGLE_CLIENT_SECRET`. Never paste them into chat or the repository.
+5. **A catch while the app is in Testing:** for an external app in Testing status, Google expires refresh tokens after about 7 days, so each user has to reconnect weekly until the app is published and verified. SeedReflections handles this by clearing the connection and asking the user to connect again. Publishing a restricted-scope app needs Google's verification (below).
+
 ## To turn it on (you do this)
 1. In Google Cloud Console, create an OAuth client of type **Web application**.
 2. Authorized redirect URI: `https://YOUR-DOMAIN/api/v2/google/callback` (and `http://127.0.0.1:8476/api/v2/google/callback` for a local install).

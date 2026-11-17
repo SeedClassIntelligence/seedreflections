@@ -1,6 +1,6 @@
 # Put SeedReflections on your own domain (small Linux server)
 
-Result: SeedReflections at `https://app.asolutiongroup.com` (or any subdomain you choose), with automatic HTTPS, nightly backups, and one command to update it from GitHub. Your existing SiteGround website stays exactly as it is.
+Result: SeedReflections at `https://seedreflections.com`, with automatic HTTPS, nightly backups, and one command to update it from GitHub. SiteGround keeps the domain and DNS.
 
 **Why not the GrowBig plan itself:** GrowBig is shared web hosting, built for PHP and WordPress. SeedReflections is a program that must run continuously and keep its own database and uploaded files, which shared hosting is not designed to do. Ask SiteGround support if you want it confirmed. SiteGround keeps your domain and DNS; a small server runs the app.
 
@@ -11,26 +11,30 @@ Result: SeedReflections at `https://app.asolutiongroup.com` (or any subdomain yo
 ## 2. Get a server (about US$6 to 12 a month)
 Any of DigitalOcean, Linode (Akamai), Vultr or Hetzner. Choose **Ubuntu 24.04 LTS**, **2 GB RAM**, 40 GB disk, a US region, and add your SSH key (the provider explains how). Turn on the provider's automatic backups or snapshots; they protect you if the whole server is lost, which the nightly backups below cannot. Write down the server's IP address.
 
-## 3. Point a subdomain at it (SiteGround)
-SiteGround → **Site Tools** → **Domain** → **DNS Zone Editor** → add an **A** record: Name `app`, Value = the server IP, TTL 3600. Do not change any existing records. It can take from a few minutes to an hour to take effect. (If your domain's name servers are not SiteGround's, add the record wherever the DNS is managed.)
+## 3. Point seedreflections.com at it (SiteGround)
+SiteGround → **Site Tools** → **Domain** → **DNS Zone Editor**. Look at the existing records first.
+- Replace the **A** record for `seedreflections.com` (the `@` or blank name) so its value is the server IP, TTL 3600. If there is an A record for `www`, point it at the same IP too (or make `www` a CNAME to `seedreflections.com`).
+- **Do not delete MX, SPF or other mail records.** Those keep any `@seedreflections.com` mailbox working, including the one used for password-reset email.
+- If a website currently lives at `seedreflections.com` on your GrowBig plan, it stops being served once this record changes. Move or copy anything you want to keep first.
+- It can take from a few minutes to an hour to take effect. Visitors who type `www.` need that record to exist; the app itself is served at `seedreflections.com`.
 
 ## 4. Run the setup (once)
 From your Windows PowerShell, in the `seedreflections` folder (use your server's IP):
 ```
 scp deploy\setup-server.sh root@SERVER_IP:/root/
-ssh root@SERVER_IP "bash /root/setup-server.sh app.asolutiongroup.com"
+ssh root@SERVER_IP "bash /root/setup-server.sh seedreflections.com"
 ```
 The first run installs Docker and the firewall, then prints a **deploy key**. In GitHub open the repository → **Settings → Deploy keys → Add deploy key**, paste it, leave write access off, and run the same `ssh` command again. It then downloads the code, creates `/opt/seedreflections/.env` with freshly generated secrets, starts the app, and sets up the nightly backup.
 
 **Save a copy of `/opt/seedreflections/.env` somewhere safe** (for example with `scp root@SERVER_IP:/opt/seedreflections/.env .`). It holds the admin password and the encryption master key. Lose the key and stored model keys and Google tokens cannot be decrypted.
 
 ## 5. Set up the password-reset email
-Users who forget a password get a reset link by email, so the server needs a mailbox to send from. In SiteGround: **Site Tools → Email → Accounts**, create `noreply@asolutiongroup.com`, then open **Mail Configuration** and note the outgoing (SMTP) server and port. On the server, edit `/opt/seedreflections/.env`: fill the `SEED_REFLECTIONS_SMTP_` lines (host, port 465 with security `ssl`, the mailbox address as user and from, its password), then run `cd /opt/seedreflections && docker compose -f docker-compose.prod.yml up -d`. Until this is filled in, the readiness check below fails on purpose.
+Users who forget a password get a reset link by email, so the server needs a mailbox to send from. In SiteGround: **Site Tools → Email → Accounts**, create `noreply@seedreflections.com`, then open **Mail Configuration** and note the outgoing (SMTP) server and port. On the server, edit `/opt/seedreflections/.env`: fill the `SEED_REFLECTIONS_SMTP_` lines (host, port 465 with security `ssl`, the mailbox address as user and from, its password), then run `cd /opt/seedreflections && docker compose -f docker-compose.prod.yml up -d`. Until this is filled in, the readiness check below fails on purpose.
 
 ## 6. Check it
-Open `https://app.asolutiongroup.com` (the certificate is requested automatically; allow a minute after DNS works). Then:
+Open `https://seedreflections.com` (the certificate is requested automatically; allow a minute after DNS works). Then:
 ```
-curl -s https://app.asolutiongroup.com/api/v2/readiness
+curl -s https://seedreflections.com/api/v2/readiness
 ```
 Every check should pass. Create your own account, import something small, and try Settings → Delete account on a throwaway account.
 
