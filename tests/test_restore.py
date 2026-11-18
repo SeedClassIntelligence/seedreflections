@@ -143,6 +143,21 @@ class RestoreRollbackTests(unittest.TestCase):
             self.assertIn("put back unchanged", str(caught.exception)); self.assert_untouched(data)
             self.assertTrue((data / "archive.db").exists())              # the exact case reviewed: the database is never left missing
 
+    def test_an_incomplete_rollback_requires_manual_recovery(self):
+        with tempfile.TemporaryDirectory() as work:
+            data, backup = self.setup(work)
+            real_move, calls = _shutil.move, {"n": 0}
+            def fail_twice(src, dst, *args, **kwargs):
+                calls["n"] += 1
+                if calls["n"] in (4, 6): raise OSError("simulated restore and rollback failures")
+                return real_move(src, dst, *args, **kwargs)
+            with _patch.object(restore_snapshot.shutil, "move", fail_twice):
+                with self.assertRaises(restore_snapshot.RollbackIncompleteError) as caught:
+                    restore_snapshot.restore(str(backup), str(data))
+            self.assertIn("before starting the app", str(caught.exception))
+            self.assertTrue(any(data.glob(".before-restore-*/archive.db")))
+            self.assertFalse((data / "archive.db").exists())
+
 
 FAKE_DOCKER = _textwrap.dedent("""\
     #!/usr/bin/env bash
@@ -167,7 +182,11 @@ class RestoreScriptFlowTests(unittest.TestCase):
         backup = root / "b.tar.gz"; backup.write_bytes(backup_bytes(self.make_source(root)))
         log = root / "log.txt"
         env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "SEEDREFLECTIONS_APP": str(app), "FAKE_LOG": str(log), "FAKE_RUN_EXIT": str(run_exit), **(extra_env or {})}
-        done = _subprocess.run(["bash", str(app / "deploy/restore.sh"), str(backup)], capture_output=True, text=True, env=env, timeout=60)
+        bash = "bash"
+        if os.name == "nt" and _shutil.which("git"):
+            git_bash = Path(_shutil.which("git")).resolve().parents[1] / "bin" / "bash.exe"
+            if git_bash.exists(): bash = str(git_bash)
+        done = _subprocess.run([bash, str(app / "deploy/restore.sh"), str(backup)], capture_output=True, text=True, env=env, timeout=60)
         commands = log.read_text() if log.exists() else ""
         work.cleanup()
         return done, commands
@@ -187,6 +206,13 @@ class RestoreScriptFlowTests(unittest.TestCase):
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("Starting the app again", done.stdout)
         self.assertGreaterEqual(commands.count(" up -d "), 1)
+
+    def test_an_incomplete_rollback_keeps_the_app_stopped_for_manual_recovery(self):
+        done, commands = self.run_script(run_exit=2)
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("Manual recovery is required", done.stdout)
+        self.assertIn(" stop ", commands)
+        self.assertNotIn(" up -d ", commands)
 
     def test_the_success_path_restores_and_starts_once(self):
         done, commands = self.run_script()

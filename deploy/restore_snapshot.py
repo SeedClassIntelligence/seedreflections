@@ -21,6 +21,10 @@ class RestoreError(RuntimeError):
     pass
 
 
+class RollbackIncompleteError(RestoreError):
+    """Previous data still needs manual recovery; the app must stay stopped."""
+
+
 def _safe_members(tar):
     members, total = [], 0
     for member in tar:
@@ -84,7 +88,7 @@ def restore(backup_path, data_dir):
                 try: shutil.move(os.path.join(aside, entry), os.path.join(data_dir, entry))
                 except OSError: stuck.append(entry)
             if stuck:
-                raise RestoreError(f"The restore failed and could not fully undo itself. Your previous data is in {aside}; "
+                raise RollbackIncompleteError(f"The restore failed and could not fully undo itself. Your previous data is in {aside}; "
                                    f"these items could not be put back: {', '.join(stuck)}. Copy them back by hand before starting the app.") from exc
             raise RestoreError(f"The restore failed while moving files ({exc}). The previous data was put back unchanged.") from exc
         os.rmdir(staging)
@@ -102,6 +106,9 @@ if __name__ == "__main__":
         sys.exit("Usage: python deploy/restore_snapshot.py BACKUP.tar.gz /data")
     try:
         summary = restore(sys.argv[1], sys.argv[2])
+    except RollbackIncompleteError as exc:
+        print(f"Restore requires manual recovery: {exc}", file=sys.stderr)
+        sys.exit(2)
     except (RestoreError, tarfile.TarError, OSError) as exc:
         sys.exit(f"Restore refused: {exc}")
     print(f"Restored {summary['restored_files']} files; {summary['databases_checked']} databases passed the integrity check.")

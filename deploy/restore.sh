@@ -23,11 +23,13 @@ if ! "$APP/deploy/backup.sh"; then
   fi
 fi
 
-STOPPED=0; DONE=0
+STOPPED=0; DONE=0; RECOVERY_REQUIRED=0
 bring_back() {
-  # If anything goes wrong after the app was stopped, start it again on whatever data is in place
-  # (the restore undoes itself on failure, so that is the data from before).
-  if [ "$STOPPED" = 1 ] && [ "$DONE" != 1 ]; then
+  # A failed rollback can leave the active folder incomplete. Keep the app
+  # stopped in that case so it cannot initialize a fresh database over it.
+  if [ "$STOPPED" = 1 ] && [ "$DONE" != 1 ] && [ "$RECOVERY_REQUIRED" = 1 ]; then
+    echo "!! Manual recovery is required. The app is staying stopped; restore the previous data from the .before-restore-* folder before starting it."
+  elif [ "$STOPPED" = 1 ] && [ "$DONE" != 1 ]; then
     echo "!! The restore did not complete. Starting the app again on the data that is in place."
     $COMPOSE up -d seed-reflections || echo "!! The app could not be started: look at: $COMPOSE logs --tail 80"
   fi
@@ -35,11 +37,16 @@ bring_back() {
 trap bring_back EXIT
 
 echo "==> Stopping the app"
-$COMPOSE stop seed-reflections
 STOPPED=1
+$COMPOSE stop seed-reflections
 
 echo "==> Restoring $ABS"
-$COMPOSE run --rm --no-deps -v "$ABS:/restore/backup.tar.gz:ro" seed-reflections python deploy/restore_snapshot.py /restore/backup.tar.gz /data
+RESTORE_EXIT=0
+$COMPOSE run --rm --no-deps -v "$ABS:/restore/backup.tar.gz:ro" seed-reflections python deploy/restore_snapshot.py /restore/backup.tar.gz /data || RESTORE_EXIT=$?
+if [ "$RESTORE_EXIT" -ne 0 ]; then
+  if [ "$RESTORE_EXIT" -eq 2 ]; then RECOVERY_REQUIRED=1; fi
+  exit "$RESTORE_EXIT"
+fi
 DONE=1   # the data is restored; anything after this is about the app starting, not the restore
 
 echo "==> Starting the app"
