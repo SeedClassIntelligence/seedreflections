@@ -1459,6 +1459,29 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .wh-first .btns{display:flex;gap:8px;flex-wrap:wrap}
 .chat-messages{max-height:max(320px,calc(100vh - 430px))}
 .shelf-next{font-size:12.5px;line-height:1.4;color:var(--text-muted);margin:2px 0 4px;overflow-wrap:anywhere}
+
+/* ── Idea view: everything about one idea in one place ─────────────── */
+.idea-header{padding:14px 18px 0;border-bottom:1px solid var(--border);background:var(--bg-card)}
+.idea-head-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.idea-status{font-size:12.5px;font-weight:700;text-transform:capitalize}
+.idea-title{margin:8px 0 4px;font-size:19px;line-height:1.3;color:var(--text);overflow-wrap:anywhere}
+.idea-next{margin:0 0 10px;font-size:13.5px;line-height:1.5;color:var(--text-muted);overflow-wrap:anywhere}
+.idea-next:empty{display:none}
+.idea-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.idea-tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--text-muted);padding:10px 14px;min-height:44px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.idea-tabs button:hover{color:var(--text)}
+.idea-tabs button[aria-selected="true"]{color:var(--green);border-bottom-color:var(--green)}
+.idea-tabs .n{margin-left:5px;font-variant-numeric:tabular-nums;font-size:12.5px;opacity:.9}
+.idea-panel{padding:18px;overflow:auto;max-height:max(320px,calc(100vh - 470px));min-height:240px}
+.idea-panel h3{margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.idea-panel section{margin-bottom:20px}
+.idea-empty{padding:14px;border:1px dashed var(--border-light);border-radius:10px;font-size:13.5px;color:var(--text-muted)}
+.src-msg{border-left:2px solid var(--border);padding:6px 12px;margin:0 0 8px;font-size:13.5px;line-height:1.55;color:var(--text2);overflow-wrap:anywhere}
+.src-msg .who{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:2px}
+.src-msg.hit{border-left:3px solid var(--green);background:var(--bg-elevated);color:var(--text)}
+.dec-card{padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);margin-bottom:8px}
+.dec-card .s{font-size:14px;font-weight:600;color:var(--text);overflow-wrap:anywhere}.dec-card .r{margin-top:4px;font-size:13px;color:var(--text-muted);overflow-wrap:anywhere}
+.make-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 </style>
 </head>
 <body>
@@ -1767,6 +1790,18 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         <span class="cockpit-panel-title">Active work</span>
         <button class="btn btn-ghost btn-sm" onclick="clearChatStream()">Clear conversation</button>
       </div>
+      <div class="idea-header" id="idea-header" hidden>
+        <div class="idea-head-top"><button type="button" class="btn btn-ghost btn-sm" onclick="clearActiveSeedFocus()">← Workspace home</button><span class="idea-status" id="idea-status"></span></div>
+        <h2 class="idea-title" id="idea-title"></h2>
+        <p class="idea-next" id="idea-next"></p>
+        <div class="idea-tabs" role="tablist" aria-label="Everything about this idea">
+          <button type="button" role="tab" id="idea-tab-work" aria-selected="true" aria-controls="idea-panel" onclick="setIdeaTab('work')">Work</button>
+          <button type="button" role="tab" id="idea-tab-sources" aria-selected="false" aria-controls="idea-panel" tabindex="-1" onclick="setIdeaTab('sources')">Sources</button>
+          <button type="button" role="tab" id="idea-tab-outputs" aria-selected="false" aria-controls="idea-panel" tabindex="-1" onclick="setIdeaTab('outputs')">Outputs <span class="n" id="idea-n-outputs">0</span></button>
+          <button type="button" role="tab" id="idea-tab-decisions" aria-selected="false" aria-controls="idea-panel" tabindex="-1" onclick="setIdeaTab('decisions')">Decisions <span class="n" id="idea-n-decisions">0</span></button>
+        </div>
+      </div>
+      <div class="idea-panel" id="idea-panel" role="tabpanel" tabindex="0" hidden></div>
       <div class="chat-wrap" style="border:none;">
         <div class="chat-messages" id="chat-messages">
           <div id="chat-welcome-block">
@@ -3304,7 +3339,9 @@ async function loadAllSeeds() {
         versions: s.versions || [],
         next_action: s.next_action || '',
         updated_at: s.updated_at || s.created_at || '',
-        source_conversation_id: s.source_conversation_id || null
+        source_conversation_id: s.source_conversation_id || null,
+        source_message_id: s.source_message_id || null,
+        candidate_id: s.candidate_id || null
       };
     });
     
@@ -4171,6 +4208,106 @@ function renderShelfSeeds(seeds) {
   shelfList.innerHTML = html;
 }
 
+/* ── Idea view ─────────────────────────────────────────────────────── */
+var IDEA_TAB = 'work';
+function ideaSeed() { return ALL_SEEDS.find(function(sd){ return sd.seed_id === activeFocusSeedId; }); }
+function ideaDecisions(sd) {
+  return (ALL_DECISIONS || []).filter(function(d){
+    return (sd.source_conversation_id && d.source_conversation_id === sd.source_conversation_id) || (d.seed_id && d.seed_id === sd.seed_id) || (d.candidate_id && d.candidate_id === sd.candidate_id);
+  });
+}
+function showIdeaView(seedId) {
+  var sd = ALL_SEEDS.find(function(x){ return x.seed_id === seedId; }); if (!sd) return;
+  var header = document.getElementById('idea-header'); if (!header) return;
+  header.hidden = false;
+  document.getElementById('idea-title').textContent = sd.content;
+  var next = realNextAction(sd); document.getElementById('idea-next').textContent = next ? 'Next: ' + next : '';
+  var st = document.getElementById('idea-status'); st.textContent = sd.status; st.style.color = statusColor(sd.status);
+  document.getElementById('idea-n-outputs').textContent = artifactsForSeed(seedId).length;
+  document.getElementById('idea-n-decisions').textContent = ideaDecisions(sd).length;
+  setIdeaTab('work');
+  // saved work may not be loaded yet; refresh the counts when it is
+  productFetch('/artifacts').then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if (!d || activeFocusSeedId !== seedId) return;
+    WORK_HOME_ARTIFACTS = d.artifacts || []; WORK_HOME_FETCHED_AT = Date.now();
+    document.getElementById('idea-n-outputs').textContent = artifactsForSeed(seedId).length;
+    if (IDEA_TAB === 'outputs') setIdeaTab('outputs');
+  }).catch(function(){});
+}
+function hideIdeaView() {
+  var header = document.getElementById('idea-header'), panel = document.getElementById('idea-panel'), wrap = document.querySelector('#cockpit-chat-panel .chat-wrap');
+  if (header) header.hidden = true; if (panel) panel.hidden = true; if (wrap) wrap.style.display = '';
+}
+function setIdeaTab(tab) {
+  IDEA_TAB = tab;
+  ['work', 'sources', 'outputs', 'decisions'].forEach(function(t){
+    var b = document.getElementById('idea-tab-' + t); if (!b) return;
+    b.setAttribute('aria-selected', t === tab ? 'true' : 'false'); b.tabIndex = t === tab ? 0 : -1;
+  });
+  var panel = document.getElementById('idea-panel'), wrap = document.querySelector('#cockpit-chat-panel .chat-wrap');
+  if (tab === 'work') { panel.hidden = true; if (wrap) wrap.style.display = ''; return; }
+  if (wrap) wrap.style.display = 'none';
+  panel.hidden = false; panel.setAttribute('aria-labelledby', 'idea-tab-' + tab);
+  var sd = ideaSeed(); if (!sd) return;
+  if (tab === 'sources') renderIdeaSources(sd, panel);
+  else if (tab === 'outputs') renderIdeaOutputs(sd, panel);
+  else renderIdeaDecisions(sd, panel);
+}
+async function renderIdeaSources(sd, panel) {
+  panel.innerHTML = '<div class="idea-empty">Loading the source passage…</div>';
+  var html = '<section><h3>Where this idea came from</h3>';
+  if (!sd.source_conversation_id) {
+    html += '<div class="idea-empty">This idea has no linked source conversation.</div>';
+  } else {
+    try {
+      var r = await productFetch('/conversations/' + encodeURIComponent(sd.source_conversation_id)); var data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'unavailable');
+      var msgs = data.messages || [], at = msgs.findIndex(function(m){ return m.id === sd.source_message_id; }); if (at < 0) at = 0;
+      var title = (data.conversation && data.conversation.title) || 'Source conversation';
+      html += '<p style="font-size:13px;color:var(--text-muted);margin:0 0 8px">' + escHtml(title) + (msgs.length ? ' · message ' + (at + 1) + ' of ' + msgs.length : '') + '</p>' +
+        msgs.slice(Math.max(0, at - 2), at + 3).map(function(m, i, arr){
+          var hit = (Math.max(0, at - 2) + i) === at;
+          return '<div class="src-msg' + (hit ? ' hit' : '') + '"><span class="who">' + escHtml(m.role) + (hit ? ' · where this idea came from' : '') + '</span>' + escHtml(m.content) + '</div>';
+        }).join('') +
+        '<div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="switchDashTab(\'browser\')">Open the full conversation in Library</button></div>';
+    } catch (e) { html += '<div class="idea-empty">The source conversation could not be loaded: ' + escHtml(e.message || 'unknown error') + '.</div>'; }
+  }
+  html += '</section>';
+  var related = (ALL_RELATIONSHIPS || []).filter(function(rel){ return rel.status === 'accepted' && (rel.source_seed_id === sd.seed_id || rel.target_seed_id === sd.seed_id); });
+  if (related.length) {
+    html += '<section><h3>Related ideas you confirmed</h3>' + related.map(function(rel){
+      var other = ALL_SEEDS.find(function(x){ return x.seed_id === (rel.source_seed_id === sd.seed_id ? rel.target_seed_id : rel.source_seed_id); });
+      return other ? '<div class="dec-card"><div class="s">' + escHtml(other.content) + '</div><div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="selectSeedForCockpit(\'' + other.seed_id + '\')">Open</button></div></div>' : '';
+    }).join('') + '</section>';
+  }
+  if (IDEA_TAB === 'sources' && activeFocusSeedId === sd.seed_id) panel.innerHTML = html;
+}
+function renderIdeaOutputs(sd, panel) {
+  var made = artifactsForSeed(sd.seed_id), html = '<section><h3>Work you have made for this idea</h3>';
+  html += made.length ? '<div class="wh-list">' + made.map(function(a){
+    var sig = a.signature ? (a.signature.status === 'edited_since' ? 'Signed, then edited' : 'Signed') : '';
+    return '<button type="button" class="wh-work" onclick="openArtifactById(\'' + escHtml(a.artifact_id) + '\')"><span class="kind">' + escHtml(a.type.replace('_', ' ')) + '</span><span class="name">' + escHtml(a.title) + '</span><span class="state">' + escHtml(a.status) + (sig ? ' · ' + sig : '') + '</span></button>';
+  }).join('') + '</div>' : '<div class="idea-empty">Nothing yet. Ask the assistant in the Work tab to draft something, or start one yourself below.</div>';
+  html += '</section><section><h3>Start a new work product</h3><div class="make-row">' +
+    [['plan', 'Plan'], ['brief', 'Brief'], ['report', 'Report'], ['task_set', 'Task set'], ['note', 'Note']].map(function(t){
+      return '<button type="button" class="btn btn-ghost btn-sm" onclick="startArtifactForIdea(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div></section>';
+  panel.innerHTML = html;
+}
+async function startArtifactForIdea(type) {
+  var sd = ideaSeed(); if (!sd) return;
+  await openArtifactStudio(); newArtifactDraft();
+  document.getElementById('artifact-type').value = type; document.getElementById('artifact-title').value = sd.content.substring(0, 80);
+  document.getElementById('artifact-title').focus();
+}
+function renderIdeaDecisions(sd, panel) {
+  var list = ideaDecisions(sd), html = '<section><h3>Decisions from this idea\'s conversation</h3>';
+  html += list.length ? list.map(function(d){
+    return '<div class="dec-card"><div class="s">' + escHtml(d.statement || d.title || '') + '</div>' + (d.rationale ? '<div class="r">Why: ' + escHtml(d.rationale) + '</div>' : '') + '</div>';
+  }).join('') : '<div class="idea-empty">No decisions recorded for this idea yet.</div>';
+  html += '</section><div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="setIdeaTab(\'work\'); setChatPrompt(\'Record a decision: \')">Record a decision with the assistant</button></div>';
+  panel.innerHTML = html;
+}
+
 /* ── Work home ─────────────────────────────────────────────────────── */
 var WORK_HOME_ARTIFACTS = [];
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
@@ -4310,6 +4447,7 @@ function selectSeedForCockpit(seedId) {
   // Populate active working card directly inside Center Workspace Chat
   renderActiveCardInChat(seed);
   loadWorkSession(seedId);
+  showIdeaView(seedId);
 
   // Render lineage SVG and inspect provenance in right inspector
   renderLineageGraphSVG();
@@ -4390,6 +4528,7 @@ function clearActiveSeedFocus() {
   oldCards.forEach(function(c){ c.remove(); });
   var welcomeBlock = document.getElementById('chat-welcome-block');
   if (welcomeBlock) welcomeBlock.style.display = 'block';
+  hideIdeaView();
   renderWorkHome();
   var badge = document.getElementById('cockpit-scope-badge');
   if (badge) badge.textContent = 'All Ideas';
@@ -4415,6 +4554,7 @@ function clearChatStream() {
   }
   activeFocusSeedId = null;
   activeWorkingThreadId = null;
+  hideIdeaView();
   renderWorkHome();
   var badge = document.getElementById('cockpit-scope-badge');
   if (badge) badge.textContent = 'All Ideas';
@@ -4759,6 +4899,7 @@ function discussSeed(seedId) {
     activeFocusSeedId = null;
     document.querySelectorAll('.work-context, .work-turn').forEach(function(e){ e.remove(); });
     div.remove();
+    hideIdeaView(); renderWorkHome();
     appendChat('Cleared focus mode. Back to global chat.', 'system');
   };
 
@@ -4768,6 +4909,7 @@ function discussSeed(seedId) {
   msgs.scrollTop = msgs.scrollHeight;
 
   loadWorkSession(seedId);
+  showIdeaView(seedId);
   // Set starter text in chat input to guide user
   var chatInput = document.getElementById('chat-input');
   chatInput.value = 'Help me outline the next steps and plan for this idea.';
