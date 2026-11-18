@@ -17,7 +17,7 @@ class HostedDashboardBrowserTests(unittest.TestCase):
             with sync_playwright() as playwright:
                 browser=playwright.chromium.launch(headless=True); page=browser.new_page()
                 page.goto(f"http://127.0.0.1:{runtime.port}/consumer",wait_until="networkidle")
-                page.get_by_role("button",name="＋ Add or connect").click()
+                page.get_by_role("button",name="＋ Add material").click()
                 page.locator(".source-method[data-source-method='api']").click()
                 page.fill("#api-integration-name","Research automation")
                 page.select_option("#api-integration-provider","automation")
@@ -38,7 +38,7 @@ class HostedDashboardBrowserTests(unittest.TestCase):
                 browser=playwright.chromium.launch(headless=True); page=browser.new_page(); failures=[]
                 page.on("response",lambda response: failures.append((response.status,response.url)) if response.status >= 400 else None)
                 page.goto(f"http://127.0.0.1:{runtime.port}/consumer",wait_until="networkidle")
-                page.get_by_role("button",name="＋ Add or connect").click()
+                page.get_by_role("button",name="＋ Add material").click()
                 page.locator(".source-method[data-source-method='folder']").click()
                 page.select_option("#connector-provider","claude_code"); page.fill("#connector-root-path",str(source)); page.check("#connector-consent")
                 page.get_by_role("button",name="Preview source").click()
