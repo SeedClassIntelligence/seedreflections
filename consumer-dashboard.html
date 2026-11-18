@@ -6107,7 +6107,7 @@ function highlightPlanCard(plan, skipUsage) {
     if (!skipUsage && reflectText && reflectFill) {
       reflectText.textContent = 'Usage unavailable';
       reflectFill.style.width = '0%';
-      fetch('/api/v1/users/me', {headers: localStorage.getItem('seedreflections_access_token') ? {'Authorization': 'Bearer ' + localStorage.getItem('seedreflections_access_token')} : {}}).then(function(r){ return r.ok ? r.json() : null; }).then(function(me){
+      productFetch('/account/usage').then(function(r){ return r.ok ? r.json() : null; }).then(function(me){
         if (!me || me.reflections_used == null || me.reflections_limit == null) return;
         if (me.plan) highlightPlanCard(String(me.plan).toLowerCase(), true); // the enforced plan is the source of truth
         var unlimited = Number(me.reflections_limit) >= 999999;

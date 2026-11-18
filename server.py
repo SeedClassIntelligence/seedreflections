@@ -1443,6 +1443,18 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 "connection_policy":{"external_writes_require_confirmation":True,
                     "credentials":"encrypted_server_side","client_side_secrets":False}})
             return
+        if path == "/api/v2/account/usage":
+            user=self._runtime_user()
+            if not user: self._send_json({"error":"Authentication required"},401); return
+            with DB_LOCK:
+                db=load_db(); account=resolve_billing_account(self,db)
+                sync_account_cycle(account); save_db(db)
+                plan=str(account.get("plan") or "free").lower()
+                quota=TIER_QUOTAS.get(plan,TIER_QUOTAS["free"])
+                self._send_json({"plan":plan,
+                    "reflections_used":account.get("reflections_used_this_month",0),
+                    "reflections_limit":quota["max_monthly_reflections"]})
+            return
         connector_health_match=re.fullmatch(r"/api/v2/connectors/([^/]+)/health",path)
         if connector_health_match:
             user=self._runtime_user()

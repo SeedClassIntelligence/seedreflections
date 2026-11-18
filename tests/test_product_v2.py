@@ -133,5 +133,15 @@ class ProductHostedAuthTests(unittest.TestCase):
         status, overview = self.runtime.request("GET", "/api/v2/overview", token=login["access_token"])
         self.assertEqual(status, 200); self.assertEqual(overview["conversations"], 0)
 
+    def test_account_usage_requires_auth_and_reports_enforced_plan(self):
+        status, _ = self.runtime.request("GET", "/api/v2/account/usage")
+        self.assertEqual(status, 401)
+        status, signup = self.runtime.request("POST", "/api/v2/auth/signup", {
+            "name": "Usage Owner", "email": "usage@example.com", "password": "strong-password-123"})
+        self.assertEqual(status, 201)
+        status, usage = self.runtime.request("GET", "/api/v2/account/usage", token=signup["access_token"])
+        self.assertEqual(status, 200)
+        self.assertEqual(usage, {"plan": "free", "reflections_used": 0, "reflections_limit": 50})
+
 
 if __name__ == "__main__": unittest.main()
