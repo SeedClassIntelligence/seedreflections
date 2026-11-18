@@ -29,7 +29,11 @@ The first run installs Docker and the firewall, then prints a **deploy key**. In
 **Save a copy of `/opt/seedreflections/.env` somewhere safe** (for example with `scp root@SERVER_IP:/opt/seedreflections/.env .`). It holds the admin password and the encryption master key. Lose the key and stored model keys and Google tokens cannot be decrypted.
 
 ## 5. Set up the password-reset email
-Users who forget a password get a reset link by email, so the server needs a mailbox to send from. In SiteGround: **Site Tools → Email → Accounts**, create `noreply@seedreflections.com`, then open **Mail Configuration** and note the outgoing (SMTP) server and port. On the server, edit `/opt/seedreflections/.env`: fill the `SEED_REFLECTIONS_SMTP_` lines (host, port 465 with security `ssl`, the mailbox address as user and from, its password), then run `cd /opt/seedreflections && docker compose -f docker-compose.prod.yml up -d`. Until this is filled in, the readiness check below fails on purpose.
+Users who forget a password get a reset link by email, so the server needs a mailbox to send from. In SiteGround: **Site Tools → Email → Accounts**, create `noreply@seedreflections.com`, then open **Mail Configuration → Manual Settings** and note the outgoing (SMTP) server. On the server, run the command below, replacing the host with the one SiteGround displays. It prompts for the mailbox password without echoing it, verifies SMTP login, saves the secret only in `/opt/seedreflections/.env`, validates Docker Compose's parsed value, and restarts the app. Never put the password on the command line or in chat.
+```
+sudo python3 /opt/seedreflections/deploy/configure-smtp.py --host YOUR_SITEGROUND_OUTGOING_SERVER --user noreply@seedreflections.com --from-address 'SeedReflections <noreply@seedreflections.com>'
+```
+Until SMTP is configured, the readiness check below fails on purpose. A passing readiness check means settings are present; also complete a real password reset to prove delivery.
 
 ## 6. Check it
 Open `https://seedreflections.com` (the certificate is requested automatically; allow a minute after DNS works). Then:
