@@ -51,7 +51,14 @@ It backs up first, pulls the latest code from GitHub, rebuilds, checks that the 
 ## 8. Backups and restoring
 - Nightly at 03:15 into `/var/backups/seedreflections` (30 days kept), and before every update. Each is a single `.tar.gz` of the databases and uploaded source files.
 - Those copies sit on the same server. Keep the provider's snapshots on, and occasionally copy one off the server: `scp root@SERVER_IP:/var/backups/seedreflections/<file> .`
-- To restore: stop the app (`docker compose -f docker-compose.prod.yml down` in `/opt/seedreflections`), unpack the `.tar.gz` into the data volume, and start it again. Try a restore once before you depend on it.
+- To restore (try it once on a throwaway copy before you ever need it): `/opt/seedreflections/deploy/restore.sh /var/backups/seedreflections/<file>.tar.gz`. It takes a safety backup, stops the app, **checks the backup first** (nothing outside the data folder, no links, every database passes SQLite's integrity check), moves the current data aside into a `.before-restore-*` folder instead of deleting it, unpacks the backup, starts the app and checks it is healthy.
+
+## Prove it works, from outside
+From any computer with Python:
+```
+python scripts/journey_check.py https://seedreflections.com
+```
+It makes a throwaway account, imports a small made-up export, searches, reads, runs the review step and accepts a finding, saves and exports a work artifact, signs out and back in, confirms everything is still there, then deletes the account. Every step must pass. Run it after every update and before you trust the site with a real archive.
 
 ## Before you invite real people
 - Have a Nevada attorney read the Privacy and Terms pages once. They were written from what the product does, not by a lawyer.
@@ -60,4 +67,4 @@ It backs up first, pulls the latest code from GitHub, rebuilds, checks that the 
 - This is one server with one SQLite database: fine for early users, not for heavy traffic. Python's built-in web server is behind a proper HTTPS proxy, but it has not been load-tested.
 
 ## What is and is not proven
-Tested here: the sign-in and reset rate limits behind the proxy (each visitor limited separately, forged headers ignored), the backup (consistent while the app writes, restores correctly), the production settings (the app reports ready with these secrets and not ready without them), and that the scripts parse. **Not run:** the Docker build, the setup script on a real server, certificate issuance, and the update and rollback script. Expect to fix a snag or two on the first real deploy; send me the output and I will.
+Tested here: the restore (a real backup of a running app restored into a fresh folder, the app then starts with its accounts and archive; unsafe, damaged and wrong backups are refused and change nothing), the release journey check against a configured hosted server, the sign-in and reset rate limits behind the proxy (each visitor limited separately, forged headers ignored), the backup (consistent while the app writes, restores correctly), the production settings (the app reports ready with these secrets and not ready without them), and that the scripts parse. **Not run:** the Docker build, the setup script on a real server, certificate issuance, and the update and rollback script. Expect to fix a snag or two on the first real deploy; send me the output and I will.

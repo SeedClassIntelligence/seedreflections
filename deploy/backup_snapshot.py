@@ -14,7 +14,8 @@ import tempfile
 def snapshot(root, out):
     scratch = tempfile.mkdtemp(prefix="seed-backup-")
     with tarfile.open(fileobj=out, mode="w|gz") as tar:
-        for folder, _dirs, files in os.walk(root):
+        for folder, dirs, files in os.walk(root):
+            dirs[:] = [d for d in dirs if not d.startswith((".before-restore-", ".restore-staging-"))]   # never back up the safety copy a restore leaves behind
             for name in sorted(files):
                 path = os.path.join(folder, name); arc = os.path.relpath(path, root)
                 if name.endswith(("-wal", "-shm")):
