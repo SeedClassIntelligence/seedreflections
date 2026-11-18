@@ -12,3 +12,7 @@
         max_size {$SEED_REFLECTIONS_PROXY_MAX_BODY:2GB}
     }
 }
+
+www.{$SEED_REFLECTIONS_DOMAIN} {
+    redir https://{$SEED_REFLECTIONS_DOMAIN}{uri} 308
+}
