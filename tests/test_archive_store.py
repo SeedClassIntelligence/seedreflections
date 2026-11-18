@@ -42,6 +42,34 @@ class ArchiveStoreTests(unittest.TestCase):
         raw = archive_store.raw_conversations([stored[0]["id"]])
         self.assertEqual(raw[0]["id"], "source-1")
 
+    def test_claude_export_keeps_attachment_only_messages_and_extracted_text(self):
+        payload = [{"uuid": "thread-1", "name": "Design research", "chat_messages": [
+            {"uuid": "message-1", "sender": "human", "text": "", "content": [{"type": "text", "text": ""}],
+             "attachments": [{"file_name": "research.pdf", "extracted_content": "We should build the copper lighthouse as the core concept."}],
+             "files": [{"file_uuid": "file-1", "file_name": "research.pdf"}]},
+            {"uuid": "message-2", "parent_message_uuid": "message-1", "sender": "assistant",
+             "text": "I found the idea.", "attachments": [], "files": []},
+            {"uuid": "message-3", "sender": "human", "text": "", "content": [],
+             "attachments": [], "files": [{"file_uuid": "file-2", "file_name": "diagram.png"}]},
+            {"uuid": "message-4", "sender": "assistant", "text": "", "content": [],
+             "attachments": [], "files": []},
+        ]}]
+        result = archive_store.import_json(json.dumps(payload), "conversations.json")
+        self.assertEqual(result["platform"], "claude")
+        self.assertEqual(result["message_count"], 3)
+        conversation = archive_store.get_conversation(result["conversations"][0]["id"])
+        messages = conversation["messages"]
+        self.assertEqual([message["source_id"] for message in messages], ["message-1", "message-2", "message-3"])
+        with archive_store._connect() as db:
+            parent = db.execute("SELECT parent_source_id FROM messages WHERE source_id=?", ("message-2",)).fetchone()[0]
+        self.assertEqual(parent, "message-1")
+        self.assertIn("copper lighthouse", messages[0]["content"])
+        self.assertEqual(messages[0]["content"].count("research.pdf"), 1)
+        self.assertIn("diagram.png", messages[2]["content"])
+        self.assertEqual(len(archive_store.list_conversations("copper lighthouse")), 1)
+        self.assertEqual(archive_store.detect_candidates("human", messages[0]["content"]), [])
+        self.assertTrue(archive_store.detect_candidates("human", "We should build a source-linked archive."))
+
     def test_search_finds_message_content(self):
         payload = [{"id": "one", "title": "Notes", "messages": [
             {"role": "user", "content": "Develop the copper lighthouse concept"}

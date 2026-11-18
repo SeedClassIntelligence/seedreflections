@@ -175,6 +175,27 @@ def _text(value):
     return str(value)
 
 
+def _message_text(message):
+    """Keep Claude file references and exported attachment text with their message."""
+    body = _text(message.get("text") or message.get("content")).strip()
+    sections = [body] if body else []
+    attached_names = set()
+    for attachment in message.get("attachments") or []:
+        if not isinstance(attachment, dict):
+            continue
+        name = str(attachment.get("file_name") or "unnamed file").strip().replace("\n", " ")
+        attached_names.add(name)
+        extracted = _text(attachment.get("extracted_content")).strip()
+        sections.append(f"[Attached file: {name}]" + (f"\n{extracted}" if extracted else ""))
+    for file in message.get("files") or []:
+        if not isinstance(file, dict):
+            continue
+        name = str(file.get("file_name") or "unnamed file").strip().replace("\n", " ")
+        if name not in attached_names:
+            sections.append(f"[File: {name}]")
+    return "\n\n".join(sections)
+
+
 def _timestamp(value):
     if value in (None, ""):
         return None
@@ -275,12 +296,12 @@ def _messages(raw, source_id):
     for ordinal, message in enumerate(items if isinstance(items, list) else []):
         if not isinstance(message, dict):
             continue
-        content = _text(message.get("text") or message.get("content")).strip()
+        content = _message_text(message)
         if not content:
             continue
         result.append({
-            "source_id": str(message.get("id") or f"{source_id}-{ordinal}"),
-            "parent_source_id": None,
+            "source_id": str(message.get("id") or message.get("uuid") or f"{source_id}-{ordinal}"),
+            "parent_source_id": message.get("parent_source_id") or message.get("parent_message_uuid"),
             "ordinal": ordinal,
             "role": str(message.get("role") or message.get("sender") or "unknown"),
             "content": content,
@@ -699,10 +720,13 @@ def detect_candidates(role, content, seen=None):
     ``seen`` de-duplicates across the messages of one conversation."""
     if str(role).lower() not in USER_ROLES:
         return []
+    # Attached documents remain searchable, but their words are not automatically
+    # attributed to the user as ideas or decisions.
+    authored_content = re.split(r"(?:^|\n\n)\[(?:Attached file|File): ", content or "", maxsplit=1)[0]
     seen = set() if seen is None else seen
     found = []
     for kind, pattern in _CANDIDATE_PATTERNS:
-        for match in pattern.finditer(content or ""):
+        for match in pattern.finditer(authored_content):
             interpretation = re.split(r"[\n.!?](?:\s|$)", match.group(1).strip(), maxsplit=1)[0].strip()
             key = re.sub(r"\W+", " ", interpretation.lower()).strip()
             if len(key) < 12 or key in seen:
