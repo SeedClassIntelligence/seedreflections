@@ -96,3 +96,99 @@ class RestoreDrillTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+import shutil as _shutil
+import subprocess as _subprocess
+import textwrap as _textwrap
+from unittest.mock import patch as _patch
+
+
+class RestoreRollbackTests(unittest.TestCase):
+    """A failure part-way through must leave the previous data exactly as it was."""
+
+    def setup(self, work):
+        data = Path(work) / "data"; data.mkdir(); make_data(data, rows=9, note="original source")
+        backup = Path(work) / "b.tar.gz"
+        other = Path(work) / "other"; other.mkdir(); make_data(other, rows=33, note="backup source")
+        backup.write_bytes(backup_bytes(other))
+        return data, backup
+
+    def assert_untouched(self, data):
+        db = sqlite3.connect(data / "archive.db"); self.assertEqual(db.execute("SELECT COUNT(*) FROM t").fetchone()[0], 9); db.close()
+        self.assertEqual((data / "tenant_sources/ws1/doc.txt").read_text(), "original source")
+        self.assertEqual([p.name for p in data.iterdir() if p.name.startswith((".restore-staging-", ".before-restore-"))], [])
+
+    def fail_on_call(self, number):
+        real, calls = _shutil.move, {"n": 0}
+        def flaky(src, dst, *a, **k):
+            calls["n"] += 1
+            if calls["n"] == number: raise OSError("simulated failure")
+            return real(src, dst, *a, **k)
+        return _patch.object(restore_snapshot.shutil, "move", flaky)
+
+    def test_a_failure_while_moving_the_old_data_aside_puts_everything_back(self):
+        with tempfile.TemporaryDirectory() as work:
+            data, backup = self.setup(work)
+            with self.fail_on_call(2):                                   # the second item being moved aside
+                with self.assertRaises(restore_snapshot.RestoreError) as caught: restore_snapshot.restore(str(backup), str(data))
+            self.assertIn("put back unchanged", str(caught.exception)); self.assert_untouched(data)
+
+    def test_a_failure_while_moving_the_restored_files_in_puts_everything_back(self):
+        with tempfile.TemporaryDirectory() as work:
+            data, backup = self.setup(work)
+            entries = len([p for p in data.iterdir()])                   # items moved aside; the next move is the first restored item in
+            with self.fail_on_call(entries + 2):                         # fail on the second restored item
+                with self.assertRaises(restore_snapshot.RestoreError) as caught: restore_snapshot.restore(str(backup), str(data))
+            self.assertIn("put back unchanged", str(caught.exception)); self.assert_untouched(data)
+            self.assertTrue((data / "archive.db").exists())              # the exact case reviewed: the database is never left missing
+
+
+FAKE_DOCKER = _textwrap.dedent("""\
+    #!/usr/bin/env bash
+    echo "docker $*" >> "$FAKE_LOG"
+    case "$*" in
+      *" run "*) exit "${FAKE_RUN_EXIT:-0}";;
+      *" exec "*) exit "${FAKE_HEALTH_EXIT:-0}";;
+      *) exit 0;;
+    esac
+""")
+
+
+class RestoreScriptFlowTests(unittest.TestCase):
+    """The shell script's control flow, with a stand-in for docker and the backup script."""
+
+    def run_script(self, run_exit=0, backup_ok=True, extra_env=None):
+        work = tempfile.TemporaryDirectory(); root = Path(work.name)
+        app = root / "app"; (app / "deploy").mkdir(parents=True)
+        _shutil.copy(ROOT / "deploy/restore.sh", app / "deploy/restore.sh")
+        (app / "deploy/backup.sh").write_text("#!/usr/bin/env bash\n" + ("exit 0\n" if backup_ok else "echo 'backup failed'; exit 1\n")); (app / "deploy/backup.sh").chmod(0o755)
+        bin_dir = root / "bin"; bin_dir.mkdir(); (bin_dir / "docker").write_text(FAKE_DOCKER); (bin_dir / "docker").chmod(0o755)
+        backup = root / "b.tar.gz"; backup.write_bytes(backup_bytes(self.make_source(root)))
+        log = root / "log.txt"
+        env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "SEEDREFLECTIONS_APP": str(app), "FAKE_LOG": str(log), "FAKE_RUN_EXIT": str(run_exit), **(extra_env or {})}
+        done = _subprocess.run(["bash", str(app / "deploy/restore.sh"), str(backup)], capture_output=True, text=True, env=env, timeout=60)
+        commands = log.read_text() if log.exists() else ""
+        work.cleanup()
+        return done, commands
+
+    def make_source(self, root):
+        src = root / "src"; src.mkdir(); make_data(src); return src
+
+    def test_a_failed_safety_backup_stops_before_anything_changes(self):
+        done, commands = self.run_script(backup_ok=False)
+        self.assertNotEqual(done.returncode, 0); self.assertIn("nothing has been changed", done.stdout)
+        self.assertNotIn(" stop ", commands)                                          # the app was never stopped
+        done, commands = self.run_script(backup_ok=False, extra_env={"RESTORE_WITHOUT_SAFETY_BACKUP": "1"})
+        self.assertEqual(done.returncode, 0); self.assertIn(" stop ", commands)       # only with the explicit override
+
+    def test_if_the_restore_fails_after_the_app_was_stopped_the_app_is_started_again(self):
+        done, commands = self.run_script(run_exit=3)
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("Starting the app again", done.stdout)
+        self.assertGreaterEqual(commands.count(" up -d "), 1)
+
+    def test_the_success_path_restores_and_starts_once(self):
+        done, commands = self.run_script()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr); self.assertIn("Restore complete", done.stdout)
+        self.assertEqual(commands.count(" up -d "), 1)

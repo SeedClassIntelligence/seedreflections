@@ -2000,7 +2000,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   <div class="account-grid">
     <div class="card" style="grid-column:1/-1">
       <div class="card-header"><h3 aria-level="2">Data & portability</h3></div>
-      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)" aria-label="Restore ideas backup file"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
+      <div class="card-body"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Your archive remains portable. Download a complete backup, restore a verified workspace, or move a versioned interchange package between Seed Reflections installations.</p><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportSeeds()">Export ideas JSON</button><button class="btn btn-ghost btn-sm" onclick="downloadArchiveBackup()">Download complete archive</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('restore-backup-input').click()">Restore complete archive</button><button class="btn btn-ghost btn-sm" onclick="openExportPackageModal()">Export package v2</button><button class="btn btn-ghost btn-sm" onclick="openImportPackageModal()">Import package v2</button></div><input id="restore-backup-input" type="file" accept=".zip,application/zip" hidden onchange="restoreArchiveBackup(event)" aria-label="Restore ideas backup file"><div id="restore-preview-panel" style="margin-top:14px"></div></div>
     </div>
     
     <!-- Column 1: Usage Tracker -->
@@ -4178,10 +4178,20 @@ function seedWhen(s) { var d = s.updated_at || s.date; return d ? formatDate(d) 
 function realNextAction(sd) { var t = (sd.next_action || '').trim(); return /^review the source context/i.test(t) ? '' : t; }
 function artifactsForSeed(seedId) { return WORK_HOME_ARTIFACTS.filter(function(a){ return (a.seed_ids || []).indexOf(seedId) !== -1; }); }
 async function openArtifactById(id) { await openArtifactStudio(); editArtifact(id); }
+var WORK_HOME_BUSY = false, WORK_HOME_AGAIN = false, WORK_HOME_FETCHED_AT = 0;
+// Many parts of the page ask for a redraw while data loads. Draw one at a time, and re-read saved work at most every 5 seconds.
 async function renderWorkHome() {
+  if (WORK_HOME_BUSY) { WORK_HOME_AGAIN = true; return; }
+  WORK_HOME_BUSY = true;
+  try { await renderWorkHomeOnce(); }
+  finally { WORK_HOME_BUSY = false; if (WORK_HOME_AGAIN) { WORK_HOME_AGAIN = false; renderWorkHome(); } }
+}
+async function renderWorkHomeOnce() {
   var block = document.getElementById('chat-welcome-block');
   if (!block || activeFocusSeedId) return;
-  try { var r = await productFetch('/artifacts'); if (r.ok) WORK_HOME_ARTIFACTS = (await r.json()).artifacts || []; } catch (e) {}
+  if (Date.now() - WORK_HOME_FETCHED_AT > 5000) {
+    try { var r = await productFetch('/artifacts'); if (r.ok) { WORK_HOME_ARTIFACTS = (await r.json()).artifacts || []; WORK_HOME_FETCHED_AT = Date.now(); } } catch (e) {}
+  }
   if (activeFocusSeedId) return;
   var totals = ARCHIVE_TOTALS || {conversations: 0, pending: 0};
   var coverage = Array.isArray(SOURCE_COVERAGE) ? SOURCE_COVERAGE : [];
@@ -6033,7 +6043,7 @@ function newArtifactDraft(){document.getElementById('artifact-id').value='';docu
 function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;renderArtifactSignature(a);}
 async function saveCurrentArtifact(){
   var id=document.getElementById('artifact-id').value,payload={type:document.getElementById('artifact-type').value,title:document.getElementById('artifact-title').value.trim(),status:document.getElementById('artifact-status').value,content:document.getElementById('artifact-content').value.trim(),conversation_ids:activeWorkingThreadId?[activeWorkingThreadId]:[],seed_ids:activeFocusSeedId?[activeFocusSeedId]:[]};
-  try{var response=await productFetch(id?'/artifacts/'+encodeURIComponent(id):'/artifacts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);document.getElementById('artifact-id').value=result.artifact.artifact_id;showToast('Work artifact saved.');await loadArtifacts();editArtifact(result.artifact.artifact_id);}catch(e){showToast(e.message||'Artifact could not be saved');}
+  try{var response=await productFetch(id?'/artifacts/'+encodeURIComponent(id):'/artifacts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);document.getElementById('artifact-id').value=result.artifact.artifact_id;showToast('Work artifact saved.');WORK_HOME_FETCHED_AT=0;await loadArtifacts();editArtifact(result.artifact.artifact_id);}catch(e){showToast(e.message||'Artifact could not be saved');}
 }
 async function exportCurrentArtifact(){var id=document.getElementById('artifact-id').value;if(!id){showToast('Save the artifact before exporting.');return;}var response=await productFetch('/artifacts/'+encodeURIComponent(id)+'/export'),data=await response.json();if(!response.ok){showToast(data.error);return;}var blob=new Blob([data.markdown],{type:'text/markdown'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.artifact.title||'artifact').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.md';a.click();URL.revokeObjectURL(a.href);}
 
@@ -6074,7 +6084,7 @@ async function signCurrentArtifact() {
           var saved = await productFetch('/artifacts/' + encodeURIComponent(id) + '/signature', {method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({signature_id: result.signatureId, certificate_url: result.certificateUrl || ''})});
           var data = await saved.json(); if (!saved.ok) throw new Error(data.error || 'The signature could not be saved.');
-          showToast('Signed. The certificate is saved with this work.'); await loadArtifacts(); editArtifact(id);
+          showToast('Signed. The certificate is saved with this work.'); WORK_HOME_FETCHED_AT = 0; await loadArtifacts(); editArtifact(id);
         } catch (e) { showToast(e.message || 'The signature could not be saved.'); }
       },
       onError: function(err) { showToast((err && err.error) || 'Signing failed.'); },

@@ -66,12 +66,27 @@ def restore(backup_path, data_dir):
             if result != "ok":
                 raise RestoreError(f"A database in the backup is damaged ({os.path.relpath(path, staging)}): {result}")
         os.makedirs(aside)
-        for entry in os.listdir(data_dir):
-            if entry.startswith(".restore-staging-") or entry.startswith(".before-restore-"):
-                continue
-            shutil.move(os.path.join(data_dir, entry), os.path.join(aside, entry))
-        for entry in os.listdir(staging):
-            shutil.move(os.path.join(staging, entry), os.path.join(data_dir, entry))
+        moved_aside, moved_in = [], []
+        try:
+            for entry in os.listdir(data_dir):
+                if entry.startswith(".restore-staging-") or entry.startswith(".before-restore-"):
+                    continue
+                shutil.move(os.path.join(data_dir, entry), os.path.join(aside, entry)); moved_aside.append(entry)
+            for entry in os.listdir(staging):
+                shutil.move(os.path.join(staging, entry), os.path.join(data_dir, entry)); moved_in.append(entry)
+        except BaseException as exc:
+            # Put everything back exactly as it was: take back what was moved in, then restore what was moved aside.
+            stuck = []
+            for entry in moved_in:
+                try: shutil.move(os.path.join(data_dir, entry), os.path.join(staging, entry))
+                except OSError: stuck.append(entry)
+            for entry in moved_aside:
+                try: shutil.move(os.path.join(aside, entry), os.path.join(data_dir, entry))
+                except OSError: stuck.append(entry)
+            if stuck:
+                raise RestoreError(f"The restore failed and could not fully undo itself. Your previous data is in {aside}; "
+                                   f"these items could not be put back: {', '.join(stuck)}. Copy them back by hand before starting the app.") from exc
+            raise RestoreError(f"The restore failed while moving files ({exc}). The previous data was put back unchanged.") from exc
         os.rmdir(staging)
         files = sum(len(f) for _d, _s, f in os.walk(data_dir) if ".before-restore-" not in _d and ".restore-staging-" not in _d)
         return {"restored_files": files, "databases_checked": len(databases), "previous_data_kept_at": aside}
