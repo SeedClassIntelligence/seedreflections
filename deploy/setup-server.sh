@@ -86,7 +86,11 @@ fi
 
 echo "==> Daily backup at 03:15 (kept 30 days)"
 mkdir -p /var/backups/seedreflections
-( crontab -l 2>/dev/null | grep -v 'seedreflections/deploy/backup.sh' ; echo "15 3 * * * $APP/deploy/backup.sh >> /var/log/seedreflections-backup.log 2>&1" ) | crontab -
+CRON_CURRENT="$(crontab -l 2>/dev/null || true)"
+{
+  printf '%s\n' "$CRON_CURRENT" | awk '!/seedreflections\/deploy\/backup\.sh/'
+  echo "15 3 * * * $APP/deploy/backup.sh >> /var/log/seedreflections-backup.log 2>&1"
+} | crontab -
 
 echo "==> Starting SeedReflections"
 docker compose -f docker-compose.prod.yml up -d --build
