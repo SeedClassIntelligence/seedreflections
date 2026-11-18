@@ -116,7 +116,7 @@ class TestBrowserAutomation(unittest.TestCase):
             # Workspace is the entrance; sources are a native Library destination.
             page.wait_for_selector("#section-workspace", state="visible")
             self.assertTrue(page.locator("#chat-input").is_visible())
-            page.get_by_role("button",name="＋ Add or connect").click()
+            page.get_by_role("button",name="＋ Add material").click()
             page.wait_for_selector("text=Bring your history home.")
             self.assertTrue(page.locator("#section-intake").is_visible())
             page.click(".app-primary-tab[data-primary='library']")

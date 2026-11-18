@@ -1427,6 +1427,38 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
   .inbox-body.detail-open .inbox-detail{display:block;max-height:none}
   .inbox-back{display:inline-flex}
 }
+
+/* ── Work home: the Workspace when no idea is selected ─────────────── */
+.wh{display:grid;gap:22px;padding:6px 4px 18px;max-width:900px}
+.wh h3{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.wh-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);margin-bottom:8px}
+.wh-row .n{min-width:34px;font-size:20px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
+.wh-row .t{flex:1 1 220px;font-size:14px;color:var(--text)}
+.wh-row .t small{display:block;margin-top:2px;font-size:12.5px;color:var(--text-muted)}
+.wh-row.warn .n{color:var(--amber)}
+.wh-calm{padding:14px;border:1px dashed var(--border-light);border-radius:10px;font-size:13.5px;color:var(--text-muted)}
+.wh-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.wh-card{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card);text-align:left}
+.wh-card:hover{border-color:var(--border-light)}
+.wh-card .title{font-size:14.5px;font-weight:700;line-height:1.35;color:var(--text);overflow-wrap:anywhere}
+.wh-card .next{font-size:13px;line-height:1.45;color:var(--text-muted);overflow-wrap:anywhere}
+.wh-card .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--text-muted)}
+.wh-card .actions{display:flex;gap:8px;margin-top:auto;padding-top:6px}
+.wh-list{display:grid;gap:6px}
+.wh-work{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);width:100%;text-align:left;color:var(--text);cursor:pointer;font:inherit;min-height:44px}
+.wh-work:hover{border-color:var(--border-light)}
+.wh-work .kind{font-size:12px;font-weight:700;text-transform:capitalize;color:var(--green)}
+.wh-work .name{flex:1 1 180px;font-size:14px;overflow-wrap:anywhere}
+.wh-work .state{font-size:12.5px;color:var(--text-muted)}
+.wh-start{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.wh-start button{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--text);text-align:left;cursor:pointer;font:inherit;min-height:60px}
+.wh-start button:hover{border-color:var(--green)}
+.wh-start strong{font-size:13.5px}.wh-start span{font-size:12.5px;color:var(--text-muted)}
+.wh-first{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card)}
+.wh-first h2{margin:0 0 6px;font-size:18px;color:var(--text)}.wh-first p{margin:0 0 14px;font-size:14px;color:var(--text-muted);max-width:60ch}
+.wh-first .btns{display:flex;gap:8px;flex-wrap:wrap}
+.chat-messages{max-height:max(320px,calc(100vh - 430px))}
+.shelf-next{font-size:12.5px;line-height:1.4;color:var(--text-muted);margin:2px 0 4px;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1660,12 +1692,12 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <!-- ── Unified Workspace ──────────────────────────────────────────── -->
 <div class="section" id="section-workspace" style="display:none">
   <div class="section-head" style="display:flex; justify-content:space-between; align-items:center;">
-    <div><div class="section-title">Your workspace</div><p class="workspace-intro">Return to an idea, bring in new material, or turn what you have already learned into the next piece of work.</p></div>
+    <div><div class="section-title">Your workspace</div><p class="workspace-intro">Pick up an idea, bring in new material, and turn what you have learned into finished work.</p></div>
     <div class="workspace-actions">
-      <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add or connect</button>
+      <button class="btn btn-primary btn-sm" onclick="openWorkspaceSources('upload')">＋ Add material</button>
       <button class="btn btn-ghost btn-sm" onclick="openArtifactStudio()">Work artifacts</button>
       <button class="btn btn-ghost btn-sm" onclick="openEvidenceDrawer()">Evidence & lineage</button>
-      <span style="font-size:12px; color:var(--text-muted);">Active Scope:</span>
+      <span style="font-size:12px; color:var(--text-muted);">Focus:</span>
       <span class="seed-badge" style="background:var(--accent-glow); color:var(--accent);" id="cockpit-scope-badge">All Ideas</span>
     </div>
   </div>
@@ -2609,6 +2641,7 @@ async function loadProductOverview() {
       conversations: Number(data.conversations != null ? data.conversations : data.total || 0),
       pending: Number(data.pending != null ? data.pending : data.pending_candidates || 0)
     };
+    if (typeof renderWorkHome === 'function' && !activeFocusSeedId) renderWorkHome();
   } catch (error) {
     SOURCE_COVERAGE = [];
     ARCHIVE_TOTALS = null;
@@ -3268,7 +3301,10 @@ async function loadAllSeeds() {
         authority_status: s.authority_status || 'Detected',
         continuity_status: s.continuity_status || 'Active',
         project_id: s.project_id || 'default_project',
-        versions: s.versions || []
+        versions: s.versions || [],
+        next_action: s.next_action || '',
+        updated_at: s.updated_at || s.created_at || '',
+        source_conversation_id: s.source_conversation_id || null
       };
     });
     
@@ -3295,6 +3331,7 @@ async function loadAllSeeds() {
 
 /* ── UI Sync & Rendering ───────────────────────────────────────────── */
 function renderAll() {
+  if (typeof renderWorkHome === 'function') renderWorkHome();
   renderHero();
   renderGarden();
   renderPlatforms();
@@ -4122,6 +4159,7 @@ function renderShelfSeeds(seeds) {
     html += '<span>' + formatDate(s.date) + '</span>';
     html += '</div>';
 
+    if (realNextAction(s)) html += '<div class="shelf-next">Next: ' + escHtml(realNextAction(s).substring(0, 90)) + '</div>';
     html += '<div class="shelf-btn-group">';
     html += '<button class="btn btn-primary shelf-btn" onclick="event.stopPropagation();discussSeed(\'' + sid + '\')">Continue</button>';
     html += '<button class="btn btn-ghost shelf-btn" onclick="event.stopPropagation();selectSeedForCockpit(\'' + sid + '\')">Inspect</button>';
@@ -4131,6 +4169,74 @@ function renderShelfSeeds(seeds) {
   });
 
   shelfList.innerHTML = html;
+}
+
+/* ── Work home ─────────────────────────────────────────────────────── */
+var WORK_HOME_ARTIFACTS = [];
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+function seedWhen(s) { var d = s.updated_at || s.date; return d ? formatDate(d) : ''; }
+function realNextAction(sd) { var t = (sd.next_action || '').trim(); return /^review the source context/i.test(t) ? '' : t; }
+function artifactsForSeed(seedId) { return WORK_HOME_ARTIFACTS.filter(function(a){ return (a.seed_ids || []).indexOf(seedId) !== -1; }); }
+async function openArtifactById(id) { await openArtifactStudio(); editArtifact(id); }
+async function renderWorkHome() {
+  var block = document.getElementById('chat-welcome-block');
+  if (!block || activeFocusSeedId) return;
+  try { var r = await productFetch('/artifacts'); if (r.ok) WORK_HOME_ARTIFACTS = (await r.json()).artifacts || []; } catch (e) {}
+  if (activeFocusSeedId) return;
+  var totals = ARCHIVE_TOTALS || {conversations: 0, pending: 0};
+  var coverage = Array.isArray(SOURCE_COVERAGE) ? SOURCE_COVERAGE : [];
+  var unreadable = coverage.reduce(function(t, c){ return t + Number(c.unreadable || 0); }, 0);
+  var analyzed = coverage.reduce(function(t, c){ return t + Number(c.analyzed || 0); }, 0);
+  var waiting = Math.max(0, totals.conversations - analyzed);
+  var edited = WORK_HOME_ARTIFACTS.filter(function(a){ return a.signature && a.signature.status === 'edited_since'; });
+  var html = '<div class="wh">';
+
+  if (!totals.conversations && !ALL_SEEDS.length) {
+    html += '<div class="wh-first"><h2>Start by bringing in your history</h2><p>Add the AI conversations and documents you already have. SeedReflections keeps the originals, shows what it could and could not read, and finds the ideas and decisions buried in them for you to confirm.</p>' +
+      '<div class="btns"><button class="btn btn-primary" onclick="openWorkspaceSources(\'upload\')">Upload an export</button>' +
+      '<button class="btn btn-ghost" onclick="openWorkspaceSources(\'folder\')">Connect local history (SeedBridge)</button>' +
+      '<button class="btn btn-ghost" onclick="openWorkspaceSources(\'web\')">Add a web page</button></div></div>';
+    block.innerHTML = html + '</div>'; return;
+  }
+
+  html += '<section aria-labelledby="wh-attn"><h3 id="wh-attn">Needs your attention</h3>';
+  var rows = 0;
+  if (totals.pending) { rows++; html += '<div class="wh-row"><span class="n">' + totals.pending + '</span><span class="t">' + plural(totals.pending, 'finding is', 'findings are') + ' waiting for your decision<small>Each one links back to the passage it came from. Nothing becomes part of your work until you accept it.</small></span><button class="btn btn-primary btn-sm" onclick="switchDashTab(\'review\')">Review findings</button></div>'; }
+  if (unreadable) { rows++; html += '<div class="wh-row warn"><span class="n">' + unreadable + '</span><span class="t">' + plural(unreadable, 'conversation', 'conversations') + ' had nothing readable<small>Check the coverage report before relying on a search of your archive.</small></span><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'overview\')">See coverage</button></div>'; }
+  if (waiting && totals.conversations) { rows++; html += '<div class="wh-row"><span class="n">' + waiting + '</span><span class="t">' + plural(waiting, 'conversation has', 'conversations have') + ' not been analyzed yet<small>Analysis looks for ideas, decisions and questions to review.</small></span><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'overview\')">Open overview</button></div>'; }
+  edited.slice(0, 3).forEach(function(a){ rows++; html += '<div class="wh-row warn"><span class="n">!</span><span class="t">' + escHtml(a.title) + ' was edited after it was signed<small>The certificate no longer matches the text.</small></span><button class="btn btn-ghost btn-sm" onclick="openArtifactById(\'' + escHtml(a.artifact_id) + '\')">Open and sign again</button></div>'; });
+  if (!rows) html += '<div class="wh-calm">Nothing is waiting on you. Pick an idea to continue, or start something new below.</div>';
+  html += '</section>';
+
+  var recent = ALL_SEEDS.slice().sort(function(a, b){ return String(b.updated_at || b.date).localeCompare(String(a.updated_at || a.date)); }).slice(0, 3);
+  html += '<section aria-labelledby="wh-cont"><h3 id="wh-cont">Pick up where you left off</h3>';
+  if (!recent.length) {
+    html += '<div class="wh-calm">No ideas yet. Accept a finding in Review and it appears here, ready to continue.</div>';
+  } else {
+    html += '<div class="wh-cards">' + recent.map(function(sd){
+      var made = artifactsForSeed(sd.seed_id).length;
+      return '<div class="wh-card"><div class="title">' + escHtml(sd.content.substring(0, 110)) + '</div>' +
+        (realNextAction(sd) ? '<div class="next">Next: ' + escHtml(realNextAction(sd).substring(0, 140)) + '</div>' : '') +
+        '<div class="meta"><span style="color:' + statusColor(sd.status) + ';font-weight:600;text-transform:capitalize">' + escHtml(sd.status) + '</span>' + (seedWhen(sd) ? '<span>' + escHtml(seedWhen(sd)) + '</span>' : '') + '<span>' + plural(made, 'work product', 'work products') + '</span></div>' +
+        '<div class="actions"><button class="btn btn-primary btn-sm" onclick="discussSeed(\'' + sd.seed_id + '\')">Continue</button><button class="btn btn-ghost btn-sm" onclick="selectSeedForCockpit(\'' + sd.seed_id + '\')">Inspect</button></div></div>';
+    }).join('') + '</div>';
+  }
+  html += '</section>';
+
+  var works = WORK_HOME_ARTIFACTS.slice().sort(function(a, b){ return String(b.updated_at).localeCompare(String(a.updated_at)); }).slice(0, 4);
+  if (works.length) {
+    html += '<section aria-labelledby="wh-work"><h3 id="wh-work">Recent work</h3><div class="wh-list">' + works.map(function(a){
+      var sig = a.signature ? (a.signature.status === 'edited_since' ? 'Signed, then edited' : 'Signed') : '';
+      return '<button class="wh-work" onclick="openArtifactById(\'' + escHtml(a.artifact_id) + '\')"><span class="kind">' + escHtml(a.type.replace('_', ' ')) + '</span><span class="name">' + escHtml(a.title) + '</span><span class="state">' + escHtml(a.status) + (sig ? ' · ' + sig : '') + '</span></button>';
+    }).join('') + '</div></section>';
+  }
+
+  html += '<section aria-labelledby="wh-new"><h3 id="wh-new">Start something</h3><div class="wh-start">' +
+    '<button onclick="switchDashTab(\'review\')"><strong>From a finding</strong><span>Turn something your history already contains into work.</span></button>' +
+    '<button onclick="switchDashTab(\'intake\')"><strong>From my archive</strong><span>Search every conversation you have brought in.</span></button>' +
+    '<button onclick="openWorkspaceSources(\'upload\')"><strong>From new material</strong><span>Upload an export, connect a folder or add a web page.</span></button>' +
+    '<button onclick="openArtifactStudio()"><strong>From a blank page</strong><span>Write a plan, brief, report or note.</span></button></div></section>';
+  block.innerHTML = html + '</div>';
 }
 
 function toggleCockpitRail(rail) {
@@ -4274,6 +4380,7 @@ function clearActiveSeedFocus() {
   oldCards.forEach(function(c){ c.remove(); });
   var welcomeBlock = document.getElementById('chat-welcome-block');
   if (welcomeBlock) welcomeBlock.style.display = 'block';
+  renderWorkHome();
   var badge = document.getElementById('cockpit-scope-badge');
   if (badge) badge.textContent = 'All Ideas';
   var chatInput = document.getElementById('chat-input');
@@ -4294,12 +4401,11 @@ function setChatPrompt(text) {
 function clearChatStream() {
   var msgs = document.getElementById('chat-messages');
   if (msgs) {
-    msgs.innerHTML = '<div id="chat-welcome-block">' +
-      '<div class="chat-bubble system">Chat stream cleared. Select a seed on the left shelf or paste a transcript to begin.</div>' +
-      '</div>';
+    msgs.innerHTML = '<div id="chat-welcome-block"></div>';
   }
   activeFocusSeedId = null;
   activeWorkingThreadId = null;
+  renderWorkHome();
   var badge = document.getElementById('cockpit-scope-badge');
   if (badge) badge.textContent = 'All Ideas';
   filterShelfSeeds();
