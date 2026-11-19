@@ -765,6 +765,7 @@ a{color:var(--accent);text-decoration:none}
 .archive-detail{position:sticky;top:82px;background:var(--bg-card);border:1px solid var(--border);border-radius:15px;min-height:420px;overflow:hidden}
 .archive-detail-empty{padding:55px 24px;text-align:center;color:var(--text-muted);font-size:12.5px;line-height:1.6}
 .archive-detail-head{padding:20px;border-bottom:1px solid var(--border);background:linear-gradient(145deg,var(--accent-glow),transparent)}
+.archive-message-source{border-left:3px solid var(--green);background:var(--bg-elevated);padding-left:12px}.archive-source-flag{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green);margin-bottom:4px}
 .archive-detail-body{padding:16px;max-height:430px;overflow:auto}.archive-message{padding:11px 0;border-bottom:1px solid var(--border)}
 .archive-message-role{font-size:12px;font-weight:800;text-transform:uppercase;color:var(--accent);margin-bottom:4px}.archive-message-text{white-space:pre-wrap;font-size:12px;line-height:1.5;color:var(--text-muted)}
 .archive-detail-actions{padding:14px 16px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
@@ -1461,6 +1462,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .shelf-next{font-size:12.5px;line-height:1.4;color:var(--text-muted);margin:2px 0 4px;overflow-wrap:anywhere}
 
 /* ── Idea view: everything about one idea in one place ─────────────── */
+.idea-title:focus{outline:none}
+@media(max-width:1024px){#section-workspace .cockpit-layout{display:flex;flex-direction:column}#section-workspace .cockpit-chat{order:-1}#section-workspace .cockpit-shelf{order:1}}
 .idea-header{padding:14px 18px 0;border-bottom:1px solid var(--border);background:var(--bg-card)}
 .idea-head-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .idea-status{font-size:12.5px;font-weight:700;text-transform:capitalize}
@@ -3341,7 +3344,9 @@ async function loadAllSeeds() {
         updated_at: s.updated_at || s.created_at || '',
         source_conversation_id: s.source_conversation_id || null,
         source_message_id: s.source_message_id || null,
-        candidate_id: s.candidate_id || null
+        candidate_id: s.candidate_id || null,
+        decision_references: s.decision_references || [],
+        related_seed_ids: s.related_seeds || []
       };
     });
     
@@ -4213,14 +4218,22 @@ var IDEA_TAB = 'work';
 function ideaSeed() { return ALL_SEEDS.find(function(sd){ return sd.seed_id === activeFocusSeedId; }); }
 function ideaDecisions(sd) {
   return (ALL_DECISIONS || []).filter(function(d){
-    return (sd.source_conversation_id && d.source_conversation_id === sd.source_conversation_id) || (d.seed_id && d.seed_id === sd.seed_id) || (d.candidate_id && d.candidate_id === sd.candidate_id);
+    return (d.related_seeds || []).indexOf(sd.seed_id) !== -1 ||
+      (sd.decision_references || []).indexOf(d.decision_id) !== -1 ||
+      (sd.source_conversation_id && d.source_conversation_id === sd.source_conversation_id) ||
+      (d.seed_id && d.seed_id === sd.seed_id) || (d.candidate_id && d.candidate_id === sd.candidate_id);
   });
+}
+function isApprovedRelationship(rel) {
+  return String(rel.approval_status || '').toLowerCase() === 'approved' || rel.approved === true;
 }
 function showIdeaView(seedId) {
   var sd = ALL_SEEDS.find(function(x){ return x.seed_id === seedId; }); if (!sd) return;
   var header = document.getElementById('idea-header'); if (!header) return;
   header.hidden = false;
   document.getElementById('idea-title').textContent = sd.content;
+  var heading = document.getElementById('idea-title'); heading.tabIndex = -1;
+  setTimeout(function(){ var top = header.getBoundingClientRect().top; if (top < 0 || top > window.innerHeight * 0.5) header.scrollIntoView({block: 'start'}); if (document.activeElement === document.body) { try { heading.focus({preventScroll: true}); } catch (e) {} } }, 60);
   var next = realNextAction(sd); document.getElementById('idea-next').textContent = next ? 'Next: ' + next : '';
   var st = document.getElementById('idea-status'); st.textContent = sd.status; st.style.color = statusColor(sd.status);
   document.getElementById('idea-n-outputs').textContent = artifactsForSeed(seedId).length;
@@ -4262,18 +4275,26 @@ async function renderIdeaSources(sd, panel) {
     try {
       var r = await productFetch('/conversations/' + encodeURIComponent(sd.source_conversation_id)); var data = await r.json();
       if (!r.ok) throw new Error(data.error || 'unavailable');
-      var msgs = data.messages || [], at = msgs.findIndex(function(m){ return m.id === sd.source_message_id; }); if (at < 0) at = 0;
+      var msgs = data.messages || [], at = msgs.findIndex(function(m){ return sd.source_message_id && m.id === sd.source_message_id; }), label = 'where this idea came from', notice = '';
+      if (at < 0) {   // the recorded message is missing or no longer matches: say so instead of pointing at the wrong place
+        var needle = String(sd.content || '').trim().toLowerCase();
+        var found = needle ? msgs.reduce(function(acc, m, i){ return String(m.content || '').toLowerCase().indexOf(needle) !== -1 ? acc.concat(i) : acc; }, []) : [];
+        if (found.length === 1) { at = found[0]; label = 'closest match, the recorded message was not found'; notice = 'The exact message this idea was recorded from could not be found, so this is the one message that contains the same words.'; }
+        else { notice = 'The exact message this idea came from could not be found in the conversation' + (found.length > 1 ? ' and several messages match its words' : '') + ', so none is marked. The start of the conversation is shown.'; }
+      }
+      var from = Math.max(0, (at < 0 ? 0 : at) - 2), to = at < 0 ? 5 : at + 3;
       var title = (data.conversation && data.conversation.title) || 'Source conversation';
-      html += '<p style="font-size:13px;color:var(--text-muted);margin:0 0 8px">' + escHtml(title) + (msgs.length ? ' · message ' + (at + 1) + ' of ' + msgs.length : '') + '</p>' +
-        msgs.slice(Math.max(0, at - 2), at + 3).map(function(m, i, arr){
-          var hit = (Math.max(0, at - 2) + i) === at;
-          return '<div class="src-msg' + (hit ? ' hit' : '') + '"><span class="who">' + escHtml(m.role) + (hit ? ' · where this idea came from' : '') + '</span>' + escHtml(m.content) + '</div>';
+      html += '<p style="font-size:13px;color:var(--text-muted);margin:0 0 8px">' + escHtml(title) + (msgs.length ? (at >= 0 ? ' · message ' + (at + 1) + ' of ' + msgs.length : ' · ' + msgs.length + ' messages') : '') + '</p>' +
+        (notice ? '<div class="idea-empty" role="note" style="margin-bottom:10px">' + escHtml(notice) + '</div>' : '') +
+        msgs.slice(from, to).map(function(m, i){
+          var hit = at >= 0 && (from + i) === at;
+          return '<div class="src-msg' + (hit ? ' hit' : '') + '"><span class="who">' + escHtml(m.role) + (hit ? ' · ' + label : '') + '</span>' + escHtml(m.content) + '</div>';
         }).join('') +
-        '<div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="switchDashTab(\'browser\')">Open the full conversation in Library</button></div>';
+        '<div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="openIdeaSource(\'' + escHtml(sd.source_conversation_id) + '\', \'' + escHtml(at >= 0 && msgs[at] && sd.source_message_id && msgs[at].id === sd.source_message_id ? sd.source_message_id : '') + '\')">Open the full conversation in Library</button></div>';
     } catch (e) { html += '<div class="idea-empty">The source conversation could not be loaded: ' + escHtml(e.message || 'unknown error') + '.</div>'; }
   }
   html += '</section>';
-  var related = (ALL_RELATIONSHIPS || []).filter(function(rel){ return rel.status === 'accepted' && (rel.source_seed_id === sd.seed_id || rel.target_seed_id === sd.seed_id); });
+  var related = (ALL_RELATIONSHIPS || []).filter(function(rel){ return isApprovedRelationship(rel) && (rel.source_seed_id === sd.seed_id || rel.target_seed_id === sd.seed_id); });
   if (related.length) {
     html += '<section><h3>Related ideas you confirmed</h3>' + related.map(function(rel){
       var other = ALL_SEEDS.find(function(x){ return x.seed_id === (rel.source_seed_id === sd.seed_id ? rel.target_seed_id : rel.source_seed_id); });
@@ -4293,6 +4314,11 @@ function renderIdeaOutputs(sd, panel) {
       return '<button type="button" class="btn btn-ghost btn-sm" onclick="startArtifactForIdea(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div></section>';
   panel.innerHTML = html;
 }
+async function openIdeaSource(conversationId, messageId) {
+  switchDashTab('map');
+  await openArchiveConversation(conversationId, messageId || null);
+  var detail = document.getElementById('archive-map-detail'); if (detail && detail.scrollIntoView) detail.scrollIntoView({block: 'start'});
+}
 async function startArtifactForIdea(type) {
   var sd = ideaSeed(); if (!sd) return;
   await openArtifactStudio(); newArtifactDraft();
@@ -4300,7 +4326,7 @@ async function startArtifactForIdea(type) {
   document.getElementById('artifact-title').focus();
 }
 function renderIdeaDecisions(sd, panel) {
-  var list = ideaDecisions(sd), html = '<section><h3>Decisions from this idea\'s conversation</h3>';
+  var list = ideaDecisions(sd), html = '<section><h3>Decisions linked to this idea</h3>';
   html += list.length ? list.map(function(d){
     return '<div class="dec-card"><div class="s">' + escHtml(d.statement || d.title || '') + '</div>' + (d.rationale ? '<div class="r">Why: ' + escHtml(d.rationale) + '</div>' : '') + '</div>';
   }).join('') : '<div class="idea-empty">No decisions recorded for this idea yet.</div>';
@@ -4913,7 +4939,7 @@ function discussSeed(seedId) {
   // Set starter text in chat input to guide user
   var chatInput = document.getElementById('chat-input');
   chatInput.value = 'Help me outline the next steps and plan for this idea.';
-  chatInput.focus();
+  chatInput.focus({preventScroll: true});
   chatInput.style.height = 'auto';
   chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 
@@ -4976,7 +5002,7 @@ function searchArchiveMap() {
   loadArchiveThreads(input ? input.value.trim() : '');
 }
 
-async function openArchiveConversation(conversationId) {
+async function openArchiveConversation(conversationId, focusMessageId) {
   activeWorkingThreadId = conversationId;
   renderArchiveMap();
   var panel = document.getElementById('archive-map-detail');
@@ -4991,7 +5017,7 @@ async function openArchiveConversation(conversationId) {
     var html = '<div class="archive-detail-head"><div class="archive-platform">' + escHtml(conv.platform || 'conversation') + '</div><h2 style="font-size:18px;line-height:1.3;margin:8px 0 5px">' + escHtml(conv.title) + '</h2><div style="font-size:12px;color:var(--text-muted)">' + messages.length + ' source messages · provenance preserved</div></div>';
     html += '<div class="archive-detail-body">';
     messages.forEach(function(message) {
-      html += '<div class="archive-message"><div class="archive-message-role">' + escHtml(message.role || 'unknown') + '</div><div class="archive-message-text">' + escHtml(message.content || '') + '</div></div>';
+      html += '<div class="archive-message" data-message-id="' + escHtml(message.id || '') + '"><div class="archive-message-role">' + escHtml(message.role || 'unknown') + '</div><div class="archive-message-text">' + escHtml(message.content || '') + '</div></div>';
     });
     html += '</div><div class="archive-detail-actions">';
     html += '<button class="btn btn-primary" onclick="activateArchiveWork(\'continue\')">▶ Continue</button>';
@@ -4999,6 +5025,10 @@ async function openArchiveConversation(conversationId) {
     html += '<button class="btn btn-ghost" onclick="activateArchiveWork(\'explore\')">✦ Explore</button>';
     html += '<button class="btn btn-ghost" onclick="analyzeArchiveConversation(\'' + escHtml(conversationId) + '\')">🌱 Map Ideas</button></div>';
     if (panel) panel.innerHTML = html;
+    if (focusMessageId && panel) {
+      var hit = Array.prototype.find.call(panel.querySelectorAll('.archive-message'), function(el){ return el.getAttribute('data-message-id') === String(focusMessageId); });
+      if (hit) { hit.classList.add('archive-message-source'); hit.insertAdjacentHTML('afterbegin', '<div class="archive-source-flag">Where the idea came from</div>'); hit.scrollIntoView({block: 'center'}); }
+    }
   } catch (error) {
     if (panel) panel.innerHTML = '<div class="archive-detail-empty">The source conversation could not be opened.</div>';
   }
