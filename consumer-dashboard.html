@@ -6543,7 +6543,7 @@ function renderPlatformAiNote() {
   var title = document.getElementById('platform-ai-title'), detail = document.getElementById('platform-ai-detail');
   if (SAVED_API_MODE !== 'managed') {
     title.textContent = 'Platform managed AI: not saved yet';
-    detail.textContent = 'Save AI Configuration to use it. Until then your current setting stays in effect.';
+    detail.textContent = 'Save AI Configuration to keep this preference. The server\'s configuration still determines which model runs.';
   } else {
     // Only what was checked: the saved mode, and what the server's model list shows. The task runtime does not read
     // this setting yet, so nothing here claims that a task will run.

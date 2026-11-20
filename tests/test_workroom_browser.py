@@ -157,6 +157,8 @@ class WorkroomBrowserTests(unittest.TestCase):
                 self.assertFalse(page.is_visible("#platform-ai-note"), label)
                 page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; }"); page.select_option("#acc-api-mode", "managed")
                 self.assertIn("not saved yet", page.inner_text("#platform-ai-title"), label)                # choosing is not the same as saving
+                unsaved = page.inner_text("#platform-ai-detail")
+                self.assertIn("still determines which model runs", unsaved, label); self.assertNotIn("to use it", unsaved, label)   # saving does not change routing yet
                 page.evaluate("() => { SAVED_API_MODE = 'managed'; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
                 self.assertIn("No models appear", page.inner_text("#platform-ai-detail"), label)
                 page.evaluate("() => { AVAILABLE_MODEL_COUNT = 2; renderPlatformAiNote(); }")
