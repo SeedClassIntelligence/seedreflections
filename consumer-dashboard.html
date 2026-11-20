@@ -1485,6 +1485,16 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .dec-card{padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);margin-bottom:8px}
 .dec-card .s{font-size:14px;font-weight:600;color:var(--text);overflow-wrap:anywhere}.dec-card .r{margin-top:4px;font-size:13px;color:var(--text-muted);overflow-wrap:anywhere}
 .make-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* Overview: three plain rows instead of six counters */
+.overview-brief{border:1px solid #30363d;border-radius:10px;background:#0d1117;margin:4px 0 22px;overflow:hidden}
+.brief-row{display:grid;grid-template-columns:150px 1fr auto;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid #21262d}.brief-row:last-child{border-bottom:0}
+.brief-label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:#8b949e;font-weight:700}
+.brief-row p{margin:0;font-size:16px;color:#c9d1d9}.brief-row p strong{font-size:22px;letter-spacing:-.5px;color:#f0f6fc;margin-right:2px}
+#overview-brief .btn:not(.btn-primary){background:#161b22;color:#c9d1d9;border:1px solid #30363d}#overview-brief .btn:not(.btn-primary):hover{border-color:#3fb950;color:#3fb950}
+#brief-needs-you{background:rgba(63,185,80,.07)}#brief-needs-you .brief-label{color:#3fb950}
+#brief-needs-you.is-clear{background:transparent}#brief-needs-you.is-clear .brief-label{color:#8b949e}
+@media(max-width:700px){.brief-row{grid-template-columns:1fr;gap:8px}.brief-row button{justify-self:start}}
 </style>
 </head>
 <body>
@@ -1693,8 +1703,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <div class="section" id="section-map" style="display:none">
   <div class="journey-shell">
     <div class="journey-kicker">Library · Conversations</div>
-    <h2 class="journey-title" style="font-size:34px">See what you have before deciding what to do with it.</h2>
-    <p class="journey-copy">Every card is a source conversation—not an invented summary. Open one to inspect the original exchange, then continue it, plan from it, explore it, or map its ideas.</p>
+    <h2 class="journey-title" style="font-size:34px">Your conversations.</h2>
+    <p class="journey-copy">Each card is something you imported, exactly as it was written. Search every message, or open one to read it and carry it forward.</p>
     <div class="archive-toolbar">
       <div class="search-wrap">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10 10l4.5 4.5"/></svg>
@@ -1918,15 +1928,15 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <!-- ── Idea Garden ────────────────────────────────────────────────── -->
 <div class="section" id="section-garden">
   <div class="section-head">
-    <div><div class="journey-kicker">Overview</div><div class="section-title">The state of your work.</div><p class="workspace-intro">Archive coverage, work awaiting your review, project continuity, and the progress of accepted ideas—without repeating the same metric under different names.</p></div>
+    <div><div class="journey-kicker">Overview</div><div class="section-title">The state of your work.</div><p class="workspace-intro">What needs you, what you have saved, and what the archive holds. Each button opens the place where you act on it.</p></div>
   </div>
-  <div class="overview-summary">
-    <div class="overview-stat"><strong id="ov-conversations">0</strong><span>Conversations</span><button onclick="switchDashTab('map')">Open library →</button></div>
-    <div class="overview-stat"><strong id="ov-sources">0</strong><span>Source providers</span><button onclick="switchDashTab('intake')">Manage sources →</button></div>
-    <div class="overview-stat"><strong id="ov-ideas">0</strong><span>Saved ideas</span><button onclick="switchDashTab('browser')">Browse ideas →</button></div>
-    <div class="overview-stat"><strong id="ov-decisions">0</strong><span>Decisions</span><button onclick="switchDashTab('browser')">View decisions →</button></div>
-    <div class="overview-stat"><strong id="ov-review">0</strong><span>Awaiting review</span><button onclick="switchDashTab('review')">Review now →</button></div>
-    <div class="overview-stat"><strong id="ov-projects">0</strong><span>Projects</span><button onclick="switchDashTab('workspace')">Continue work →</button></div>
+  <div class="overview-brief" id="overview-brief">
+    <div class="brief-row" id="brief-needs-you"><div class="brief-label">Needs you</div>
+      <p><strong id="ov-review">0</strong> <span id="ov-review-words">findings wait for your decision</span></p><button class="btn btn-primary" id="brief-needs-action" onclick="switchDashTab('review')">Review now</button></div>
+    <div class="brief-row"><div class="brief-label">Saved so far</div>
+      <p><strong id="ov-ideas">0</strong> <span id="ov-ideas-words">ideas</span>, <strong id="ov-decisions">0</strong> <span id="ov-decisions-words">decisions</span> and <strong id="ov-projects">0</strong> <span id="ov-projects-words">projects</span>, in every state</p><button class="btn" onclick="switchDashTab('workspace')">Continue work</button></div>
+    <div class="brief-row"><div class="brief-label">In the archive</div>
+      <p><strong id="ov-conversations">0</strong> <span id="ov-conversations-words">conversations</span> from <strong id="ov-sources">0</strong> <span id="ov-sources-words">source providers</span></p><button class="btn" onclick="switchDashTab('map')">Open library</button></div>
   </div>
   <div class="garden-grid overview-lifecycle">
     <div class="card">
@@ -3121,7 +3131,7 @@ async function loadCandidateLinkQueue() {
     var links = data.links || [];
     var linkTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : links.length;
     if (count) count.textContent = linkTotal > links.length ? 'Showing ' + links.length + ' of ' + linkTotal.toLocaleString() + ' pending' : linkTotal + ' pending';
-    INBOX.linksPending = linkTotal; renderInboxTabs();
+    INBOX.linksPending = linkTotal; renderInboxTabs(); updateNeedsYou();
     if (!links.length) {
       grid.innerHTML = '<div class="review-empty"><strong>No relationships need a decision.</strong><p>Suggestions appear when separate conversations share specific source evidence.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Explore the archive →</button></div>';
       return;
@@ -3397,6 +3407,36 @@ function renderHero() {
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
 }
 
+/* Overview "Needs you": both Review queues count, findings and relationship suggestions. With nothing in either,
+   say so plainly and offer the next useful step: bring in history (the main action only when the archive is empty). */
+function updateNeedsYou() {
+  var needs=document.getElementById('brief-needs-you'); if(!needs) return;
+  var findings=Number((ARCHIVE_TOTALS ? ARCHIVE_TOTALS.pending : PENDING_CANDIDATE_COUNT)||0);
+  var links=Number((typeof INBOX!=='undefined' && INBOX.linksPending)||0);
+  var conversations=Number((ARCHIVE_TOTALS ? ARCHIVE_TOTALS.conversations : (archiveConversationTotal || uploadedConversations.length))||0);
+  var plural=function(n,one,many){return n===1?one:many;};
+  var count=document.getElementById('ov-review'), words=document.getElementById('ov-review-words'), action=document.getElementById('brief-needs-action');
+  var waiting=findings+links, empty=!conversations;
+  needs.classList.toggle('is-clear',!waiting);
+  if(count){ count.textContent=findings; count.style.display='none'; }
+  if(words){
+    var parts=[];
+    if(findings) parts.push('<strong>'+findings+'</strong> '+plural(findings,'finding','findings'));
+    if(links) parts.push('<strong>'+links+'</strong> '+plural(links,'relationship suggestion','relationship suggestions'));
+    if(waiting) words.innerHTML=parts.join(' and ')+' '+plural(waiting,'waits','wait')+' for your decision';
+    else words.textContent=empty?'Nothing to decide yet. Bring in your AI history to start.':'Nothing is waiting for your decision.';
+  }
+  if(action){
+    action.textContent=waiting?'Review now':'Add history';
+    action.onclick=function(){
+      if(!waiting){ switchDashTab('intake'); return; }
+      switchDashTab('review');
+      if(!findings && typeof inboxSetStatus==='function') inboxSetStatus('relationships');      // only relationships wait: open that queue
+    };
+    action.classList.toggle('btn-primary',!!waiting||empty);
+  }
+}
+
 function renderGarden() {
   var disc = ALL_SEEDS.filter(function(s){ return s.status === 'discovered'; }).length;
   var act = ALL_SEEDS.filter(function(s){ return s.status === 'active'; }).length;
@@ -3412,6 +3452,11 @@ function renderGarden() {
     'ov-projects': ALL_PROJECTS.length
   };
   Object.keys(summary).forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=summary[id];});
+  var plural=function(n,one,many){return n===1?one:many;};
+  [['ov-sources','source provider','source providers'],['ov-ideas','idea','ideas'],['ov-decisions','decision','decisions'],['ov-projects','project','projects'],['ov-conversations','conversation','conversations']].forEach(function(w){
+    var el=document.getElementById(w[0]+'-words'); if(el) el.textContent=plural(summary[w[0]],w[1],w[2]);
+  });
+  updateNeedsYou();
 
   // Render pipeline
   var pipeline = document.getElementById('lifecycle-pipeline');
