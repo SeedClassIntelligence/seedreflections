@@ -21,14 +21,25 @@ class HarnessTests(unittest.TestCase):
         finally:
             runtime.close()
 
-    def test_a_server_that_fails_to_start_reports_why(self):
+    def test_a_server_that_fails_to_start_reports_why_and_does_so_promptly(self):
+        started = time.time()
         with self.assertRaises(RuntimeError) as caught:
             UnifiedRuntime("not-a-real-mode")
-        self.assertIn("Invalid SEED_REFLECTIONS_MODE", str(caught.exception))
+        self.assertIn("Invalid SEED_REFLECTIONS_MODE", str(caught.exception)); self.assertIn("exited with code", str(caught.exception))
+        self.assertLess(time.time() - started, 15)       # it must notice the exit, not retry a dead server for a minute or more
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_waiting_for_a_dead_server_stops_at_once_even_when_connections_are_slow_to_fail(self):
+        import subprocess
+        from unittest.mock import patch
+        from test_unified_runtime import wait_for_server
+        dead = subprocess.Popen([sys.executable, "-c", "import sys; print('boom', file=sys.stderr); sys.exit(3)"]); dead.wait()
+        def slow_refusal(*args, **kwargs):                                       # what a refused connection can cost on some systems
+            time.sleep(5); raise ConnectionRefusedError()
+        started = time.time()
+        with patch("urllib.request.urlopen", slow_refusal):
+            with self.assertRaises(RuntimeError) as caught:
+                wait_for_server(dead, 1, lambda: "boom")
+        self.assertIn("exited with code 3", str(caught.exception)); self.assertLess(time.time() - started, 2)   # never even tries the slow connection
 
 
 class PageIntegrityTests(unittest.TestCase):

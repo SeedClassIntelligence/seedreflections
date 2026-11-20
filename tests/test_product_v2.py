@@ -33,14 +33,18 @@ class Runtime:
         self._log = tempfile.TemporaryFile()      # a file, not a pipe: an unread pipe fills and blocks the server mid-request
         self.process = subprocess.Popen([sys.executable, str(ROOT / "server.py")], cwd=ROOT,
                                         env=env, stdout=subprocess.DEVNULL, stderr=self._log)
-        for _ in range(80):
+        deadline = time.monotonic() + 40
+        while True:                                  # a server that already exited is reported at once, not retried (each refused connection can take seconds on Windows)
+            code = self.process.poll()
+            if code is not None:
+                self._log.seek(0); tail = self._log.read()[-4000:].decode("utf-8", "replace"); self._log.close(); self.temp.cleanup()
+                raise RuntimeError(f"server exited with code {code} before it was ready:\n{tail}")
             try:
-                self.request("GET", "/api/v2/health")
-                break
+                with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/api/v2/health", timeout=1): break
             except Exception:
-                time.sleep(.05)
-        else:
-            raise RuntimeError("server failed to start")
+                if time.monotonic() > deadline:
+                    self.process.kill(); self.process.wait(timeout=5); self._log.close(); self.temp.cleanup(); raise RuntimeError("server failed to start")
+                time.sleep(.1)
 
     def request(self, method, path, data=None, token=None):
         headers = {"Content-Type": "application/json"}

@@ -6,6 +6,18 @@ ROOT=Path(__file__).resolve().parents[1]
 def free_port():
     with socket.socket() as sock: sock.bind(("127.0.0.1",0)); return sock.getsockname()[1]
 
+def wait_for_server(process,port,read_log,seconds=40):
+    """Wait until the server answers. A server that has already exited is reported at once, with its log, instead of being retried:
+    on some systems each refused connection takes seconds, so retrying a dead server could take minutes."""
+    deadline=time.monotonic()+seconds
+    while time.monotonic()<deadline:
+        code=process.poll()
+        if code is not None: raise RuntimeError(f"The server exited with code {code} before it was ready. Server log:\n"+read_log())
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/v2/health",timeout=1): return
+        except Exception: time.sleep(.1)
+    raise RuntimeError(f"The server was not ready after {seconds} seconds. Server log:\n"+read_log())
+
 class UnifiedRuntime:
     def __init__(self,mode,extra_env=None):
         self.temp=tempfile.TemporaryDirectory(); self.port=free_port(); env=os.environ.copy()
@@ -18,11 +30,9 @@ class UnifiedRuntime:
         self._log=tempfile.TemporaryFile()
         self.process=subprocess.Popen([sys.executable,str(ROOT/"server.py")],cwd=ROOT,env=env,
                                       stdout=subprocess.DEVNULL,stderr=self._log)
-        for _ in range(100):
-            try: self.request("GET","/api/v2/health"); break
-            except Exception: time.sleep(.05)
-        else:
-            tail=self.server_log(); self.process.kill(); raise RuntimeError("unified runtime failed to start. Server log:\n"+tail)
+        try: wait_for_server(self.process,self.port,self.server_log)
+        except Exception:
+            self.process.kill(); self.process.wait(timeout=5); self._log.close(); self.temp.cleanup(); raise
     def server_log(self,limit=4000):
         self._log.flush(); self._log.seek(0,2); size=self._log.tell(); self._log.seek(max(0,size-limit))
         return self._log.read().decode("utf-8","replace")
