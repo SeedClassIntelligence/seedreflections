@@ -50,7 +50,7 @@ def build(runtime):
 class WorkroomBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.runtime = UnifiedRuntime("local")
+        cls.runtime = UnifiedRuntime("local", {"SEED_SIGNATURE_API_URL": "http://127.0.0.1:9", "SEED_SIGNATURE_PLATFORM_API_KEY": "test-key"})
         cls.seeds = build(cls.runtime)
         assert len(cls.seeds) >= 3, cls.seeds
         cls.A, cls.B, cls.C = cls.seeds[0], cls.seeds[1], cls.seeds[2]
@@ -62,6 +62,8 @@ class WorkroomBrowserTests(unittest.TestCase):
         post("POST", "/api/v2/workspace/relationships/create", {"source_seed_id": cls.A["seed_id"], "target_seed_id": cls.B["seed_id"], "relationship_type": "Related Work", "created_by": "user"})
         post("POST", "/api/v2/workspace/relationships/create", {"source_seed_id": cls.A["seed_id"], "target_seed_id": cls.C["seed_id"], "relationship_type": "Related Work"})
         post("POST", "/api/v2/workspace/decisions", {"decision_statement": "Publish pricing before refund rules", "rationale": "Testers need prices first", "related_seeds": [cls.A["seed_id"]]})
+        post("POST", "/api/v2/workspace/decisions", {"decision_statement": "Noted in the same chat only", "source_conversation_id": cls.A["source_conversation_id"]})
+        cls.D = next(x for x in cls.seeds if x["source_conversation_id"] != cls.A["source_conversation_id"])
 
     @classmethod
     def tearDownClass(cls):
@@ -88,7 +90,8 @@ class WorkroomBrowserTests(unittest.TestCase):
                 phrase = "1 finding is waiting for your decision" if self.waiting == 1 else f"{self.waiting} findings are waiting for your decision"
                 self.assertIn(phrase, text, label)
                 self.assertGreaterEqual(page.locator(".wh-card .btn-primary").count(), 1)
-                self.assertIn("Pricing page plan", text); self.assertIn("From a finding", text); self.assertIn("From a blank page", text)
+                self.assertIn("recent work", text.lower()); self.assertGreaterEqual(page.locator(".wh-work").count(), 1)       # saved work is listed (which items depends on what other tests saved)
+                self.assertIn("From a finding", text); self.assertIn("From a blank page", text)
                 self.assertNotIn("Review the source context", text)
                 self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
                 self.assertEqual(page.evaluate("() => [...document.querySelectorAll('.wh *')].filter(e => [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && parseFloat(getComputedStyle(e).fontSize) < 12).length"), 0)
@@ -160,17 +163,95 @@ class WorkroomBrowserTests(unittest.TestCase):
             self.assertNotIn(self.C["title"][:30].lower(), lower.split("related ideas you confirmed")[1])                                  # the merely proposed one
             self.assertEqual(errors, []); browser.close()
 
-    def test_decisions_linked_through_related_seeds_or_decision_references_are_listed(self):
+    def test_direct_decisions_are_kept_apart_from_decisions_that_only_share_the_conversation(self):
         with sync_playwright() as pw:
             browser, page, errors = self.page(pw, DESKTOP)
             self.focus(page, self.A); page.click("#idea-tab-decisions")
-            self.assertIn("Publish pricing before refund rules", page.inner_text("#idea-panel")); self.assertEqual(page.inner_text("#idea-n-decisions").strip(), "1")
-            self.focus(page, self.B); page.click("#idea-tab-decisions")
-            self.assertNotIn("Publish pricing before refund rules", page.inner_text("#idea-panel"))             # not linked to this idea
+            panel = page.inner_text("#idea-panel"); lower = " ".join(panel.split()).lower()
+            direct, context = lower.split("also decided in the same conversation")[0], lower.split("also decided in the same conversation")[1]
+            self.assertIn("publish pricing before refund rules", direct)                                  # linked through related_seeds
+            self.assertNotIn("noted in the same chat only", direct)                                       # context is never presented as linked
+            self.assertIn("noted in the same chat only", context); self.assertIn("not linked to this idea", context)
+            self.assertEqual(page.inner_text("#idea-n-decisions").strip(), "1")                           # the count is direct decisions only
+            self.focus(page, self.D); page.click("#idea-tab-decisions")                                   # an idea from another conversation sees neither
+            other = page.inner_text("#idea-panel").lower()
+            self.assertNotIn("publish pricing before refund rules", other); self.assertNotIn("noted in the same chat only", other)
             linked = page.evaluate("""() => { var sd = {seed_id: 'x1', decision_references: ['d1'], source_conversation_id: null};
                 ALL_DECISIONS = ALL_DECISIONS.concat([{decision_id: 'd1', statement: 'Linked from the idea side'}]); return ideaDecisions(sd).map(function(d){ return d.statement; }); }""")
-            self.assertEqual(linked, ["Linked from the idea side"])
+            self.assertEqual(linked, ["Linked from the idea side"])                                       # and a link recorded on the idea itself counts
             self.assertEqual(errors, []); browser.close()
+
+    # ---- saved work keeps its relationships ----
+    def make_artifact(self, title, **fields):
+        body = {"type": "plan", "title": title, "content": "first version", "seed_ids": [self.A["seed_id"]], "conversation_ids": [self.A["source_conversation_id"]]}
+        body.update(fields)
+        made = self.runtime.request("POST", "/api/v2/artifacts", body)[1]["artifact"]; return made["artifact_id"]
+
+    def stored(self, artifact_id):
+        return next(a for a in self.runtime.request("GET", "/api/v2/artifacts")[1]["artifacts"] if a["artifact_id"] == artifact_id)
+
+    def edit_in_the_studio(self, page, artifact_id, text):
+        page.evaluate("(id) => openArtifactById(id)", artifact_id); page.wait_for_function("(id) => document.getElementById('artifact-id').value === id", arg=artifact_id)
+        page.fill("#artifact-content", text); page.click('#section-artifacts button:has-text("Save artifact")')
+        for _ in range(40):
+            if self.stored(artifact_id)["content"] == text: return
+            page.wait_for_timeout(150)
+        self.fail("the edit was never saved")
+
+    def test_editing_saved_work_with_nothing_in_focus_keeps_every_link(self):
+        artifact_id = self.make_artifact("Plan edited without focus")
+        with sync_playwright() as pw:
+            browser, page, errors = self.page(pw, DESKTOP)
+            self.assertEqual(page.evaluate("() => activeFocusSeedId"), None)                              # nothing is focused, as when opened from Recent work
+            self.edit_in_the_studio(page, artifact_id, "second version")
+            saved = self.stored(artifact_id)
+            self.assertEqual(saved["seed_ids"], [self.A["seed_id"]]); self.assertEqual(saved["conversation_ids"], [self.A["source_conversation_id"]])
+            self.assertEqual(len(saved["versions"]), 1)                                                   # history kept
+            self.assertIn("Saving keeps these links", page.inner_text("#artifact-links")); self.assertEqual(errors, []); browser.close()
+
+    def test_editing_saved_work_while_another_idea_is_in_focus_neither_loses_nor_adds_links(self):
+        artifact_id = self.make_artifact("Plan edited under another idea")
+        with sync_playwright() as pw:
+            browser, page, errors = self.page(pw, DESKTOP); self.focus(page, self.D)
+            page.evaluate("(id) => { activeWorkingThreadId = id; }", self.D["source_conversation_id"])
+            self.edit_in_the_studio(page, artifact_id, "second version")
+            saved = self.stored(artifact_id)
+            self.assertEqual(saved["seed_ids"], [self.A["seed_id"]])                                      # still A, and D was not added
+            self.assertEqual(saved["conversation_ids"], [self.A["source_conversation_id"]]); self.assertEqual(errors, []); browser.close()
+
+    def test_work_started_from_an_idea_is_linked_to_it_and_stays_linked_after_an_unfocused_edit(self):
+        with sync_playwright() as pw:
+            browser, page, errors = self.page(pw, DESKTOP); self.focus(page, self.D)
+            page.click("#idea-tab-outputs"); page.click('#idea-panel button:has-text("Brief")'); page.wait_for_selector("#artifact-title", state="visible")
+            page.fill("#artifact-title", "Brief started from an idea"); page.fill("#artifact-content", "draft one"); page.click('#section-artifacts button:has-text("Save artifact")')
+            artifact = None
+            for _ in range(40):
+                artifact = next((a for a in self.runtime.request("GET", "/api/v2/artifacts")[1]["artifacts"] if a["title"] == "Brief started from an idea"), None)
+                if artifact: break
+                page.wait_for_timeout(150)
+            self.assertIsNotNone(artifact); self.assertEqual(artifact["seed_ids"], [self.D["seed_id"]])
+            page.evaluate("() => clearActiveSeedFocus()"); page.wait_for_timeout(300)                     # leave the idea, then edit the saved work
+            self.edit_in_the_studio(page, artifact["artifact_id"], "draft two")
+            self.assertEqual(self.stored(artifact["artifact_id"])["seed_ids"], [self.D["seed_id"]]); self.assertEqual(errors, []); browser.close()
+
+    def test_a_signed_artifact_keeps_its_signature_when_edited_and_says_it_is_out_of_date(self):
+        artifact_id = self.make_artifact("Signed plan")
+        self.assertEqual(self.runtime.request("POST", f"/api/v2/artifacts/{artifact_id}/signature", {"signature_id": "sig_abc12345"})[0], 200)
+        with sync_playwright() as pw:
+            browser, page, errors = self.page(pw, DESKTOP)
+            self.edit_in_the_studio(page, artifact_id, "changed after signing")
+            saved = self.stored(artifact_id)
+            self.assertEqual(saved["signature"]["signature_id"], "sig_abc12345"); self.assertEqual(saved["signature"]["status"], "edited_since")
+            self.assertEqual(saved["seed_ids"], [self.A["seed_id"]]); self.assertEqual(errors, []); browser.close()
+
+    def test_the_api_keeps_links_unless_a_list_is_sent_and_rejects_a_malformed_one(self):
+        artifact_id = self.make_artifact("API link rules")
+        post = lambda body: self.runtime.request("POST", f"/api/v2/artifacts/{artifact_id}", body)
+        self.assertEqual(post({"content": "no link fields"})[0], 200)
+        self.assertEqual((self.stored(artifact_id)["seed_ids"], self.stored(artifact_id)["conversation_ids"]), ([self.A["seed_id"]], [self.A["source_conversation_id"]]))
+        self.assertEqual(post({"seed_ids": None})[0], 400); self.assertEqual(post({"seed_ids": "abc"})[0], 400); self.assertEqual(post({"conversation_ids": [1]})[0], 400)
+        self.assertEqual(self.stored(artifact_id)["seed_ids"], [self.A["seed_id"]])                       # a bad request changed nothing
+        self.assertEqual(post({"seed_ids": [self.B["seed_id"]]})[0], 200); self.assertEqual(self.stored(artifact_id)["seed_ids"], [self.B["seed_id"]])   # an explicit list replaces on purpose
 
     def test_on_a_phone_the_work_area_comes_first_and_the_idea_is_in_view_after_continue_and_inspect(self):
         with sync_playwright() as pw:

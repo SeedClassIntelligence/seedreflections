@@ -1907,7 +1907,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
           <select id="artifact-status" aria-label="Artifact status"><option value="draft">Draft</option><option value="active">Active</option><option value="complete">Complete</option><option value="archived">Archived</option></select>
         </div>
         <textarea id="artifact-content" rows="17" style="width:100%;box-sizing:border-box;margin-top:10px;font-family:inherit" placeholder="Write the durable work product here…" aria-label="Artifact content"></textarea>
-        <div id="artifact-signature" role="status" style="font-size:12.5px;color:var(--text-muted);margin-top:10px"></div>
+        <div id="artifact-links" style="font-size:12.5px;color:var(--text-muted);margin-top:10px"></div>
+        <div id="artifact-signature" role="status" style="font-size:12.5px;color:var(--text-muted);margin-top:6px"></div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="exportCurrentArtifact()">Export Markdown</button><button class="btn btn-ghost btn-sm" onclick="signCurrentArtifact()" title="Opens Seed Signature in a window. Upload the exported file there to sign it.">Sign with Seed Signature</button><button class="btn btn-primary btn-sm" onclick="saveCurrentArtifact()">Save artifact</button></div>
       </div>
     </div>
@@ -4216,12 +4217,17 @@ function renderShelfSeeds(seeds) {
 /* ── Idea view ─────────────────────────────────────────────────────── */
 var IDEA_TAB = 'work';
 function ideaSeed() { return ALL_SEEDS.find(function(sd){ return sd.seed_id === activeFocusSeedId; }); }
-function ideaDecisions(sd) {
+function ideaDecisions(sd) {   // linked to this idea itself
   return (ALL_DECISIONS || []).filter(function(d){
     return (d.related_seeds || []).indexOf(sd.seed_id) !== -1 ||
       (sd.decision_references || []).indexOf(d.decision_id) !== -1 ||
-      (sd.source_conversation_id && d.source_conversation_id === sd.source_conversation_id) ||
       (d.seed_id && d.seed_id === sd.seed_id) || (d.candidate_id && d.candidate_id === sd.candidate_id);
+  });
+}
+function ideaConversationDecisions(sd) {   // only share this idea's source conversation: context, not a link
+  var direct = ideaDecisions(sd);
+  return (ALL_DECISIONS || []).filter(function(d){
+    return direct.indexOf(d) === -1 && sd.source_conversation_id && d.source_conversation_id === sd.source_conversation_id;
   });
 }
 function isApprovedRelationship(rel) {
@@ -4325,12 +4331,16 @@ async function startArtifactForIdea(type) {
   document.getElementById('artifact-type').value = type; document.getElementById('artifact-title').value = sd.content.substring(0, 80);
   document.getElementById('artifact-title').focus();
 }
+function decisionCard(d) {
+  return '<div class="dec-card"><div class="s">' + escHtml(d.statement || d.title || '') + '</div>' + (d.rationale ? '<div class="r">Why: ' + escHtml(d.rationale) + '</div>' : '') + '</div>';
+}
 function renderIdeaDecisions(sd, panel) {
-  var list = ideaDecisions(sd), html = '<section><h3>Decisions linked to this idea</h3>';
-  html += list.length ? list.map(function(d){
-    return '<div class="dec-card"><div class="s">' + escHtml(d.statement || d.title || '') + '</div>' + (d.rationale ? '<div class="r">Why: ' + escHtml(d.rationale) + '</div>' : '') + '</div>';
-  }).join('') : '<div class="idea-empty">No decisions recorded for this idea yet.</div>';
-  html += '</section><div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="setIdeaTab(\'work\'); setChatPrompt(\'Record a decision: \')">Record a decision with the assistant</button></div>';
+  var direct = ideaDecisions(sd), context = ideaConversationDecisions(sd);
+  var html = '<section><h3>Decisions linked to this idea</h3>' + (direct.length ? direct.map(decisionCard).join('') : '<div class="idea-empty">No decision is linked to this idea yet.</div>') + '</section>';
+  if (context.length) {
+    html += '<section><h3>Also decided in the same conversation</h3><p style="font-size:13px;color:var(--text-muted);margin:0 0 8px">These came from the conversation this idea was found in. They are not linked to this idea, so they may not apply to it.</p>' + context.map(decisionCard).join('') + '</section>';
+  }
+  html += '<div class="make-row"><button type="button" class="btn btn-ghost btn-sm" onclick="setIdeaTab(\'work\'); setChatPrompt(\'Record a decision: \')">Record a decision with the assistant</button></div>';
   panel.innerHTML = html;
 }
 
@@ -6211,10 +6221,19 @@ async function loadArtifacts(){
   var response=await productFetch('/artifacts'),data=await response.json();WORK_ARTIFACTS=data.artifacts||[];
   var list=document.getElementById('artifact-list');list.innerHTML=WORK_ARTIFACTS.map(function(a){return '<button class="btn btn-ghost" style="display:block;width:100%;text-align:left;margin-bottom:6px" onclick="editArtifact(\''+a.artifact_id+'\')"><strong>'+escapeHtml(a.title)+'</strong><div style="font-size:12px;color:var(--text-muted)">'+escapeHtml(a.type.replace('_',' '))+' · '+escapeHtml(a.status)+'</div></button>';}).join('')||'<div style="font-size:12px;color:var(--text-muted)">No artifacts yet.</div>';
 }
-function newArtifactDraft(){document.getElementById('artifact-id').value='';document.getElementById('artifact-type').value='plan';document.getElementById('artifact-title').value='';document.getElementById('artifact-status').value='draft';document.getElementById('artifact-content').value='';document.getElementById('artifact-type').disabled=false;}
-function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;renderArtifactSignature(a);}
+function newArtifactDraft(){var lk=document.getElementById('artifact-links');if(lk)lk.textContent=activeFocusSeedId?'Will be linked to the idea you are working on.':'Not linked to an idea yet.';document.getElementById('artifact-id').value='';document.getElementById('artifact-type').value='plan';document.getElementById('artifact-title').value='';document.getElementById('artifact-status').value='draft';document.getElementById('artifact-content').value='';document.getElementById('artifact-type').disabled=false;}
+function renderArtifactLinks(a){
+  var box=document.getElementById('artifact-links'); if(!box)return;
+  var ideas=(a&&a.seed_ids||[]).map(function(sid){var sd=ALL_SEEDS.find(function(x){return x.seed_id===sid;});return sd?sd.content.substring(0,60):null;}).filter(Boolean);
+  var n=(a&&a.conversation_ids||[]).length;
+  box.textContent=(ideas.length||n)?'Linked to '+(ideas.length?'idea: '+ideas.join('; '):'')+(ideas.length&&n?' · ':'')+(n?plural(n,'conversation','conversations'):'')+'. Saving keeps these links.':'Not linked to an idea yet.';
+}
+function editArtifact(id){var a=WORK_ARTIFACTS.find(function(item){return item.artifact_id===id});if(!a)return;document.getElementById('artifact-id').value=a.artifact_id;document.getElementById('artifact-type').value=a.type;document.getElementById('artifact-type').disabled=true;document.getElementById('artifact-title').value=a.title;document.getElementById('artifact-status').value=a.status;document.getElementById('artifact-content').value=a.content;renderArtifactSignature(a);renderArtifactLinks(a);}
 async function saveCurrentArtifact(){
-  var id=document.getElementById('artifact-id').value,payload={type:document.getElementById('artifact-type').value,title:document.getElementById('artifact-title').value.trim(),status:document.getElementById('artifact-status').value,content:document.getElementById('artifact-content').value.trim(),conversation_ids:activeWorkingThreadId?[activeWorkingThreadId]:[],seed_ids:activeFocusSeedId?[activeFocusSeedId]:[]};
+  var id=document.getElementById('artifact-id').value,payload={type:document.getElementById('artifact-type').value,title:document.getElementById('artifact-title').value.trim(),status:document.getElementById('artifact-status').value,content:document.getElementById('artifact-content').value.trim()};
+  // Links belong to the work, not to whatever happens to be on screen. A new artifact is linked to the idea and conversation in focus;
+  // saving an existing one sends no link fields at all, so the server keeps every link (ideas, conversations, project, signature, history).
+  if(!id){payload.conversation_ids=activeWorkingThreadId?[activeWorkingThreadId]:[];payload.seed_ids=activeFocusSeedId?[activeFocusSeedId]:[];}
   try{var response=await productFetch(id?'/artifacts/'+encodeURIComponent(id):'/artifacts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);document.getElementById('artifact-id').value=result.artifact.artifact_id;showToast('Work artifact saved.');WORK_HOME_FETCHED_AT=0;await loadArtifacts();editArtifact(result.artifact.artifact_id);}catch(e){showToast(e.message||'Artifact could not be saved');}
 }
 async function exportCurrentArtifact(){var id=document.getElementById('artifact-id').value;if(!id){showToast('Save the artifact before exporting.');return;}var response=await productFetch('/artifacts/'+encodeURIComponent(id)+'/export'),data=await response.json();if(!response.ok){showToast(data.error);return;}var blob=new Blob([data.markdown],{type:'text/markdown'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.artifact.title||'artifact').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.md';a.click();URL.revokeObjectURL(a.href);}

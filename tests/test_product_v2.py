@@ -30,8 +30,9 @@ class Runtime:
                     "SEED_REFLECTIONS_PUBLIC_ORIGIN": "http://127.0.0.1:3000",
                     "SEED_REFLECTIONS_QUIET": "1", "SEED_REFLECTIONS_MIGRATE_LEGACY": "0",
                     "PYTHONDONTWRITEBYTECODE": "1"})
+        self._log = tempfile.TemporaryFile()      # a file, not a pipe: an unread pipe fills and blocks the server mid-request
         self.process = subprocess.Popen([sys.executable, str(ROOT / "server.py")], cwd=ROOT,
-                                        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                                        env=env, stdout=subprocess.DEVNULL, stderr=self._log)
         for _ in range(80):
             try:
                 self.request("GET", "/api/v2/health")
@@ -56,6 +57,7 @@ class Runtime:
     def close(self):
         self.process.terminate()
         self.process.wait(timeout=5)
+        self._log.close()
         self.temp.cleanup()
 
 
