@@ -100,7 +100,7 @@ class WorkroomBrowserTests(unittest.TestCase):
     def test_overview_with_nothing_waiting_says_so_and_offers_the_next_step_not_review(self):
         with sync_playwright() as pw:
             browser, page, errors = self.page(pw, DESKTOP, tab="overview")
-            page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS || {}, {pending: 0}); PENDING_CANDIDATE_COUNT = 0; renderGarden(); }")
+            page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS || {}, {pending: 0}); PENDING_CANDIDATE_COUNT = 0; INBOX.linksPending = 0; renderGarden(); }")
             text = " ".join(page.inner_text("#brief-needs-you").split())
             self.assertIn("Nothing is waiting for your decision.", text); self.assertNotIn("Review now", text)
             self.assertEqual(page.inner_text("#brief-needs-action"), "Add history")
@@ -120,6 +120,22 @@ class WorkroomBrowserTests(unittest.TestCase):
                 self.assertEqual(errors, []); browser.close()
         finally:
             empty.close()
+
+    def test_overview_counts_relationship_suggestions_as_waiting_even_with_no_findings(self):
+        with sync_playwright() as pw:
+            for label, size in (("desktop", DESKTOP), ("phone", PHONE)):
+                browser, page, errors = self.page(pw, size, tab="overview")
+                page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS || {}, {pending: 0}); PENDING_CANDIDATE_COUNT = 0; INBOX.linksPending = 2; renderGarden(); }")
+                text = " ".join(page.inner_text("#brief-needs-you").split())
+                self.assertIn("2 relationship suggestions wait for your decision", text, label)
+                self.assertNotIn("Nothing is waiting", text, label); self.assertNotIn("Add history", text, label)
+                self.assertEqual(page.inner_text("#overview-brief .btn-primary"), "Review now", label)
+                page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS, {pending: 3}); renderGarden(); }")
+                self.assertIn("3 findings and 2 relationship suggestions wait for your decision", " ".join(page.inner_text("#brief-needs-you").split()), label)
+                page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS, {pending: 0}); renderGarden(); }")
+                page.click("#brief-needs-action"); page.wait_for_timeout(500)
+                self.assertEqual(page.evaluate("() => [localStorage.getItem('active_dash_tab'), INBOX.status]"), ["review", "relationships"], label)
+                self.assertEqual(errors, [], label); browser.close()
 
     # ---- Work home ----
     def test_work_home_says_what_is_waiting_where_you_left_off_and_what_to_start(self):

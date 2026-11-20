@@ -3131,7 +3131,7 @@ async function loadCandidateLinkQueue() {
     var links = data.links || [];
     var linkTotal = Number.isFinite(Number(data.total)) ? Number(data.total) : links.length;
     if (count) count.textContent = linkTotal > links.length ? 'Showing ' + links.length + ' of ' + linkTotal.toLocaleString() + ' pending' : linkTotal + ' pending';
-    INBOX.linksPending = linkTotal; renderInboxTabs();
+    INBOX.linksPending = linkTotal; renderInboxTabs(); updateNeedsYou();
     if (!links.length) {
       grid.innerHTML = '<div class="review-empty"><strong>No relationships need a decision.</strong><p>Suggestions appear when separate conversations share specific source evidence.</p><button class="btn btn-ghost btn-sm" onclick="switchDashTab(\'map\')">Explore the archive →</button></div>';
       return;
@@ -3407,6 +3407,36 @@ function renderHero() {
   document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
 }
 
+/* Overview "Needs you": both Review queues count, findings and relationship suggestions. With nothing in either,
+   say so plainly and offer the next useful step: bring in history (the main action only when the archive is empty). */
+function updateNeedsYou() {
+  var needs=document.getElementById('brief-needs-you'); if(!needs) return;
+  var findings=Number((ARCHIVE_TOTALS ? ARCHIVE_TOTALS.pending : PENDING_CANDIDATE_COUNT)||0);
+  var links=Number((typeof INBOX!=='undefined' && INBOX.linksPending)||0);
+  var conversations=Number((ARCHIVE_TOTALS ? ARCHIVE_TOTALS.conversations : (archiveConversationTotal || uploadedConversations.length))||0);
+  var plural=function(n,one,many){return n===1?one:many;};
+  var count=document.getElementById('ov-review'), words=document.getElementById('ov-review-words'), action=document.getElementById('brief-needs-action');
+  var waiting=findings+links, empty=!conversations;
+  needs.classList.toggle('is-clear',!waiting);
+  if(count){ count.textContent=findings; count.style.display='none'; }
+  if(words){
+    var parts=[];
+    if(findings) parts.push('<strong>'+findings+'</strong> '+plural(findings,'finding','findings'));
+    if(links) parts.push('<strong>'+links+'</strong> '+plural(links,'relationship suggestion','relationship suggestions'));
+    if(waiting) words.innerHTML=parts.join(' and ')+' '+plural(waiting,'waits','wait')+' for your decision';
+    else words.textContent=empty?'Nothing to decide yet. Bring in your AI history to start.':'Nothing is waiting for your decision.';
+  }
+  if(action){
+    action.textContent=waiting?'Review now':'Add history';
+    action.onclick=function(){
+      if(!waiting){ switchDashTab('intake'); return; }
+      switchDashTab('review');
+      if(!findings && typeof inboxSetStatus==='function') inboxSetStatus('relationships');      // only relationships wait: open that queue
+    };
+    action.classList.toggle('btn-primary',!!waiting||empty);
+  }
+}
+
 function renderGarden() {
   var disc = ALL_SEEDS.filter(function(s){ return s.status === 'discovered'; }).length;
   var act = ALL_SEEDS.filter(function(s){ return s.status === 'active'; }).length;
@@ -3426,21 +3456,7 @@ function renderGarden() {
   [['ov-sources','source provider','source providers'],['ov-ideas','idea','ideas'],['ov-decisions','decision','decisions'],['ov-projects','project','projects'],['ov-conversations','conversation','conversations']].forEach(function(w){
     var el=document.getElementById(w[0]+'-words'); if(el) el.textContent=plural(summary[w[0]],w[1],w[2]);
   });
-  // Needs you: with findings waiting, the main action is Review. With none, say so plainly and offer the next useful
-  // step instead: bring in history (the main action when the archive is empty, a quiet one otherwise).
-  var waiting=summary['ov-review']||0, needs=document.getElementById('brief-needs-you');
-  if(needs){
-    var count=document.getElementById('ov-review'), words=document.getElementById('ov-review-words'), action=document.getElementById('brief-needs-action');
-    var empty=!summary['ov-conversations'];
-    needs.classList.toggle('is-clear',!waiting);
-    if(count) count.style.display=waiting?'':'none';
-    if(words) words.textContent=waiting?plural(waiting,'finding waits for your decision','findings wait for your decision'):(empty?'Nothing to decide yet. Bring in your AI history to start.':'Nothing is waiting for your decision.');
-    if(action){
-      action.textContent=waiting?'Review now':'Add history';
-      action.onclick=function(){ switchDashTab(waiting?'review':'intake'); };
-      action.classList.toggle('btn-primary',!!waiting||empty);
-    }
-  }
+  updateNeedsYou();
 
   // Render pipeline
   var pipeline = document.getElementById('lifecycle-pipeline');
