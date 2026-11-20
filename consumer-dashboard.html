@@ -6544,15 +6544,14 @@ function renderPlatformAiNote() {
   if (SAVED_API_MODE !== 'managed') {
     title.textContent = 'Platform managed AI: not saved yet';
     detail.textContent = 'Save AI Configuration to use it. Until then your current setting stays in effect.';
-  } else if (AVAILABLE_MODEL_COUNT === null) {
-    title.textContent = 'Platform managed AI: selected';
-    detail.textContent = 'Model availability could not be checked.';
-  } else if (AVAILABLE_MODEL_COUNT === 0) {
-    title.textContent = 'Platform managed AI: no model available';
-    detail.textContent = 'It is selected, but no model is available right now, so AI tasks cannot run.';
   } else {
-    title.textContent = 'Platform managed AI: ready';
-    detail.textContent = AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model is' : ' models are') + ' available for your tasks.';
+    // Only what was checked: the saved mode, and what the server's model list shows. The task runtime does not read
+    // this setting yet, so nothing here claims that a task will run.
+    title.textContent = 'Platform managed AI: saved';
+    var listed = AVAILABLE_MODEL_COUNT === null ? 'The model list could not be checked.'
+      : (AVAILABLE_MODEL_COUNT === 0 ? 'No models appear in the server\'s model list.'
+      : AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model appears' : ' models appear') + ' in the server\'s model list.');
+    detail.textContent = listed + ' Which model runs a task is set by the server\'s configuration, not by this choice.';
   }
 }
 

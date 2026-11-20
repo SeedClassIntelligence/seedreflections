@@ -158,9 +158,13 @@ class WorkroomBrowserTests(unittest.TestCase):
                 page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; }"); page.select_option("#acc-api-mode", "managed")
                 self.assertIn("not saved yet", page.inner_text("#platform-ai-title"), label)                # choosing is not the same as saving
                 page.evaluate("() => { SAVED_API_MODE = 'managed'; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
-                self.assertIn("no model available", page.inner_text("#platform-ai-title"), label)
+                self.assertIn("No models appear", page.inner_text("#platform-ai-detail"), label)
                 page.evaluate("() => { AVAILABLE_MODEL_COUNT = 2; renderPlatformAiNote(); }")
-                self.assertIn("ready", page.inner_text("#platform-ai-title"), label); self.assertIn("2 models are available", page.inner_text("#platform-ai-detail"), label)
+                note = page.inner_text("#platform-ai-note")
+                self.assertIn("2 models appear in the server's model list", note, label)
+                self.assertIn("not by this choice", note, label)                                             # the runtime does not read this setting yet
+                for promise in ("ready", "Active", "can run", "available for your tasks"):
+                    self.assertNotIn(promise, note, label)                                                   # reports what was checked, promises nothing
                 self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
                 self.assertEqual(errors, [], label); browser.close()
 
