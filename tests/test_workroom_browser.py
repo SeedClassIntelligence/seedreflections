@@ -137,6 +137,25 @@ class WorkroomBrowserTests(unittest.TestCase):
                 self.assertEqual(page.evaluate("() => [localStorage.getItem('active_dash_tab'), INBOX.status]"), ["review", "relationships"], label)
                 self.assertEqual(errors, [], label); browser.close()
 
+    # ---- Settings ----
+    def test_settings_shows_only_true_things(self):
+        with sync_playwright() as pw:
+            for label, size in (("desktop", DESKTOP), ("phone", PHONE)):
+                browser, page, errors = self.page(pw, size, tab="account")
+                text = " ".join(page.inner_text("#section-account").split())
+                for invented in ("4.2 MB", "Disk Space", "28 seeds", "Allow AI model training", "Anonymized analytics", "Consent Control Center", "Delete Account Permanently"):
+                    self.assertNotIn(invented, text, label)                                             # placeholder numbers and switches that did nothing
+                self.assertEqual(page.locator("#section-account input[type=checkbox][id^=priv-]").count(), 0, label)
+                ideas = page.evaluate("() => ALL_SEEDS.length")
+                self.assertEqual(page.inner_text("#u-seeds-text"), f"{ideas} idea" + ("" if ideas == 1 else "s"), label)
+                self.assertIn("No AI training.", text, label); self.assertEqual(page.get_attribute("#privacy-facts a", "href"), "/privacy.html", label)
+                page.select_option("#acc-api-mode", "self_hosted"); page.evaluate("() => toggleApiModeFields()")
+                self.assertFalse(page.is_visible("#platform-ai-note"), label)                              # no "Platform AI — Active" when you run your own model
+                page.select_option("#acc-api-mode", "managed"); page.evaluate("() => toggleApiModeFields()")
+                self.assertTrue(page.is_visible("#platform-ai-note"), label)
+                self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
+                self.assertEqual(errors, [], label); browser.close()
+
     # ---- Work home ----
     def test_work_home_says_what_is_waiting_where_you_left_off_and_what_to_start(self):
         with sync_playwright() as pw:
