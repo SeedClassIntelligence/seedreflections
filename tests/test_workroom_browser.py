@@ -81,6 +81,21 @@ class WorkroomBrowserTests(unittest.TestCase):
     def focus(self, page, seed):
         page.evaluate("(id) => selectSeedForCockpit(id)", seed["seed_id"]); page.wait_for_selector("#idea-header", state="visible")
 
+    # ---- Overview ----
+    def test_overview_is_three_rows_whose_buttons_go_where_the_work_is_done(self):
+        with sync_playwright() as pw:
+            for label, size in (("desktop", DESKTOP), ("phone", PHONE)):
+                browser, page, errors = self.page(pw, size, tab="overview")
+                rows = page.locator("#overview-brief .brief-row"); self.assertEqual(rows.count(), 3, label)
+                needs = " ".join(page.inner_text("#brief-needs-you").split())
+                self.assertIn(f"{self.waiting} finding", needs, label); self.assertIn("for your decision", needs, label)
+                self.assertEqual(page.locator("#overview-brief .btn-primary").count(), 1, label)           # one main action, the one that needs the person
+                self.assertEqual(page.locator(".overview-stat").count(), 0, label)                         # the six counters are gone
+                self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
+                page.click("#brief-needs-you button"); page.wait_for_timeout(500)
+                self.assertEqual(page.evaluate("() => localStorage.getItem('active_dash_tab')"), "review", label)
+                self.assertEqual(errors, [], label); browser.close()
+
     # ---- Work home ----
     def test_work_home_says_what_is_waiting_where_you_left_off_and_what_to_start(self):
         with sync_playwright() as pw:
