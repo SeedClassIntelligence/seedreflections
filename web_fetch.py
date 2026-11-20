@@ -39,11 +39,42 @@ def _is_public(address):
     return ip.is_global and not ip.is_multicast
 
 
-def _resolve(host, port, allow_private):
+def _literal_address(host):
+    """If `host` is an IP address written the way a resolver might accept it (dotted, decimal, hex, octal, short forms, IPv6),
+    return it normalised; return "invalid" for something that looks numeric but is not an address; return None for a name.
+    Done here, not by the operating system, because systems disagree about these forms and a guard must not depend on that."""
     try:
-        found = {item[4][0] for item in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)}
-    except socket.gaierror:
-        raise FetchError("That address could not be found.")
+        return str(ipaddress.ip_address(host))
+    except ValueError:
+        pass
+    parts = host.split(".")
+    if not all(re.fullmatch(r"0[xX][0-9a-fA-F]+|[0-9]+", part) for part in parts):
+        return None
+    if len(parts) > 4:
+        return "invalid"
+    try:
+        numbers = [int(part, 16) if part[:2].lower() == "0x" else int(part, 8) if len(part) > 1 and part.startswith("0") else int(part) for part in parts]
+    except ValueError:
+        return "invalid"                                  # for example 089 (not valid octal)
+    if any(number > 255 for number in numbers[:-1]) or numbers[-1] >= 256 ** (5 - len(numbers)):
+        return "invalid"
+    value = 0
+    for number in numbers[:-1]:
+        value = (value << 8) | number
+    return str(ipaddress.IPv4Address((value << (8 * (5 - len(numbers)))) | numbers[-1]))
+
+
+def _resolve(host, port, allow_private):
+    literal = _literal_address(host)
+    if literal == "invalid":
+        raise FetchError("That is not a valid web address.")
+    if literal:
+        found = {literal}
+    else:
+        try:
+            found = {item[4][0] for item in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)}
+        except socket.gaierror:
+            raise FetchError("That address could not be found.")
     if not found:
         raise FetchError("That address could not be found.")
     if not allow_private and not all(_is_public(address) for address in found):

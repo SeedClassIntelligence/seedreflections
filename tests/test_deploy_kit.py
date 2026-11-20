@@ -10,8 +10,9 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "deploy"))
+sys.path.insert(0, str(ROOT / "deploy")); sys.path.insert(0, str(Path(__file__).parent))
 import backup_snapshot
+from support import needs_bash
 
 
 class BackupTests(unittest.TestCase):
@@ -35,6 +36,7 @@ class BackupTests(unittest.TestCase):
 
 
 class KitTests(unittest.TestCase):
+    @needs_bash
     def test_scripts_parse_and_production_compose_passes_secrets_and_trusts_only_the_proxy(self):
         for script in (ROOT / "deploy").glob("*.sh"):
             self.assertEqual(subprocess.run(["bash", "-n", str(script)]).returncode, 0, script.name)
@@ -45,6 +47,7 @@ class KitTests(unittest.TestCase):
         for ignored in (".env",):
             self.assertIn(ignored, (ROOT / ".dockerignore").read_text().split())            # secrets are never baked into the image
 
+    @needs_bash
     def test_setup_script_refuses_a_bad_domain_before_changing_anything(self):
         result = subprocess.run(["bash", str(ROOT / "deploy/setup-server.sh"), "not a domain"], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)

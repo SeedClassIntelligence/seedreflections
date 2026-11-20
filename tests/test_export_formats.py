@@ -7,6 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import archive_store
 
 
@@ -19,7 +21,7 @@ class ExportFormatTests(unittest.TestCase):
 
     def tearDown(self):
         self.patch.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def messages(self, result):
         found = archive_store.get_conversation(result["conversations"][0]["id"])

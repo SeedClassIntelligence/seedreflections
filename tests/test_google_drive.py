@@ -14,6 +14,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import account_erasure
 import agent_tokens
 import archive_store
@@ -113,7 +115,7 @@ class DriveBase(unittest.TestCase):
     def tearDown(self):
         self.google.shutdown(); self.google.server_close()
         for item in reversed(self.patches): item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def sign_in(self, workspace="local"):
         url = google_drive.begin_authorization(workspace, "http://127.0.0.1:1/api/v2/google/callback")
@@ -320,13 +322,13 @@ class HostedFlowTests(DriveBase):
         self.assertEqual((status, deleted["deleted"]), (200, True))
         left = {}
         import sqlite3
-        db = sqlite3.connect(archive_store.DB_PATH)
-        for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'google_drive_%'"):
-            count = db.execute(f"SELECT COUNT(*) FROM {table} WHERE workspace_id=?", (alice["workspace_id"],)).fetchone()[0]
-            if count: left[table] = count
-        self.assertEqual(left, {})                                                                  # Drive records went with the account
-        self.assertEqual(db.execute("SELECT COUNT(*) FROM model_credentials WHERE workspace_id=?", (alice["workspace_id"],)).fetchone()[0], 0)
-
+        from contextlib import closing
+        with closing(sqlite3.connect(archive_store.DB_PATH)) as db:                              # closed even when an assertion fails
+            for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'google_drive_%'"):
+                count = db.execute(f"SELECT COUNT(*) FROM {table} WHERE workspace_id=?", (alice["workspace_id"],)).fetchone()[0]
+                if count: left[table] = count
+            self.assertEqual(left, {})                                                          # Drive records went with the account
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM model_credentials WHERE workspace_id=?", (alice["workspace_id"],)).fetchone()[0], 0)
 
 if __name__ == "__main__":
     unittest.main()

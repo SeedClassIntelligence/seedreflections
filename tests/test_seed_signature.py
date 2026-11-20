@@ -11,6 +11,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import archive_store
 import auth_store
 import seed_signature
@@ -61,7 +63,7 @@ class Base(unittest.TestCase):
     def tearDown(self):
         self.authority.shutdown(); self.authority.server_close()
         for item in reversed(self.patches): item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
 
 class ModuleTests(Base):

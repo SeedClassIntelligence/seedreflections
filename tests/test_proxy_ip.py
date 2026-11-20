@@ -10,6 +10,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import archive_store
 import auth_store
 import server
@@ -30,7 +32,7 @@ class ProxyAddressTests(unittest.TestCase):
     def tearDown(self):
         self.httpd.shutdown(); self.httpd.server_close()
         for item in reversed(self.patches): item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def login(self, forwarded=None):
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)

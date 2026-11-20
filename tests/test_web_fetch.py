@@ -82,6 +82,23 @@ class GuardTests(unittest.TestCase):
                     "http://2130706433/", "http://0x7f000001/", "http://[::ffff:127.0.0.1]/", "http://[fe80::1]/"):
             self.refused(url, "private or internal")
 
+    def test_address_forms_are_understood_by_us_not_by_the_operating_system(self):
+        """Windows, Linux and macOS disagree about decimal, hex, octal and short forms, so the guard parses them itself."""
+        with patch("socket.getaddrinfo", side_effect=OSError("the resolver must not be asked about a literal address")):
+            for url in ("http://0x7f000001/", "http://2130706433/", "http://0177.0.0.1/", "http://127.1/", "http://0x7f.1/", "http://017700000001/",
+                        "http://[::1]/", "http://[::ffff:7f00:1]/", "http://169.254.169.254/", "http://0/", "http://0x0a000001/", "http://167772161/"):
+                self.refused(url, "private or internal")
+            for url in ("http://089.0.0.1/", "http://1.2.3.4.5/", "http://999999999999/", "http://256.1.1.1/"):
+                self.refused(url, "not a valid web address")
+
+    def test_a_public_address_written_in_another_form_is_allowed_and_used_as_that_address(self):
+        seen = {}
+        def fake_once(parsed, port, ip, timeout):
+            seen["ip"] = ip; return 200, "text/plain", b"ok", "text/plain"
+        with patch("socket.getaddrinfo", side_effect=OSError("not needed for a literal")), patch.object(web_fetch, "_once", side_effect=fake_once):
+            fetch_page("http://134744072/")                            # 8.8.8.8 as one decimal number
+        self.assertEqual(seen["ip"], "8.8.8.8")
+
     def test_only_http_and_https_on_standard_ports_without_credentials(self):
         self.refused("file:///etc/passwd", "http://")
         self.refused("ftp://example.com/", "http://")

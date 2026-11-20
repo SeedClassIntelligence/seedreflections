@@ -9,6 +9,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
+sys.path.insert(0, os.path.dirname(__file__))
 import account_erasure
 import agent_tokens
 import archive_store
@@ -92,7 +94,7 @@ class SharedWorkspaceTests(unittest.TestCase):
     def tearDown(self):
         for item in reversed(self.patches):
             item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def signup(self, name):
         return auth_store.signup(name, f"{name}@example.com", PASSWORD, "hosted")
