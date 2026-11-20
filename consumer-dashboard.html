@@ -2076,7 +2076,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
           </div>
         </div>
 
-        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px">Usage limits reset monthly on your billing cycle anniversary. Upgrading your tier instantly increases reflections limits and storage allocation.</p>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px">Reflection counts start again at the beginning of each calendar month. A higher plan raises the monthly reflection limit.</p>
       </div>
     </div>
     
@@ -2153,8 +2153,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         <div id="platform-ai-note" style="display:none;align-items:center;gap:12px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-top:12px;">
           <span style="font-size:22px;">🤖</span>
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);">Platform AI — Active</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">Seed Reflections handles AI infrastructure on your behalf. Reflections, analysis, and chat are all powered by the platform engine.</div>
+            <div id="platform-ai-title" style="font-size:13px;font-weight:600;color:var(--text);">Platform managed AI</div>
+            <div id="platform-ai-detail" style="font-size:12px;color:var(--text-muted);margin-top:3px;">Checking…</div>
           </div>
         </div>
 
@@ -2193,7 +2193,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     <div class="card">
       <div class="card-header"><h3 aria-level="2">Billing Plans & Subscriptions</h3></div>
       <div class="card-body">
-        <p style="font-size:12.5px;color:var(--text-muted)">Configure your platform tier plan. Self-hosted key users bypass reflection limits entirely.</p>
+        <p style="font-size:12.5px;color:var(--text-muted)">Plan limits apply whichever AI option you use, including your own key or a local model.</p>
         
         <div class="plan-selection">
           <div class="plan-tier-card" id="plan-tier-free" onclick="selectBillingPlan('free')">
@@ -2281,13 +2281,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     <h2>⚙️ Platform Settings</h2>
     <div class="modal-section" style="margin-top:0;padding-top:0;border:none">
       <h3>AI Engine</h3>
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-bottom:4px;">
-        <span style="font-size:18px;">✅</span>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);">Platform AI — Active</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Your reflections are powered by the Seed Reflections platform AI engine. No configuration needed.</div>
-        </div>
-      </div>
+      <p style="font-size:12px;color:var(--text-muted)">AI settings and their status are in Settings.</p>
     </div>
     <div class="modal-section">
       <h3>Data Portability</h3>
@@ -6357,6 +6351,7 @@ async function loadAccountSettings() {
     
     // API Operational mode
     document.getElementById('acc-api-mode').value = cfg.api_mode || 'self_hosted';
+    SAVED_API_MODE = cfg.api_mode || 'self_hosted';
     document.getElementById('acc-llm-provider').value = cfg.llm_provider || 'ollama';
     document.getElementById('acc-llm-model').value = cfg.llm_model || '';
     document.getElementById('acc-llm-url').value = cfg.llm_api_url || '';
@@ -6523,12 +6518,13 @@ async function loadModelCatalog(selectedId) {
   try {
     var response = await productFetch('/models'), data = await response.json();
     var available=(data.models || []).filter(function(m){return m.available;});
+    AVAILABLE_MODEL_COUNT = response.ok ? available.length : null; renderPlatformAiNote();
     select.innerHTML = available.map(function(m){
       var caps=(m.capabilities||[]).join(', ');
       return '<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.label)+' · '+escapeHtml(caps)+'</option>';
     }).join('') || '<option value="">No available models — configure or start a provider</option>';
     if (selectedId) select.value=selectedId;
-  } catch(e) { select.innerHTML='<option value="">Model catalog unavailable</option>'; }
+  } catch(e) { select.innerHTML='<option value="">Model catalog unavailable</option>'; AVAILABLE_MODEL_COUNT = null; renderPlatformAiNote(); }
 }
 
 function toggleModelSelectionFields() {
@@ -6536,13 +6532,36 @@ function toggleModelSelectionFields() {
   document.getElementById('preferred-model-block').style.display=manual?'block':'none';
 }
 
+/* The platform-AI note reports what is true: the SAVED mode and whether the model catalog has an available model.
+   Choosing Managed in the dropdown without saving says it is not applied yet. */
+var SAVED_API_MODE = null, AVAILABLE_MODEL_COUNT = null;
+function renderPlatformAiNote() {
+  var note = document.getElementById('platform-ai-note'); if (!note) return;
+  var chosen = document.getElementById('acc-api-mode').value;
+  if (chosen === 'self_hosted') { note.style.display = 'none'; return; }
+  note.style.display = 'flex';
+  var title = document.getElementById('platform-ai-title'), detail = document.getElementById('platform-ai-detail');
+  if (SAVED_API_MODE !== 'managed') {
+    title.textContent = 'Platform managed AI: not saved yet';
+    detail.textContent = 'Save AI Configuration to use it. Until then your current setting stays in effect.';
+  } else if (AVAILABLE_MODEL_COUNT === null) {
+    title.textContent = 'Platform managed AI: selected';
+    detail.textContent = 'Model availability could not be checked.';
+  } else if (AVAILABLE_MODEL_COUNT === 0) {
+    title.textContent = 'Platform managed AI: no model available';
+    detail.textContent = 'It is selected, but no model is available right now, so AI tasks cannot run.';
+  } else {
+    title.textContent = 'Platform managed AI: ready';
+    detail.textContent = AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model is' : ' models are') + ' available for your tasks.';
+  }
+}
+
 function toggleApiModeFields() {
   var mode = document.getElementById('acc-api-mode').value;
   var block = document.getElementById('self-hosted-settings-block');
   if (block) block.style.display = (mode === 'self_hosted') ? 'block' : 'none';
   
-  var platformNote = document.getElementById('platform-ai-note');
-  if (platformNote) platformNote.style.display = (mode === 'self_hosted') ? 'none' : 'flex';
+  renderPlatformAiNote();
   var badge = document.getElementById('api-mode-badge');
   badge.textContent = mode === 'self_hosted' ? 'Self-Hosted' : 'Managed';
   badge.style.background = mode === 'self_hosted' ? 'var(--cyan-glow)' : 'var(--green-glow)';

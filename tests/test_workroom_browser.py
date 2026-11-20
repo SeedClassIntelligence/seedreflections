@@ -149,10 +149,18 @@ class WorkroomBrowserTests(unittest.TestCase):
                 ideas = page.evaluate("() => ALL_SEEDS.length")
                 self.assertEqual(page.inner_text("#u-seeds-text"), f"{ideas} idea" + ("" if ideas == 1 else "s"), label)
                 self.assertIn("No AI training.", text, label); self.assertEqual(page.get_attribute("#privacy-facts a", "href"), "/privacy.html", label)
-                page.select_option("#acc-api-mode", "self_hosted"); page.evaluate("() => toggleApiModeFields()")
-                self.assertFalse(page.is_visible("#platform-ai-note"), label)                              # no "Platform AI — Active" when you run your own model
-                page.select_option("#acc-api-mode", "managed"); page.evaluate("() => toggleApiModeFields()")
-                self.assertTrue(page.is_visible("#platform-ai-note"), label)
+                self.assertNotIn("billing cycle anniversary", text, label); self.assertIn("calendar month", text, label)   # the server resets by calendar month
+                self.assertNotIn("storage allocation", text, label)
+                self.assertNotIn("bypass reflection limits", text, label); self.assertIn("Plan limits apply whichever AI option you use", text, label)
+                self.assertNotIn("Platform AI — Active", page.content(), label)                             # nowhere, including the old modal
+                page.select_option("#acc-api-mode", "self_hosted")
+                self.assertFalse(page.is_visible("#platform-ai-note"), label)
+                page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; }"); page.select_option("#acc-api-mode", "managed")
+                self.assertIn("not saved yet", page.inner_text("#platform-ai-title"), label)                # choosing is not the same as saving
+                page.evaluate("() => { SAVED_API_MODE = 'managed'; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
+                self.assertIn("no model available", page.inner_text("#platform-ai-title"), label)
+                page.evaluate("() => { AVAILABLE_MODEL_COUNT = 2; renderPlatformAiNote(); }")
+                self.assertIn("ready", page.inner_text("#platform-ai-title"), label); self.assertIn("2 models are available", page.inner_text("#platform-ai-detail"), label)
                 self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
                 self.assertEqual(errors, [], label); browser.close()
 
