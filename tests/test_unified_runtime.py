@@ -43,7 +43,8 @@ class UnifiedRuntime:
             data=json.dumps(data).encode() if data is not None else None,headers=headers,method=method)
         try:
             with urllib.request.urlopen(request,timeout=5) as response: return response.status,json.loads(response.read())
-        except urllib.error.HTTPError as exc: return exc.code,json.loads(exc.read())
+        except urllib.error.HTTPError as exc:
+            with exc: return exc.code,json.loads(exc.read())
     def upload(self,path,filename,content,token):
         boundary="seed-reflections-test-boundary"
         body=(f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\n"
@@ -56,7 +57,8 @@ class UnifiedRuntime:
         request=urllib.request.Request(f"http://127.0.0.1:{self.port}{path}",headers={"Authorization":"Bearer "+token})
         try:
             with urllib.request.urlopen(request,timeout=5) as response: return response.status,response.read()
-        except urllib.error.HTTPError as exc: return exc.code,exc.read()
+        except urllib.error.HTTPError as exc:
+            with exc: return exc.code,exc.read()
     def close(self): self.process.terminate(); self.process.wait(timeout=5); self._log.close(); self.temp.cleanup()
 
 class UnifiedRuntimeTests(unittest.TestCase):
