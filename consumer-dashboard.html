@@ -1493,7 +1493,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 .brief-row p{margin:0;font-size:16px;color:#c9d1d9}.brief-row p strong{font-size:22px;letter-spacing:-.5px;color:#f0f6fc;margin-right:2px}
 #overview-brief .btn:not(.btn-primary){background:#161b22;color:#c9d1d9;border:1px solid #30363d}#overview-brief .btn:not(.btn-primary):hover{border-color:#3fb950;color:#3fb950}
 #brief-needs-you{background:rgba(63,185,80,.07)}#brief-needs-you .brief-label{color:#3fb950}
-#brief-needs-you.is-clear{background:transparent}#brief-needs-you.is-clear .brief-label{color:#8b949e}#brief-needs-you.is-clear button{background:transparent;color:#c9d1d9;border-color:#30363d}
+#brief-needs-you.is-clear{background:transparent}#brief-needs-you.is-clear .brief-label{color:#8b949e}
 @media(max-width:700px){.brief-row{grid-template-columns:1fr;gap:8px}.brief-row button{justify-self:start}}
 </style>
 </head>
@@ -1928,15 +1928,15 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <!-- ── Idea Garden ────────────────────────────────────────────────── -->
 <div class="section" id="section-garden">
   <div class="section-head">
-    <div><div class="journey-kicker">Overview</div><div class="section-title">The state of your work.</div><p class="workspace-intro">What needs you, what is in motion, and what the archive holds. Counts here are links to the place where you act on them.</p></div>
+    <div><div class="journey-kicker">Overview</div><div class="section-title">The state of your work.</div><p class="workspace-intro">What needs you, what you have saved, and what the archive holds. Each button opens the place where you act on it.</p></div>
   </div>
   <div class="overview-brief" id="overview-brief">
     <div class="brief-row" id="brief-needs-you"><div class="brief-label">Needs you</div>
-      <p><strong id="ov-review">0</strong> <span id="ov-review-words">findings wait for your decision</span></p><button class="btn btn-primary" onclick="switchDashTab('review')">Review now</button></div>
-    <div class="brief-row"><div class="brief-label">In motion</div>
-      <p><strong id="ov-ideas">0</strong> saved ideas, <strong id="ov-decisions">0</strong> decisions, <strong id="ov-projects">0</strong> projects</p><button class="btn" onclick="switchDashTab('workspace')">Continue work</button></div>
+      <p><strong id="ov-review">0</strong> <span id="ov-review-words">findings wait for your decision</span></p><button class="btn btn-primary" id="brief-needs-action" onclick="switchDashTab('review')">Review now</button></div>
+    <div class="brief-row"><div class="brief-label">Saved so far</div>
+      <p><strong id="ov-ideas">0</strong> <span id="ov-ideas-words">ideas</span>, <strong id="ov-decisions">0</strong> <span id="ov-decisions-words">decisions</span> and <strong id="ov-projects">0</strong> <span id="ov-projects-words">projects</span>, in every state</p><button class="btn" onclick="switchDashTab('workspace')">Continue work</button></div>
     <div class="brief-row"><div class="brief-label">In the archive</div>
-      <p><strong id="ov-conversations">0</strong> conversations from <strong id="ov-sources">0</strong> <span id="ov-sources-words">source providers</span></p><button class="btn" onclick="switchDashTab('map')">Open library</button></div>
+      <p><strong id="ov-conversations">0</strong> <span id="ov-conversations-words">conversations</span> from <strong id="ov-sources">0</strong> <span id="ov-sources-words">source providers</span></p><button class="btn" onclick="switchDashTab('map')">Open library</button></div>
   </div>
   <div class="garden-grid overview-lifecycle">
     <div class="card">
@@ -3423,11 +3423,23 @@ function renderGarden() {
   };
   Object.keys(summary).forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=summary[id];});
   var plural=function(n,one,many){return n===1?one:many;};
-  var sw=document.getElementById('ov-sources-words'); if(sw) sw.textContent=plural(summary['ov-sources'],'source provider','source providers');
+  [['ov-sources','source provider','source providers'],['ov-ideas','idea','ideas'],['ov-decisions','decision','decisions'],['ov-projects','project','projects'],['ov-conversations','conversation','conversations']].forEach(function(w){
+    var el=document.getElementById(w[0]+'-words'); if(el) el.textContent=plural(summary[w[0]],w[1],w[2]);
+  });
+  // Needs you: with findings waiting, the main action is Review. With none, say so plainly and offer the next useful
+  // step instead: bring in history (the main action when the archive is empty, a quiet one otherwise).
   var waiting=summary['ov-review']||0, needs=document.getElementById('brief-needs-you');
   if(needs){
+    var count=document.getElementById('ov-review'), words=document.getElementById('ov-review-words'), action=document.getElementById('brief-needs-action');
+    var empty=!summary['ov-conversations'];
     needs.classList.toggle('is-clear',!waiting);
-    var words=document.getElementById('ov-review-words'); if(words) words.textContent=waiting===1?'finding waits for your decision':(waiting?'findings wait for your decision':'findings waiting. You are caught up');
+    if(count) count.style.display=waiting?'':'none';
+    if(words) words.textContent=waiting?plural(waiting,'finding waits for your decision','findings wait for your decision'):(empty?'Nothing to decide yet. Bring in your AI history to start.':'Nothing is waiting for your decision.');
+    if(action){
+      action.textContent=waiting?'Review now':'Add history';
+      action.onclick=function(){ switchDashTab(waiting?'review':'intake'); };
+      action.classList.toggle('btn-primary',!!waiting||empty);
+    }
   }
 
   // Render pipeline

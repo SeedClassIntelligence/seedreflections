@@ -88,13 +88,38 @@ class WorkroomBrowserTests(unittest.TestCase):
                 browser, page, errors = self.page(pw, size, tab="overview")
                 rows = page.locator("#overview-brief .brief-row"); self.assertEqual(rows.count(), 3, label)
                 needs = " ".join(page.inner_text("#brief-needs-you").split())
-                self.assertIn(f"{self.waiting} finding", needs, label); self.assertIn("for your decision", needs, label)
+                self.assertIn(f"{self.waiting} finding", needs, label); self.assertIn("for your decision", needs, label); self.assertIn("Review now", needs, label)
+                self.assertIn("in every state", page.inner_text("#overview-brief"), label)                 # totals are described as totals, not as work in progress
                 self.assertEqual(page.locator("#overview-brief .btn-primary").count(), 1, label)           # one main action, the one that needs the person
                 self.assertEqual(page.locator(".overview-stat").count(), 0, label)                         # the six counters are gone
                 self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
                 page.click("#brief-needs-you button"); page.wait_for_timeout(500)
                 self.assertEqual(page.evaluate("() => localStorage.getItem('active_dash_tab')"), "review", label)
                 self.assertEqual(errors, [], label); browser.close()
+
+    def test_overview_with_nothing_waiting_says_so_and_offers_the_next_step_not_review(self):
+        with sync_playwright() as pw:
+            browser, page, errors = self.page(pw, DESKTOP, tab="overview")
+            page.evaluate("() => { ARCHIVE_TOTALS = Object.assign({}, ARCHIVE_TOTALS || {}, {pending: 0}); PENDING_CANDIDATE_COUNT = 0; renderGarden(); }")
+            text = " ".join(page.inner_text("#brief-needs-you").split())
+            self.assertIn("Nothing is waiting for your decision.", text); self.assertNotIn("Review now", text)
+            self.assertEqual(page.inner_text("#brief-needs-action"), "Add history")
+            self.assertEqual(page.locator("#overview-brief .btn-primary").count(), 0)                   # the archive has history, so nothing is shouted
+            page.click("#brief-needs-action"); page.wait_for_timeout(300)
+            self.assertEqual(page.evaluate("() => localStorage.getItem('active_dash_tab')"), "intake")
+            self.assertEqual(errors, []); browser.close()
+        empty = UnifiedRuntime("local")
+        try:
+            with sync_playwright() as pw:
+                browser, page, errors = self.page(pw, PHONE, runtime=empty, tab="overview")
+                text = " ".join(page.inner_text("#brief-needs-you").split())
+                self.assertIn("Bring in your AI history", text); self.assertNotIn("Review now", text)
+                self.assertEqual(page.locator("#overview-brief .btn-primary").count(), 1)                # with an empty archive, adding history is the main action
+                self.assertEqual(page.inner_text("#overview-brief .btn-primary"), "Add history")
+                self.assertIn("0 ideas, 0 decisions and 0 projects", " ".join(page.inner_text("#overview-brief").split()))
+                self.assertEqual(errors, []); browser.close()
+        finally:
+            empty.close()
 
     # ---- Work home ----
     def test_work_home_says_what_is_waiting_where_you_left_off_and_what_to_start(self):
