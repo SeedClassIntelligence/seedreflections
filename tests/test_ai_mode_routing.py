@@ -185,6 +185,65 @@ class SpendingTests(HostedTests):
             self.assertEqual(status, 403, path)
 
 
+class UnrecordedSpendTests(HostedTests):
+    """A platform-paid call whose cost cannot be written must not let further platform-paid calls through."""
+
+    def setUp(self):
+        super().setUp()
+        server.save_config({**server.load_config(), "ai_monthly_budget_usd": 1.0, "ai_budget_hard_stop": True})
+        server.spend_ledger._MEMORY_HELD.clear()
+
+    def tearDown(self):
+        server.spend_ledger._MEMORY_HELD.clear()
+        super().tearDown()
+
+    def expensive_chat(self, token):
+        def model(provider, api_url, api_key, model_name, messages, **kwargs):
+            self.calls.append({"provider": provider, "api_key": api_key})
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 0, "completion_tokens": 18_750_000}   # $3.75 at the default rate
+        with patch.object(server, "invoke_model", model):
+            return self.call("POST", "/api/v2/chat", {"prompt": "hello"}, token)[1]
+
+    def test_a_failed_ledger_write_stops_the_next_paid_call_even_after_a_restart_and_is_recorded_once_writable(self):
+        managed = self.person("kim"); self.settings(managed, api_mode="managed")
+        own = self.person("lee"); self.settings(own, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="lee-secret")
+        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")):         # writes fail, reads still work
+            self.assertEqual(self.expensive_chat(managed)["mode"], "model")                          # the first call had already gone out
+            self.assertEqual(server.platform_spend(), 0.0)                                             # ...and is not in the ledger
+            second = self.expensive_chat(managed)
+            self.assertEqual(second["mode"], "records_only"); self.assertIn("could not be recorded", second["reason"])
+            self.assertEqual(len(self.calls), 1)                                                       # no second paid call
+            server.spend_ledger._MEMORY_HELD.clear(); server.TELEMETRY_LOG.clear()                    # a restart: memory is gone
+            self.assertEqual(self.expensive_chat(managed)["mode"], "records_only"); self.assertEqual(len(self.calls), 1)
+            self.assertEqual(self.chat(own)["mode"], "model")                                          # own keys are not the platform's cost
+            self.assertEqual(self.calls[-1]["api_key"], "lee-secret")
+        # The ledger works again: the held cost is written, and it is over the $1 cap, so paid calls stay stopped for that reason.
+        before = len(self.calls)
+        result = self.expensive_chat(managed)
+        self.assertEqual(result["mode"], "records_only"); self.assertIn("budget", result["reason"].lower())
+        self.assertEqual(len(self.calls), before)
+        self.assertAlmostEqual(server.platform_spend(), 3.75)
+        self.assertFalse(server.spend_ledger.has_unrecorded())
+
+    def test_if_even_the_hold_file_cannot_be_written_the_hold_stays_in_memory(self):
+        managed = self.person("mia"); self.settings(managed, api_mode="managed")
+        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")), \
+             patch.object(server.spend_ledger.os, "replace", side_effect=OSError("disk full")):
+            self.expensive_chat(managed)
+            self.assertEqual(self.expensive_chat(managed)["mode"], "records_only")
+        self.assertEqual(len(self.calls), 1)
+
+    def test_the_off_switch_still_stops_everything_while_spend_is_held(self):
+        managed = self.person("noa"); self.settings(managed, api_mode="managed")
+        own = self.person("oli"); self.settings(own, api_mode="self_hosted", llm_provider="openai", llm_model="own-model", llm_api_key="oli-secret")
+        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")):
+            self.expensive_chat(managed)
+            server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
+            self.assertEqual(self.chat(own)["mode"], "records_only")
+            self.assertIn("paused", self.chat(own)["reason"].lower())
+        self.assertEqual(len(self.calls), 1)
+
+
 class LocalTests(Base):
     MODE = "local"
 

@@ -509,6 +509,8 @@ def check_ai_gateway_status(mode="managed"):
     On the desktop app the operator and the person are the same, every key is theirs, and the cap they set applies to all calls."""
     cfg = load_config()
     budget_applies = mode == "managed" or DEPLOYMENT_MODE == "local"
+    # Spend that could not be written earlier is moved into the ledger first, so it counts in the total below.
+    held_cleared = spend_ledger.flush_held() if budget_applies else True
     try:
         current_spend = platform_spend()
     except Exception:
@@ -521,6 +523,9 @@ def check_ai_gateway_status(mode="managed"):
 
     if killswitch:
         return False, "AI_KILLSWITCH_ACTIVE", "Platform AI Gateway is temporarily paused by administrator (Emergency Killswitch active).", round(current_spend or 0.0, 4), budget_cap
+
+    if not held_cleared:
+        return False, "AI_SPEND_UNRECORDED", "An AI call's cost could not be recorded, so paid AI calls are paused until it is.", round(current_spend or 0.0, 4), budget_cap
 
     if current_spend is None:
         if budget_applies and hard_stop:
@@ -561,6 +566,9 @@ def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_t
         spend_ledger.record(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag)
     except Exception as exc:
         print(f"Warning: AI spend could not be written to the ledger: {exc}")
+        if event["billed"] == "platform":
+            # Keep the cost so it is not forgotten, and stop further platform-paid calls until it is in the ledger.
+            spend_ledger.hold(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag)
     TELEMETRY_LOG.append(event)
     # Retain last 500 events in memory (recent activity view only; the budget uses the ledger)
     if len(TELEMETRY_LOG) > 500:
