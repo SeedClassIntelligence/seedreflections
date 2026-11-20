@@ -14,6 +14,8 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import archive_store
 import server
+sys.path.insert(0, os.path.dirname(__file__))
+from support import FakeOllama
 import work_context
 import work_sessions
 
@@ -112,6 +114,7 @@ class SessionStoreTests(unittest.TestCase):
 
 class WorkTurnHttpTests(unittest.TestCase):
     def setUp(self):
+        self.ollama = FakeOllama(["m"]).__enter__()                      # a model that is really available
         self.temp = tempfile.TemporaryDirectory()
         payload = json.dumps([{"id": "src", "title": "Pricing tiers", "create_time": 1700000000, "mapping": {
             "a": {"parent": None, "message": {"id": "m1", "create_time": 1700000001, "author": {"role": "user"},
@@ -139,7 +142,7 @@ class WorkTurnHttpTests(unittest.TestCase):
             p.start(); self.patches.append(p)
         server.TELEMETRY_LOG.clear()
         server.save_config({**server.load_config(), "llm_provider": "ollama", "llm_model": "m",
-                            "llm_api_url": "http://127.0.0.1:1", "ai_killswitch_enabled": False})
+                            "llm_api_url": self.ollama.url, "ai_killswitch_enabled": False})
         sock = socket.socket(); sock.bind(("127.0.0.1", 0)); self.port = sock.getsockname()[1]; sock.close()
         self.httpd = server.HTTPServer(("127.0.0.1", self.port), server.SeedReflectionAPIHandler)
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
@@ -148,7 +151,7 @@ class WorkTurnHttpTests(unittest.TestCase):
         self.workspace = copy.deepcopy(workspace); self.saved_reasons.append(reason)
 
     def tearDown(self):
-        self.httpd.shutdown(); self.httpd.server_close()
+        self.httpd.shutdown(); self.httpd.server_close(); self.ollama.__exit__()
         for p in self.patches:
             p.stop()
         self.temp.cleanup()

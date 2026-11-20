@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.insert(0, os.path.dirname(__file__))
-from support import remove_temp
+from support import FakeOllama, remove_temp
 import agent_tokens
 import archive_store
 import auth_store
@@ -135,16 +135,99 @@ class HostedTests(Base):
         self.assertNotIn("secret", json.dumps(models))                            # no key is ever returned
 
 
+class SpendingTests(HostedTests):
+    """The platform budget protects the platform's AI account; it does not stop people paying with their own key."""
+
+    def at_cap(self):
+        server.save_config({**server.load_config(), "ai_monthly_budget_usd": 0.0, "ai_budget_hard_stop": True})
+
+    def test_own_key_still_runs_when_the_platform_budget_is_spent(self):
+        self.at_cap()
+        token = self.person("frank")
+        self.settings(token, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="frank-secret")
+        result = self.chat(token)
+        self.assertEqual(result["mode"], "model"); self.assertEqual(self.calls[-1]["api_key"], "frank-secret")
+
+    def test_managed_stops_at_the_platform_budget(self):
+        self.at_cap()
+        token = self.person("gina")
+        self.settings(token, api_mode="managed")
+        result = self.chat(token)
+        self.assertEqual(result["mode"], "records_only"); self.assertEqual(self.calls, [])
+        self.assertIn("budget", result["reason"].lower())
+
+    def test_own_key_calls_are_not_counted_as_platform_spend(self):
+        token = self.person("hana")
+        self.settings(token, api_mode="self_hosted", llm_provider="openai", llm_model="own-model", llm_api_key="hana-secret")
+        before = server.platform_spend()
+        with patch.object(server, "invoke_model", lambda *a, **k: {"text": '{"answer": "ok"}', "prompt_tokens": 5_000_000, "completion_tokens": 5_000_000}):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, token)
+        self.assertEqual(server.platform_spend(), before)
+        self.assertEqual(server.TELEMETRY_LOG[-1]["billed"], "own_key")
+        self.settings(token, api_mode="managed")
+        with patch.object(server, "invoke_model", lambda *a, **k: {"text": '{"answer": "ok"}', "prompt_tokens": 5_000_000, "completion_tokens": 5_000_000}):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, token)
+        self.assertGreater(server.platform_spend(), before); self.assertEqual(server.TELEMETRY_LOG[-1]["billed"], "platform")
+
+    def test_the_emergency_off_switch_stops_every_outbound_call_including_own_keys(self):
+        server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
+        token = self.person("ivan")
+        self.settings(token, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="ivan-secret")
+        self.assertEqual(self.chat(token)["mode"], "records_only")
+        self.settings(token, api_mode="managed")
+        self.assertEqual(self.chat(token)["mode"], "records_only")
+        self.assertEqual(self.calls, [])
+
+    def test_the_legacy_ai_routes_and_their_bare_aliases_are_closed(self):
+        for path in ("/api/v1/reflect", "/api/v1/reflect_selected", "/api/v1/seeds/chat", "/reflect", "/reflect_selected", "/seeds/chat"):
+            with patch.object(server.urllib.request, "urlopen", side_effect=AssertionError("no outbound call")):
+                status, _ = self.call("POST", path, {"conversations": ["x"], "prompt": "hi", "transcript": "t"})
+            self.assertEqual(status, 403, path)
+
+
 class LocalTests(Base):
     MODE = "local"
 
     def test_desktop_own_settings_route_tasks_and_unsaved_settings_fall_back_to_the_server(self):
         self.assertEqual(self.chat()["mode"], "model")
         self.assertEqual(self.calls[-1]["model"], "platform-model")                # nothing chosen yet: server configuration
-        self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": "ollama", "llm_model": "qwen2.5:7b", "llm_api_url": "http://127.0.0.1:1"})
-        self.chat()
-        self.assertEqual({k: self.calls[-1][k] for k in ("provider", "api_url")}, {"provider": "ollama", "api_url": "http://127.0.0.1:1"})
-        self.assertEqual(self.calls[-1]["model"], "qwen2.5:7b")
+        with FakeOllama(["qwen2.5:7b", "my-own-model"]) as ollama:
+            self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": "ollama", "llm_model": "my-own-model", "llm_api_url": ollama.url,
+                                                   "model_selection_mode": "manual", "preferred_model_id": "ollama:my-own-model"})
+            self.chat()
+            self.assertEqual({k: self.calls[-1][k] for k in ("provider", "api_url", "model")}, {"provider": "ollama", "api_url": ollama.url, "model": "my-own-model"})
+
+    def test_an_unreachable_local_model_is_not_called_and_the_model_list_agrees(self):
+        with FakeOllama([]) as ollama:
+            dead = ollama.url                                                     # the address of a server that is now gone
+        self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": "ollama", "llm_model": "qwen2.5:7b", "llm_api_url": dead})
+        models = self.call("GET", "/api/v2/models")[1]
+        self.assertFalse(any(m["available"] for m in models["models"]))
+        result = self.chat()
+        self.assertEqual(result["mode"], "records_only"); self.assertEqual(self.calls, [])          # the list and the chat agree
+        self.assertIn("No model is available", result["reason"])
+
+    def test_a_listed_but_not_installed_local_model_is_not_called(self):
+        with FakeOllama(["llama3.1:8b"]) as ollama:
+            self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": "ollama", "llm_model": "qwen2.5:7b", "llm_api_url": ollama.url,
+                                                   "model_selection_mode": "manual", "preferred_model_id": "ollama:qwen2.5:7b"})
+            self.chat()
+            self.assertEqual(self.calls[-1]["model"], "llama3.1:8b")                # only an installed model is ever named
+
+    def test_legacy_chat_route_follows_the_saved_mode(self):
+        sent = []
+        class Reply:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return json.dumps({"choices": [{"message": {"content": "hi"}}], "usage": {}}).encode()
+        def capture(request, timeout=None):
+            sent.append(request.get_header("Authorization")); return Reply()
+        with patch.object(server.urllib.request, "urlopen", capture):
+            self.call("POST", "/api/v2/settings", {"api_mode": "managed"})
+            self.call("POST", "/api/v1/seeds/chat", {"prompt": "hello"})
+            self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": "openai", "llm_model": "own-model", "llm_api_key": "owner-own-secret", "llm_api_key_temporary": True})
+            self.call("POST", "/api/v1/seeds/chat", {"prompt": "hello"})
+        self.assertEqual(sent, ["Bearer platform-secret", "Bearer owner-own-secret"])
 
 
 if __name__ == "__main__":

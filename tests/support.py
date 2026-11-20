@@ -30,3 +30,32 @@ def remove_temp(temp):
             if attempt == 9:
                 raise
             time.sleep(0.3)
+
+
+class FakeOllama:
+    """A stand-in Ollama that answers /api/tags with the given installed models. Use as a context manager; .url is its address."""
+    def __init__(self, models):
+        import http.server
+        import threading
+        names = list(models)
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                import json
+                body = json.dumps({"models": [{"name": name} for name in names]}).encode()
+                self.send_response(200 if self.path == "/api/tags" else 404)
+                self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        self.httpd = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+
+    def __enter__(self):
+        self.thread.start(); return self
+
+    def __exit__(self, *exc):
+        self.httpd.shutdown(); self.httpd.server_close()

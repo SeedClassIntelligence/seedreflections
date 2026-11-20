@@ -95,6 +95,10 @@ if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("I
 # running locally turns them on for a demo, and they never run in hosted or enterprise mode. Real signing goes through
 # the Seed Signature authority (seed_signature.py).
 LOCAL_SIGNING_DEMO = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_LOCAL_SIGNING_DEMO") == "1"
+# The /api/v1 AI routes (and their bare aliases) predate accounts. They exist only on the desktop, where the one
+# workspace is the device owner's, so they resolve that workspace's saved AI mode. On the hosted service they are closed.
+LEGACY_AI_WORKSPACE = "local"
+LEGACY_AI_ALIASES = {"/reflect", "/reflect_selected", "/seeds/chat"}
 LEGACY_SIGNING_PATHS = {"/api/seed/create","/api/v1/api/seed/create","/api/v1/seed/create","/widget/sign","/widget/sign/submit","/sdk/seed-signature-widget.js"}
 WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
 # Behind the Caddy proxy every connection arrives from the proxy, so sign-in rate limits would be shared by all
@@ -489,12 +493,20 @@ def record_stripe_event(event_type, event_id, customer_email, plan, details=""):
 
 
 
-def check_ai_gateway_status():
-    """Check if platform AI gateway is allowed to make outbound LLM calls.
-    Returns: (is_allowed, error_code, error_message, current_spend, budget_cap)
-    """
+def platform_spend():
+    """Estimated spend on the platform's own AI account. Calls made with a person's own key are not the platform's cost."""
+    return sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG if item.get("billed", "platform") == "platform")
+
+def check_ai_gateway_status(mode="managed"):
+    """May this call go out? Returns (is_allowed, error_code, error_message, current_spend, budget_cap).
+
+    The emergency off-switch stops EVERY outbound AI call from this server, whoever's key it uses: it exists for
+    incidents (a leak, abuse, a provider problem) where the operator needs the server to stop sending text to AI
+    providers at once. The monthly budget cap protects the platform's own AI account, so it applies only to calls the
+    platform pays for (managed mode); a person's own key is limited by their plan's reflection quota, not this cap.
+    On the desktop app the operator and the person are the same, every key is theirs, and the cap they set applies to all calls."""
     cfg = load_config()
-    current_spend = sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG)
+    current_spend = platform_spend()
     budget_cap = float(cfg.get("ai_monthly_budget_usd", 50.0))
     hard_stop = bool(cfg.get("ai_budget_hard_stop", True))
     killswitch = bool(cfg.get("ai_killswitch_enabled", False))
@@ -502,13 +514,13 @@ def check_ai_gateway_status():
     if killswitch:
         return False, "AI_KILLSWITCH_ACTIVE", "Platform AI Gateway is temporarily paused by administrator (Emergency Killswitch active).", round(current_spend, 4), budget_cap
 
-    if hard_stop and current_spend >= budget_cap:
+    if (mode == "managed" or DEPLOYMENT_MODE == "local") and hard_stop and current_spend >= budget_cap:
         return False, "AI_BUDGET_EXCEEDED", f"Platform monthly AI budget cap reached (${current_spend:.4f} / ${budget_cap:.2f} USD). Outbound LLM queries paused to prevent overages.", round(current_spend, 4), budget_cap
 
     return True, None, None, round(current_spend, 4), budget_cap
 
-def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_tag="chat"):
-    """Track LLM token consumption and estimated API spend."""
+def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_tag="chat", billed="platform"):
+    """Track LLM token consumption and estimated API spend. billed: "platform" (managed) or "own_key"."""
     total_tokens = prompt_tokens + completion_tokens
     # Estimated rates per 1M tokens (USD)
     rates = {
@@ -529,7 +541,8 @@ def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_t
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "total_tokens": total_tokens,
-        "estimated_cost_usd": round(est_cost, 6)
+        "estimated_cost_usd": round(est_cost, 6),
+        "billed": "platform" if billed == "platform" else "own_key"
     }
     TELEMETRY_LOG.append(event)
     # Retain last 500 events in memory
@@ -805,6 +818,10 @@ def runtime_model_catalog(connection=None):
             with urllib.request.urlopen(base+"/api/tags",timeout=1.5) as response:
                 payload=json.loads(response.read().decode("utf-8"))
             installed={str(item.get("name") or item.get("model") or "") for item in payload.get("models",[])}
+            configured=str(connection.get("model") or "").strip()
+            if configured in installed and not any(item["provider"]=="ollama" and item["model"]==configured for item in catalog):
+                catalog.append({"id":"ollama:"+configured,"provider":"ollama","model":configured,"label":configured,"source":"configured",
+                    "cost_tier":"local","capabilities":sorted(set().union(*TASK_CAPABILITIES.values())),"context_window":0})
             available_ids={item["id"] for item in catalog if item["provider"]=="ollama" and item["model"] in installed}
         except Exception:
             available_ids=set()
@@ -850,12 +867,13 @@ def agent_runtime(user, body, task="chat"):
     if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
     provider,api_url,api_key,model,_route=resolve_task_runtime(task,load_config(),overrides)
     refusal=model_connection(load_config(),workspace_ai_settings(user["workspace_id"]),user["workspace_id"])["refusal"]
-    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status()
+    billing=task_billing(user["workspace_id"])
+    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status("managed" if billing=="platform" else "self_hosted")
     reason=None
     if refusal: reason=refusal
     elif not ai_allowed: reason=ai_msg
     elif not model or not (api_url if provider=="ollama" else api_key):
-        reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
+        reason="No model is available for this workspace right now. Check the AI settings, or ask your administrator to connect one."
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
     return provider,api_url,api_key,model,reason
 
@@ -965,9 +983,17 @@ def resolve_task_runtime(task, cfg=None, settings=None):
     route=select_task_model(task,catalog=available,
         preferred_model_id=saved.get("preferred_model_id") or cfg.get("preferred_model_id",""),
         selection_mode=saved.get("model_selection_mode") or cfg.get("model_selection_mode","auto")) if available else None
-    provider=connection["provider"]; model=connection["model"] or ("llama3" if provider=="ollama" else "")
-    if route and route.get("provider")==provider: model=route["model"]
-    return provider,connection["api_url"],connection["api_key"],model,route
+    provider=connection["provider"]
+    # Nothing is called unless the same model list the person sees says a model is available.
+    if not route or route.get("provider")!=provider: return provider,"","","",None
+    return provider,connection["api_url"],connection["api_key"],route["model"],route
+
+def task_billing(workspace_id="local"):
+    """Who pays for this workspace's AI calls: "platform" in managed mode, "own_key" otherwise. On the desktop app the
+    owner pays for every call, so all of it counts toward the budget they set."""
+    if DEPLOYMENT_MODE=="local": return "platform"
+    mode=model_connection(load_config(),workspace_ai_settings(workspace_id),workspace_id)["mode"]
+    return "platform" if mode=="managed" else "own_key"
 
 def save_config(config_data):
     try:
@@ -3157,7 +3183,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"error":"Not found"},404); return
         if path == "/mcp":
             self._handle_mcp(); return
-        if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
+        if DEPLOYMENT_MODE != "local" and (path.startswith("/api/v1/") or path in LEGACY_AI_ALIASES):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
         permission_exempt={"/api/v2/auth/signup","/api/v2/auth/login","/api/v2/integrations/import",
@@ -3764,7 +3790,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
                         context_text=context_text,extra_factory=extra,
                         preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
-                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session",task_billing(user["workspace_id"]))
                     answer=result["answer"]
                     meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages,"context":report,
                           "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
@@ -3812,7 +3838,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                         lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
                         history=chat_history,extra_factory=web_extra,
                         active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
-                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent",task_billing(user["workspace_id"]))
                     self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
                         "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages})
                     return
@@ -5420,7 +5446,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
                 
                 cfg = load_config()
-                provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
+                provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+                legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
                 
                 seeds_to_append = []
                 assimilated = []
@@ -5473,7 +5500,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     extracted_seeds = []
                     
                     # ── LLM Provider: Ollama (local open-source LLMs) ──
-                    ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+                    ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
                     if not ai_allowed:
                         extracted_seeds = []
                     elif provider == "ollama" and api_url:
@@ -5531,7 +5558,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                                 usage_info = res_data.get("usage", {})
                                 p_tok = usage_info.get("prompt_tokens", len(prompt) // 4)
                                 c_tok = usage_info.get("completion_tokens", 100)
-                                record_llm_usage(provider, model, p_tok, c_tok, caller_tag="reflect")
+                                record_llm_usage(provider, model, p_tok, c_tok, caller_tag="reflect", billed=legacy_billing)
                                 content_res = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                                 # Strip markdown code fences if present
                                 content_res = content_res.strip()
@@ -6092,7 +6119,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
 
             cfg = load_config()
-            provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
+            provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+            legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
 
             extracted_seeds = []
             extraction_method = "heuristics_fallback"
@@ -6108,7 +6136,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             )
 
             # Check AI Gateway killswitch and budget limits
-            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
             if not ai_allowed:
                 extraction_method = f"heuristics_fallback ({ai_code})"
                 TELEMETRY_LOG.append({
@@ -6389,11 +6417,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             requested_task=body.get("task") or ("code" if body.get("coding") else "chat")
-            provider,api_url,api_key,model,model_route = resolve_task_runtime(requested_task,cfg)
+            provider,api_url,api_key,model,model_route = resolve_task_runtime(requested_task,cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+            legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
 
             answer = ""
 
-            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
             if not ai_allowed:
                 answer = f"**[AI Gateway Paused]**\n\nNotice: {ai_msg}\n\nThe administrator has activated budget caps or emergency pause for outbound LLM calls."
             elif provider == "ollama" and api_url:
@@ -6470,7 +6499,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                         usage_info = res_data.get("usage", {})
                         p_tok = usage_info.get("prompt_tokens", len(prompt + system_prompt) // 4)
                         c_tok = usage_info.get("completion_tokens", 80)
-                        record_llm_usage(provider, model, p_tok, c_tok, caller_tag="chat")
+                        record_llm_usage(provider, model, p_tok, c_tok, caller_tag="chat", billed=legacy_billing)
                         answer = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 except Exception as e:
                     print(f"OpenAI-compatible chat failed: {e}")
