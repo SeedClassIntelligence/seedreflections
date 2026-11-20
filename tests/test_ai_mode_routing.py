@@ -230,5 +230,77 @@ class LocalTests(Base):
         self.assertEqual(sent, ["Bearer platform-secret", "Bearer owner-own-secret"])
 
 
+class LegacyDesktopRouteTests(Base):
+    """The older desktop AI routes use the shared model code: every saved provider works, and the off-switch stops all of them.
+    Only the network is replaced, at the lowest level (urlopen inside model_invoke), so provider request shapes are real."""
+    MODE = "local"
+    REPLIES = {
+        "api.openai.com": {"choices": [{"message": {"content": '[{"title": "From OpenAI", "description": "d", "status": "planted"}]'}}], "usage": {}},
+        "generativelanguage.googleapis.com": {"candidates": [{"content": {"parts": [{"text": '[{"title": "From Gemini", "description": "d", "status": "planted"}]'}]}}]},
+        "api.anthropic.com": {"content": [{"type": "text", "text": '[{"title": "From Anthropic", "description": "d", "status": "planted"}]'}], "usage": {}},
+    }
+
+    def setUp(self):
+        super().setUp()
+        server.save_config({**server.load_config(), "llm_provider": "ollama", "llm_api_url": "http://127.0.0.1:9", "llm_api_key": ""})   # the server's own setup is not one of these
+
+    def own_provider(self, provider):
+        self.call("POST", "/api/v2/settings", {"api_mode": "self_hosted", "llm_provider": provider, "llm_model": provider + "-model",
+                                               "llm_api_key": provider + "-own-secret", "llm_api_key_temporary": True})
+
+    def network(self):
+        sent = []
+        replies = self.REPLIES
+        class Reply:
+            def __init__(self, body): self.body = body
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return json.dumps(self.body).encode()
+        def urlopen(request, timeout=None):
+            sent.append({"url": request.full_url, "headers": dict(request.header_items())})
+            host = request.full_url.split("/")[2]
+            return Reply(replies[host])
+        return sent, patch("model_invoke.urllib.request.urlopen", urlopen)
+
+    def test_reflect_calls_each_saved_provider_through_the_shared_code(self):
+        for provider, host, title in (("openai", "api.openai.com", "From OpenAI"), ("gemini", "generativelanguage.googleapis.com", "From Gemini"),
+                                      ("anthropic", "api.anthropic.com", "From Anthropic")):
+            self.own_provider(provider)
+            sent, network = self.network()
+            with network:
+                status, body = self.call("POST", "/api/v1/reflect", {"transcript": "User: we should build a launch checklist for the beta."})
+            self.assertEqual(status, 200, provider)
+            self.assertEqual([item["url"].split("/")[2] for item in sent], [host], provider)
+            self.assertNotIn(provider + "-own-secret", sent[0]["url"], provider)          # keys go in headers, never the address
+            self.assertIn(f"{provider}_{provider}-model", body["answer"], provider)          # the model's answer was used, not the fallback
+
+    def test_the_off_switch_stops_reflection_for_every_provider(self):
+        server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
+        for provider in ("openai", "gemini", "anthropic", "ollama"):
+            self.own_provider(provider)
+            sent, network = self.network()
+            with network:                                                      # urlopen is shared, so this records any outbound call
+                for path, body in (("/api/v1/reflect", {"transcript": "User: we should build a launch checklist."}),
+                                   ("/api/v1/seeds/chat", {"prompt": "hello"})):
+                    status, _ = self.call("POST", path, body)
+                    self.assertEqual(status, 200, (provider, path))
+            self.assertEqual(sent, [], provider)
+
+    def test_legacy_chat_uses_a_saved_anthropic_key_instead_of_falling_back(self):
+        self.own_provider("anthropic")
+        sent, network = self.network()
+        with network:
+            status, body = self.call("POST", "/api/v1/seeds/chat", {"prompt": "hello"})
+        self.assertEqual([item["url"].split("/")[2] for item in sent], ["api.anthropic.com"])
+        self.assertEqual({k.lower(): v for k, v in sent[0]["headers"].items()}["x-api-key"], "anthropic-own-secret")
+        self.assertNotIn("Offline Local Mode", body["answer"])
+
+    def test_legacy_chat_says_why_when_the_provider_fails(self):
+        self.own_provider("anthropic")
+        with patch("model_invoke.urllib.request.urlopen", side_effect=OSError("down")):
+            body = self.call("POST", "/api/v1/seeds/chat", {"prompt": "hello"})[1]
+        self.assertIn("could not be reached", body["answer"]); self.assertNotIn("Offline Local Mode", body["answer"])
+
+
 if __name__ == "__main__":
     unittest.main()

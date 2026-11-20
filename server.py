@@ -787,9 +787,12 @@ def model_connection(cfg=None, settings=None, workspace_id="local"):
                 "api_key":cfg.get("llm_api_key","") or (load_model_credential("local",provider) if provider else ""),
                 "refusal":None if provider else "The platform has no AI model configured yet."}
     chosen=settings.get("llm_provider")
-    provider=str((chosen if chosen and chosen!="managed" else cfg.get("llm_provider")) or "ollama")
-    model=str((settings.get("llm_model") if chosen and chosen!="managed" else None) or cfg.get("llm_model") or "")
-    api_url=str((settings.get("llm_api_url") if chosen and chosen!="managed" else None) or cfg.get("llm_api_url") or "").rstrip("/")
+    chosen=chosen if chosen and chosen!="managed" else None
+    provider=str(chosen or cfg.get("llm_provider") or "ollama")
+    # The server's model and address belong to the server's provider; they are inherited only for that same provider.
+    inherit=provider==cfg.get("llm_provider")
+    model=str((settings.get("llm_model") if chosen else None) or (cfg.get("llm_model") if inherit else "") or "")
+    api_url=str((settings.get("llm_api_url") if chosen else None) or (cfg.get("llm_api_url") if inherit else "") or "").rstrip("/")
     refusal=None
     if DEPLOYMENT_MODE!="local":
         api_url=""                                                           # fixed public endpoint for the provider
@@ -987,6 +990,35 @@ def resolve_task_runtime(task, cfg=None, settings=None):
     # Nothing is called unless the same model list the person sees says a model is available.
     if not route or route.get("provider")!=provider: return provider,"","","",None
     return provider,connection["api_url"],connection["api_key"],route["model"],route
+
+def legacy_model_text(provider, api_url, api_key, model, messages, billed, caller, json_mode=True, timeout=120):
+    """One model call for the older desktop AI routes, through the same invocation code as the assistant, so every
+    provider a person can save (Ollama, OpenAI, OpenAI-compatible, Anthropic, Gemini) works the same way. The caller has
+    already applied the gateway check. Returns (text, error); text is "" when nothing could be called."""
+    if not model: return "", "No model is available. Check the AI settings."
+    try:
+        result=invoke_model(provider,api_url,api_key,model,messages,timeout=timeout,json_mode=json_mode)
+    except ModelCallError as exc:
+        return "", str(exc)
+    except Exception:
+        return "", "The model provider could not be reached."
+    record_llm_usage(provider,model,int(result.get("prompt_tokens") or 0),int(result.get("completion_tokens") or 0),caller_tag=caller,billed=billed)
+    return str(result.get("text") or "").strip(), None
+
+def parse_seed_list(text):
+    """The extraction prompt asks for a JSON array; accept it bare, fenced, or wrapped in an object."""
+    text=(text or "").strip()
+    if text.startswith("```"):
+        text=text.split("\n",1)[-1]
+        if text.endswith("```"): text=text[:-3]
+    try: parsed=json.loads(text)
+    except ValueError: return []
+    if isinstance(parsed,list): return [item for item in parsed if isinstance(item,dict)]
+    if isinstance(parsed,dict):
+        for value in parsed.values():
+            if isinstance(value,list): return [item for item in value if isinstance(item,dict)]
+        return [parsed]
+    return []
 
 def task_billing(workspace_id="local"):
     """Who pays for this workspace's AI calls: "platform" in managed mode, "own_key" otherwise. On the desktop app the
@@ -5503,111 +5535,9 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
                     if not ai_allowed:
                         extracted_seeds = []
-                    elif provider == "ollama" and api_url:
-                        try:
-                            req_payload = json.dumps({
-                                "model": model or "llama3",
-                                "messages": [{"role": "user", "content": prompt}],
-                                "stream": False,
-                                "format": "json"
-                            }).encode("utf-8")
-                            req = urllib.request.Request(f"{api_url}/api/chat", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                content_res = res_data.get("message", {}).get("content", "").strip()
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"Ollama reflect failed for '{title}': {e}")
-
-                    # ── LLM Provider: OpenAI / OpenAI-compatible (LM Studio, Together, etc.) ──
-                    elif provider in ("openai", "openai_compatible") and api_key:
-                        try:
-                            endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                            if not endpoint_url.endswith("/chat/completions"):
-                                if endpoint_url.endswith("/v1"):
-                                    endpoint_url = endpoint_url + "/chat/completions"
-                                elif endpoint_url.endswith("/v1/"):
-                                    endpoint_url = endpoint_url + "chat/completions"
-                                else:
-                                    endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                            req_payload = json.dumps({
-                                "model": model or "gpt-4o-mini",
-                                "messages": [{"role": "user", "content": prompt}]
-                            }).encode("utf-8")
-                            req = urllib.request.Request(
-                                endpoint_url, 
-                                data=req_payload, 
-                                headers={
-                                    "Content-Type": "application/json", 
-                                    "Authorization": f"Bearer {api_key}",
-                                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                                }, 
-                                method="POST"
-                            )
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                usage_info = res_data.get("usage", {})
-                                p_tok = usage_info.get("prompt_tokens", len(prompt) // 4)
-                                c_tok = usage_info.get("completion_tokens", 100)
-                                record_llm_usage(provider, model, p_tok, c_tok, caller_tag="reflect", billed=legacy_billing)
-                                content_res = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                                # Strip markdown code fences if present
-                                content_res = content_res.strip()
-                                if content_res.startswith("```"):
-                                    content_res = content_res.split("\n", 1)[-1]
-                                    if content_res.endswith("```"):
-                                        content_res = content_res[:-3]
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"OpenAI-compatible reflect failed for '{title}': {e}")
-
-                    # ── LLM Provider: Gemini ──
-                    elif provider == "gemini" and api_key:
-                        try:
-                            gemini_model = model or "gemini-2.5-flash"
-                            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
-                            req_payload = json.dumps({
-                                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                                "generationConfig": {"responseMimeType": "application/json"}
-                            }).encode("utf-8")
-                            req = urllib.request.Request(gemini_url, data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                content_res = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                                if content_res.startswith("```"):
-                                    content_res = content_res.split("\n", 1)[-1]
-                                    if content_res.endswith("```"):
-                                        content_res = content_res[:-3]
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"Gemini reflect failed for '{title}': {e}")
+                    else:
+                        text, _error = legacy_model_text(provider, api_url, api_key, model, [{"role": "user", "content": prompt}], legacy_billing, "reflect")
+                        extracted_seeds = parse_seed_list(text)
 
                     if not extracted_seeds:
                         lines = transcript.split("\n")
@@ -6150,113 +6080,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     "caller": f"reflect:blocked_{ai_code}"
                 })
 
-            # Try to query LLM if configured and gateway is operational
-            if ai_allowed and provider == "ollama" and api_url:
-                try:
-                    req_payload = json.dumps({
-                        "model": model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "stream": False,
-                        "format": "json"
-                    }).encode("utf-8")
-                    
-                    req = urllib.request.Request(
-                        f"{api_url}/api/chat",
-                        data=req_payload,
-                        headers={"Content-Type": "application/json"},
-                        method="POST"
-                    )
-                    
-                    with urllib.request.urlopen(req, timeout=8) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("message", {}).get("content", "").strip()
-                        extracted_seeds = json.loads(content)
-                        extraction_method = f"ollama_local_{model}"
-                except Exception as e:
-                    print(f"Ollama call failed, falling back to heuristics: {e}")
-
-            elif provider in ("openai", "openai_compatible") and api_key:
-                try:
-                    endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                    if not endpoint_url.endswith("/chat/completions"):
-                        if endpoint_url.endswith("/v1"):
-                            endpoint_url = endpoint_url + "/chat/completions"
-                        elif endpoint_url.endswith("/v1/"):
-                            endpoint_url = endpoint_url + "chat/completions"
-                        else:
-                            endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [{"role": "user", "content": prompt}]
-                    }).encode("utf-8")
-                    
-                    req = urllib.request.Request(
-                        endpoint_url,
-                        data=req_payload,
-                        headers={
-                            "Content-Type": "application/json",
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        },
-                        method="POST"
-                    )
-                    
-                    with urllib.request.urlopen(req, timeout=120) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                        content = content.strip()
-                        if content.startswith("```"):
-                            content = content.split("\n", 1)[-1]
-                            if content.endswith("```"):
-                                content = content[:-3]
-                        parsed = json.loads(content)
-                        if isinstance(parsed, dict):
-                            for k in parsed:
-                                if isinstance(parsed[k], list):
-                                    extracted_seeds = parsed[k]
-                                    break
-                            else:
-                                extracted_seeds = [parsed]
-                        else:
-                            extracted_seeds = parsed
-                        extraction_method = f"{provider}_cloud_{model}"
-                except Exception as e:
-                    print(f"OpenAI/compatible call failed, falling back to heuristics: {e}")
-
-            elif provider == "gemini" and api_key:
-                try:
-                    gemini_model = model or "gemini-2.5-flash"
-                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
-                    req_payload = json.dumps({
-                        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                        "generationConfig": {"responseMimeType": "application/json"}
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        gemini_url,
-                        data=req_payload,
-                        headers={"Content-Type": "application/json"},
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=120) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                        if content.startswith("```"):
-                            content = content.split("\n", 1)[-1]
-                            if content.endswith("```"):
-                                content = content[:-3]
-                        parsed = json.loads(content)
-                        if isinstance(parsed, dict):
-                            for k in parsed:
-                                if isinstance(parsed[k], list):
-                                    extracted_seeds = parsed[k]
-                                    break
-                            else:
-                                extracted_seeds = [parsed]
-                        elif isinstance(parsed, list):
-                            extracted_seeds = parsed
-                        extraction_method = f"gemini_{gemini_model}"
-                except Exception as e:
-                    print(f"Gemini call failed, falling back to heuristics: {e}")
+            # Query the model only when the gateway allows it (the emergency off-switch stops every provider)
+            if ai_allowed:
+                text, model_error = legacy_model_text(provider, api_url, api_key, model, [{"role": "user", "content": prompt}], legacy_billing, "reflect")
+                extracted_seeds = parse_seed_list(text)
+                if extracted_seeds: extraction_method = f"{provider}_{model}"
 
             # Heuristics Fallback Parser
             if not extracted_seeds:
@@ -6425,99 +6253,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
             if not ai_allowed:
                 answer = f"**[AI Gateway Paused]**\n\nNotice: {ai_msg}\n\nThe administrator has activated budget caps or emergency pause for outbound LLM calls."
-            elif provider == "ollama" and api_url:
-                try:
-                    req_payload = json.dumps({
-                        "model": model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ],
-                        "stream": False
-                    }).encode("utf-8")
-                    req = urllib.request.Request(f"{api_url}/api/chat", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"Ollama chat failed: {e}")
-
-            elif ai_allowed and provider == "openai" and api_key:
-                try:
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        "https://api.openai.com/v1/chat/completions", 
-                        data=req_payload, 
-                        headers={
-                            "Content-Type": "application/json", 
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        }, 
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"OpenAI chat failed: {e}")
- 
-            elif ai_allowed and provider == "openai_compatible" and api_key:
-                try:
-                    endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                    if not endpoint_url.endswith("/chat/completions"):
-                        if endpoint_url.endswith("/v1"):
-                            endpoint_url = endpoint_url + "/chat/completions"
-                        elif endpoint_url.endswith("/v1/"):
-                            endpoint_url = endpoint_url + "chat/completions"
-                        else:
-                            endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        endpoint_url, 
-                        data=req_payload, 
-                        headers={
-                            "Content-Type": "application/json", 
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        }, 
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=30) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        usage_info = res_data.get("usage", {})
-                        p_tok = usage_info.get("prompt_tokens", len(prompt + system_prompt) // 4)
-                        c_tok = usage_info.get("completion_tokens", 80)
-                        record_llm_usage(provider, model, p_tok, c_tok, caller_tag="chat", billed=legacy_billing)
-                        answer = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"OpenAI-compatible chat failed: {e}")
-
-            elif provider == "gemini" and api_key:
-                try:
-                    req_payload = json.dumps({
-                        "contents": [
-                            {"role": "user", "parts": [{"text": f"System context:\n{system_prompt}\n\nUser Question:\n{prompt}"}]}
-                        ]
-                    }).encode("utf-8")
-                    gemini_model = model or "gemini-2.5-flash"
-                    req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                except Exception as e:
-                    print(f"Gemini chat failed: {e}")
+            else:
+                answer, model_error = legacy_model_text(provider, api_url, api_key, model,
+                    [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], legacy_billing, "chat", json_mode=False, timeout=30)
+                if not answer:
+                    answer = f"**[No AI answer]**\n\n{model_error or 'The model returned nothing.'}\n\n"
 
             if not answer:
                 answer = f"**[Offline Local Mode]**\n\nI parsed your prompt: *'{prompt}'*\n"
