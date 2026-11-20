@@ -11,6 +11,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import agent_tokens
 import archive_store
 import mcp_endpoint
@@ -33,13 +35,13 @@ class Stores:
 
 class TokenStoreTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.temp = tempfile.TemporaryDirectory()
         self.patch = patch.object(agent_tokens, "DB_PATH", Path(self.temp.name) / "tokens.db")
         self.patch.start()
 
     def tearDown(self):
         self.patch.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def test_only_the_digest_is_stored_and_the_secret_is_never_listed(self):
         made = agent_tokens.create_token("ws-a", "Claude Code")
@@ -98,7 +100,7 @@ class ProtocolTests(unittest.TestCase):
 
 class HttpTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.temp = tempfile.TemporaryDirectory()
         self.patches = [patch.object(server, "DATA_FILE", os.path.join(self.temp.name, "seeds.json")),
                         patch.object(server, "CONFIG_FILE", os.path.join(self.temp.name, "config.json")),
                         patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db"),
@@ -117,7 +119,7 @@ class HttpTests(unittest.TestCase):
         self.httpd.shutdown(); self.httpd.server_close()
         for p in self.patches:
             p.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def request(self, method, path, body=None, headers=None, raw=None):
         data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)

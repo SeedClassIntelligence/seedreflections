@@ -9,6 +9,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
+sys.path.insert(0, os.path.dirname(__file__))
 import account_erasure
 import agent_tokens
 import archive_store
@@ -80,7 +82,7 @@ class AccountDeletionHttpTests(unittest.TestCase):
 
 class SharedWorkspaceTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.temp = tempfile.TemporaryDirectory()
         root = Path(self.temp.name)
         self.patches = [patch.object(module, "DB_PATH", root / (name + ".db")) for module, name in
                         ((auth_store, "archive"), (archive_store, "archive"), (tenant_archive_store, "archive"), (secret_store, "archive"),
@@ -92,7 +94,7 @@ class SharedWorkspaceTests(unittest.TestCase):
     def tearDown(self):
         for item in reversed(self.patches):
             item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def signup(self, name):
         return auth_store.signup(name, f"{name}@example.com", PASSWORD, "hosted")

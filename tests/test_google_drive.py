@@ -14,6 +14,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import account_erasure
 import agent_tokens
 import archive_store
@@ -98,7 +100,7 @@ def free_port():
 class DriveBase(unittest.TestCase):
     def setUp(self):
         FakeGoogle.reset()
-        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True); root = Path(self.temp.name)
+        self.temp = tempfile.TemporaryDirectory(); root = Path(self.temp.name)
         self.google = HTTPServer(("127.0.0.1", 0), FakeGoogle); base = f"http://127.0.0.1:{self.google.server_address[1]}"
         threading.Thread(target=self.google.serve_forever, daemon=True).start()
         self.patches = [patch.object(archive_store, "DB_PATH", root / "archive.db"), patch.object(secret_store, "DB_PATH", root / "archive.db"),
@@ -113,7 +115,7 @@ class DriveBase(unittest.TestCase):
     def tearDown(self):
         self.google.shutdown(); self.google.server_close()
         for item in reversed(self.patches): item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
     def sign_in(self, workspace="local"):
         url = google_drive.begin_authorization(workspace, "http://127.0.0.1:1/api/v2/google/callback")

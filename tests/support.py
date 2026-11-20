@@ -13,3 +13,20 @@ def bash_works():
 
 
 needs_bash = unittest.skipUnless(bash_works(), "a working bash is not available here (the deploy scripts target Linux)")
+
+
+def remove_temp(temp):
+    """Delete a TemporaryDirectory after a test. Windows will not delete a file another handle still has open, and a handle
+    can outlive the code that opened it until the garbage collector runs, so collect first and allow a short, bounded wait.
+    A file that is still locked after that raises with its name: a real leak is reported, never hidden."""
+    import gc
+    import time
+    for attempt in range(10):
+        gc.collect()
+        try:
+            temp.cleanup()
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.3)

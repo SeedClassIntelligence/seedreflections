@@ -13,6 +13,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.dirname(__file__))
+from support import remove_temp
 import archive_store
 import auth_store
 import mailer
@@ -23,14 +25,14 @@ PASSWORD = "strong-password-123"
 
 class AuthDb(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.temp = tempfile.TemporaryDirectory()
         self.patches = [patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db"), patch.object(auth_store, "DB_PATH", Path(self.temp.name) / "archive.db")]
         for item in self.patches: item.start()
         auth_store.initialize()
 
     def tearDown(self):
         for item in reversed(self.patches): item.stop()
-        self.temp.cleanup()
+        remove_temp(self.temp)
 
 
 class ResetStoreTests(AuthDb):
