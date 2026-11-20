@@ -12,7 +12,7 @@ import archive_store
 
 class ExportFormatTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.patch = patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db")
         self.patch.start()
         archive_store.initialize()

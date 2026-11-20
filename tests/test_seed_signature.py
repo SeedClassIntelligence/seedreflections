@@ -50,7 +50,7 @@ class Base(unittest.TestCase):
         FakeAuthority.seen = []; FakeAuthority.mode = "ok"
         self.authority = HTTPServer(("127.0.0.1", 0), FakeAuthority); FakeAuthority.base = f"http://127.0.0.1:{self.authority.server_address[1]}"
         threading.Thread(target=self.authority.serve_forever, daemon=True).start()
-        self.temp = tempfile.TemporaryDirectory(); root = Path(self.temp.name)
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True); root = Path(self.temp.name)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0)); self.port = sock.getsockname()[1]
         self.patches = [patch.object(archive_store, "DB_PATH", root / "archive.db"), patch.object(workspace_store, "DB_PATH", root / "archive.db"), patch.object(auth_store, "DB_PATH", root / "archive.db"), patch.object(server, "DATA_FILE", str(root / "seeds.json")), patch.object(server, "CONFIG_FILE", str(root / "config.json")),

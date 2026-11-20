@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "deploy")); sys.path.insert(0, str(Path(__file__).parent))
 import backup_snapshot
+from support import needs_bash
 import restore_snapshot
 from test_unified_runtime import UnifiedRuntime
 
@@ -170,6 +171,7 @@ FAKE_DOCKER = _textwrap.dedent("""\
 """)
 
 
+@needs_bash
 class RestoreScriptFlowTests(unittest.TestCase):
     """The shell script's control flow, with a stand-in for docker and the backup script."""
 

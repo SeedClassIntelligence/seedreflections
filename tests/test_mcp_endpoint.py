@@ -33,7 +33,7 @@ class Stores:
 
 class TokenStoreTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.patch = patch.object(agent_tokens, "DB_PATH", Path(self.temp.name) / "tokens.db")
         self.patch.start()
 
@@ -98,7 +98,7 @@ class ProtocolTests(unittest.TestCase):
 
 class HttpTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.patches = [patch.object(server, "DATA_FILE", os.path.join(self.temp.name, "seeds.json")),
                         patch.object(server, "CONFIG_FILE", os.path.join(self.temp.name, "config.json")),
                         patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db"),

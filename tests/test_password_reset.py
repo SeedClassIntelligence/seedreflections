@@ -23,7 +23,7 @@ PASSWORD = "strong-password-123"
 
 class AuthDb(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.patches = [patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db"), patch.object(auth_store, "DB_PATH", Path(self.temp.name) / "archive.db")]
         for item in self.patches: item.start()
         auth_store.initialize()

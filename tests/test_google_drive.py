@@ -98,7 +98,7 @@ def free_port():
 class DriveBase(unittest.TestCase):
     def setUp(self):
         FakeGoogle.reset()
-        self.temp = tempfile.TemporaryDirectory(); root = Path(self.temp.name)
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True); root = Path(self.temp.name)
         self.google = HTTPServer(("127.0.0.1", 0), FakeGoogle); base = f"http://127.0.0.1:{self.google.server_address[1]}"
         threading.Thread(target=self.google.serve_forever, daemon=True).start()
         self.patches = [patch.object(archive_store, "DB_PATH", root / "archive.db"), patch.object(secret_store, "DB_PATH", root / "archive.db"),

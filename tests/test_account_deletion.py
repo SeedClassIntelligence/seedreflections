@@ -80,7 +80,7 @@ class AccountDeletionHttpTests(unittest.TestCase):
 
 class SharedWorkspaceTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         root = Path(self.temp.name)
         self.patches = [patch.object(module, "DB_PATH", root / (name + ".db")) for module, name in
                         ((auth_store, "archive"), (archive_store, "archive"), (tenant_archive_store, "archive"), (secret_store, "archive"),
