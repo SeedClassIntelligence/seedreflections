@@ -3342,6 +3342,9 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                 workspace["artifacts"]=[item for item in workspace.get("artifacts",[]) if item.get("artifact_id")!=artifact_id]
                 save_workspace(workspace,user["workspace_id"],"artifact_deleted"); self._send_json({"deleted":True}); return
             if body.get("status") and body["status"] not in {"draft","active","complete","archived"}: self._send_json({"error":"Invalid artifact status"},400); return
+            for link_key in ("seed_ids","conversation_ids"):
+                if link_key in body and not (isinstance(body[link_key],list) and all(isinstance(item,str) for item in body[link_key])):
+                    self._send_json({"error":f"{link_key} must be a list of ids. Leave it out to keep the existing links."},400); return
             artifact.setdefault("versions",[]).append({"title":artifact.get("title"),"content":artifact.get("content"),"status":artifact.get("status"),"saved_at":datetime.now().isoformat(),"saved_by":user["id"]})
             artifact["versions"]=artifact["versions"][-25:]
             for key in ("title","content","status","project_id","conversation_ids","seed_ids"):
