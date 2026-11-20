@@ -76,6 +76,7 @@ from integration_store import (create_integration as create_api_integration, lis
     revoke_integration as revoke_api_integration)
 from model_gateway import public_catalog as model_public_catalog, select_model as select_task_model, TASK_CAPABILITIES
 from model_invoke import complete as invoke_model, ModelCallError
+import spend_ledger
 from workspace_agent import run_agent, make_draft_tool, make_proposal_tools, make_web_tool, merge_extras, user_urls
 import work_sessions
 import work_context
@@ -494,8 +495,9 @@ def record_stripe_event(event_type, event_id, customer_email, plan, details=""):
 
 
 def platform_spend():
-    """Estimated spend on the platform's own AI account. Calls made with a person's own key are not the platform's cost."""
-    return sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG if item.get("billed", "platform") == "platform")
+    """Estimated spend on the platform's own AI account this calendar month (UTC), from the durable ledger.
+    Calls made with a person's own key are not the platform's cost."""
+    return spend_ledger.month_total("platform")["cost_usd"]
 
 def check_ai_gateway_status(mode="managed"):
     """May this call go out? Returns (is_allowed, error_code, error_message, current_spend, budget_cap).
@@ -506,15 +508,26 @@ def check_ai_gateway_status(mode="managed"):
     platform pays for (managed mode); a person's own key is limited by their plan's reflection quota, not this cap.
     On the desktop app the operator and the person are the same, every key is theirs, and the cap they set applies to all calls."""
     cfg = load_config()
-    current_spend = platform_spend()
+    budget_applies = mode == "managed" or DEPLOYMENT_MODE == "local"
+    try:
+        current_spend = platform_spend()
+    except Exception:
+        # The ledger could not be read. When a hard budget is in force, fail closed: an unknown spend must not
+        # let paid calls continue.
+        current_spend = None
     budget_cap = float(cfg.get("ai_monthly_budget_usd", 50.0))
     hard_stop = bool(cfg.get("ai_budget_hard_stop", True))
     killswitch = bool(cfg.get("ai_killswitch_enabled", False))
 
     if killswitch:
-        return False, "AI_KILLSWITCH_ACTIVE", "Platform AI Gateway is temporarily paused by administrator (Emergency Killswitch active).", round(current_spend, 4), budget_cap
+        return False, "AI_KILLSWITCH_ACTIVE", "Platform AI Gateway is temporarily paused by administrator (Emergency Killswitch active).", round(current_spend or 0.0, 4), budget_cap
 
-    if (mode == "managed" or DEPLOYMENT_MODE == "local") and hard_stop and current_spend >= budget_cap:
+    if current_spend is None:
+        if budget_applies and hard_stop:
+            return False, "AI_BUDGET_UNKNOWN", "AI spending could not be checked, so paid AI calls are paused until it can be.", 0.0, budget_cap
+        current_spend = 0.0
+
+    if budget_applies and hard_stop and current_spend >= budget_cap:
         return False, "AI_BUDGET_EXCEEDED", f"Platform monthly AI budget cap reached (${current_spend:.4f} / ${budget_cap:.2f} USD). Outbound LLM queries paused to prevent overages.", round(current_spend, 4), budget_cap
 
     return True, None, None, round(current_spend, 4), budget_cap
@@ -544,8 +557,12 @@ def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_t
         "estimated_cost_usd": round(est_cost, 6),
         "billed": "platform" if billed == "platform" else "own_key"
     }
+    try:
+        spend_ledger.record(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag)
+    except Exception as exc:
+        print(f"Warning: AI spend could not be written to the ledger: {exc}")
     TELEMETRY_LOG.append(event)
-    # Retain last 500 events in memory
+    # Retain last 500 events in memory (recent activity view only; the budget uses the ledger)
     if len(TELEMETRY_LOG) > 500:
         TELEMETRY_LOG.pop(0)
     return event
@@ -2878,11 +2895,13 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                         transcripts_count += 1
                         transcripts_bytes += os.path.getsize(fp)
 
-            # LLM Token & Cost Aggregation
-            total_prompt_tok = sum(item.get("prompt_tokens", 0) for item in TELEMETRY_LOG)
-            total_comp_tok = sum(item.get("completion_tokens", 0) for item in TELEMETRY_LOG)
+            # LLM Token & Cost Aggregation: this calendar month's platform-billed calls, from the durable ledger
+            try: month_usage = spend_ledger.month_total("platform")
+            except Exception: month_usage = {"cost_usd": 0.0, "requests": 0, "prompt_tokens": 0, "completion_tokens": 0}
+            total_prompt_tok = month_usage["prompt_tokens"]
+            total_comp_tok = month_usage["completion_tokens"]
             total_tokens = total_prompt_tok + total_comp_tok
-            total_cost_usd = sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG)
+            total_cost_usd = month_usage["cost_usd"]
 
             cfg = load_config()
 
@@ -2938,7 +2957,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     "active_model": cfg.get("llm_model", "qwen-qwq-32b"),
                     "endpoint_url": cfg.get("llm_api_url", "https://api.groq.com/openai/v1"),
                     "api_key_masked": (cfg.get("llm_api_key", "")[:8] + "..." + cfg.get("llm_api_key", "")[-4:]) if len(cfg.get("llm_api_key", "")) > 12 else "Not configured",
-                    "total_requests": len(TELEMETRY_LOG),
+                    "total_requests": month_usage["requests"],
+                    "spend_period": spend_ledger.month_key(),
                     "total_prompt_tokens": total_prompt_tok,
                     "total_completion_tokens": total_comp_tok,
                     "total_tokens": total_tokens,

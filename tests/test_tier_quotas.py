@@ -19,10 +19,20 @@ def get_free_port():
     s.close()
     return port
 
+
+def _patch_archive_db(directory):
+    import archive_store
+    from pathlib import Path
+    from unittest.mock import patch
+    return patch.object(archive_store, "DB_PATH", Path(directory) / "archive.db")
+
 class TestTierQuotas(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
+        # keep the archive database (and the AI spend ledger in it) out of the repository's data folder
+        self.archive_patch = _patch_archive_db(self.temp_dir.name)
+        self.archive_patch.start()
         self.temp_db_path = os.path.join(self.temp_dir.name, "seeds_test.json")
         self.original_data_file = server.DATA_FILE
         server.DATA_FILE = self.temp_db_path
@@ -107,6 +117,7 @@ class TestTierQuotas(unittest.TestCase):
         self.httpd.server_close()
         server.DATA_FILE = self.original_data_file
         server.CONFIG_FILE = self.original_config_file
+        self.archive_patch.stop()
         self.temp_dir.cleanup()
 
     def make_request(self, endpoint, method="POST", data=None, token=None):
