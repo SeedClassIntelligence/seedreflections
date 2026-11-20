@@ -2153,7 +2153,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         <div id="platform-ai-note" style="display:none;align-items:center;gap:12px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-top:12px;">
           <span style="font-size:22px;">🤖</span>
           <div>
-            <div id="platform-ai-title" style="font-size:13px;font-weight:600;color:var(--text);">Platform managed AI</div>
+            <div id="platform-ai-title" style="font-size:13px;font-weight:600;color:var(--text);">AI status</div>
             <div id="platform-ai-detail" style="font-size:12px;color:var(--text-muted);margin-top:3px;">Checking…</div>
           </div>
         </div>
@@ -6518,7 +6518,7 @@ async function loadModelCatalog(selectedId) {
   try {
     var response = await productFetch('/models'), data = await response.json();
     var available=(data.models || []).filter(function(m){return m.available;});
-    AVAILABLE_MODEL_COUNT = response.ok ? available.length : null; renderPlatformAiNote();
+    AVAILABLE_MODEL_COUNT = response.ok ? available.length : null; AI_CONNECTION = response.ok ? (data.connection || null) : null; renderPlatformAiNote();
     select.innerHTML = available.map(function(m){
       var caps=(m.capabilities||[]).join(', ');
       return '<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.label)+' · '+escapeHtml(caps)+'</option>';
@@ -6532,27 +6532,29 @@ function toggleModelSelectionFields() {
   document.getElementById('preferred-model-block').style.display=manual?'block':'none';
 }
 
-/* The platform-AI note reports what is true: the SAVED mode and whether the model catalog has an available model.
-   Choosing Managed in the dropdown without saving says it is not applied yet. */
-var SAVED_API_MODE = null, AVAILABLE_MODEL_COUNT = null;
+/* AI status: reports the SAVED mode and what the server says about the connection that mode uses (the model list
+   and the connection come from the same decision the task runtime makes). An unsaved choice says it is not applied. */
+var SAVED_API_MODE = null, AVAILABLE_MODEL_COUNT = null, AI_CONNECTION = null;
 function renderPlatformAiNote() {
   var note = document.getElementById('platform-ai-note'); if (!note) return;
   var chosen = document.getElementById('acc-api-mode').value;
-  if (chosen === 'self_hosted') { note.style.display = 'none'; return; }
-  note.style.display = 'flex';
   var title = document.getElementById('platform-ai-title'), detail = document.getElementById('platform-ai-detail');
-  if (SAVED_API_MODE !== 'managed') {
-    title.textContent = 'Platform managed AI: not saved yet';
-    detail.textContent = 'Save AI Configuration to keep this preference. The server\'s configuration still determines which model runs.';
-  } else {
-    // Only what was checked: the saved mode, and what the server's model list shows. The task runtime does not read
-    // this setting yet, so nothing here claims that a task will run.
-    title.textContent = 'Platform managed AI: saved';
-    var listed = AVAILABLE_MODEL_COUNT === null ? 'The model list could not be checked.'
-      : (AVAILABLE_MODEL_COUNT === 0 ? 'No models appear in the server\'s model list.'
-      : AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model appears' : ' models appear') + ' in the server\'s model list.');
-    detail.textContent = listed + ' Which model runs a task is set by the server\'s configuration, not by this choice.';
+  var who = function(mode){ return mode === 'managed' ? 'the platform\'s AI' : 'your own provider'; };
+  note.style.display = 'flex';
+  if (SAVED_API_MODE !== chosen) {
+    title.textContent = 'Not saved yet';
+    detail.textContent = 'Save AI Configuration to switch your tasks to ' + who(chosen) + '. Until then they use ' + who(SAVED_API_MODE) + '.';
+    return;
   }
+  if (AI_CONNECTION && AI_CONNECTION.refusal) {
+    title.textContent = 'AI tasks cannot run';
+    detail.textContent = AI_CONNECTION.refusal;
+    return;
+  }
+  title.textContent = 'Your tasks use ' + who(SAVED_API_MODE);
+  if (AVAILABLE_MODEL_COUNT === null) detail.textContent = 'Model availability could not be checked.';
+  else if (AVAILABLE_MODEL_COUNT === 0) detail.textContent = 'No model is available yet, so AI tasks cannot run. ' + (SAVED_API_MODE === 'managed' ? 'The platform has not connected one.' : 'Check the provider, model and key above.');
+  else detail.textContent = AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model is' : ' models are') + ' available to them.';
 }
 
 function toggleApiModeFields() {

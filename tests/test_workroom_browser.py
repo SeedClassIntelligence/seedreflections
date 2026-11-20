@@ -153,20 +153,21 @@ class WorkroomBrowserTests(unittest.TestCase):
                 self.assertNotIn("storage allocation", text, label)
                 self.assertNotIn("bypass reflection limits", text, label); self.assertIn("Plan limits apply whichever AI option you use", text, label)
                 self.assertNotIn("Platform AI — Active", page.content(), label)                             # nowhere, including the old modal
-                page.select_option("#acc-api-mode", "self_hosted")
-                self.assertFalse(page.is_visible("#platform-ai-note"), label)
+                page.wait_for_function("() => AI_CONNECTION !== null")                                    # real server answer, nothing injected
+                self.assertEqual(page.inner_text("#platform-ai-title"), "Your tasks use your own provider", label)
+                self.assertIn("No model is available yet", page.inner_text("#platform-ai-detail"), label)  # this test server has no model
                 page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; }"); page.select_option("#acc-api-mode", "managed")
-                self.assertIn("not saved yet", page.inner_text("#platform-ai-title"), label)                # choosing is not the same as saving
-                unsaved = page.inner_text("#platform-ai-detail")
-                self.assertIn("still determines which model runs", unsaved, label); self.assertNotIn("to use it", unsaved, label)   # saving does not change routing yet
-                page.evaluate("() => { SAVED_API_MODE = 'managed'; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
-                self.assertIn("No models appear", page.inner_text("#platform-ai-detail"), label)
+                self.assertEqual(page.inner_text("#platform-ai-title"), "Not saved yet", label)           # choosing is not the same as saving
+                self.assertIn("Until then they use your own provider", page.inner_text("#platform-ai-detail"), label)
+                page.evaluate("() => { SAVED_API_MODE = 'managed'; AI_CONNECTION = {mode:'managed', refusal:null}; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
+                self.assertIn("cannot run", page.inner_text("#platform-ai-detail"), label)
                 page.evaluate("() => { AVAILABLE_MODEL_COUNT = 2; renderPlatformAiNote(); }")
-                note = page.inner_text("#platform-ai-note")
-                self.assertIn("2 models appear in the server's model list", note, label)
-                self.assertIn("not by this choice", note, label)                                             # the runtime does not read this setting yet
-                for promise in ("ready", "Active", "can run", "available for your tasks"):
-                    self.assertNotIn(promise, note, label)                                                   # reports what was checked, promises nothing
+                self.assertEqual(page.inner_text("#platform-ai-title"), "Your tasks use the platform's AI", label)
+                self.assertIn("2 models are available", page.inner_text("#platform-ai-detail"), label)
+                page.select_option("#acc-api-mode", "self_hosted")
+                page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; AI_CONNECTION = {mode:'self_hosted', refusal:'A local or custom model address can only be used in the desktop app.'}; renderPlatformAiNote(); }")
+                self.assertEqual(page.inner_text("#platform-ai-title"), "AI tasks cannot run", label)    # the server's refusal is shown, not hidden
+                self.assertNotIn("Platform AI — Active", page.content(), label)
                 self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
                 self.assertEqual(errors, [], label); browser.close()
 

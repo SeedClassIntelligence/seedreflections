@@ -752,26 +752,69 @@ def load_config():
             cfg[k] = v
     return cfg
 
-def runtime_model_catalog():
-    """Return candidate models with truthful runtime availability."""
-    cfg=load_config(); catalog=model_public_catalog(); provider=cfg.get("llm_provider","ollama")
+# Providers a person may use with their own key on the hosted service. Each has a fixed public endpoint; a hosted
+# account cannot point the server at an address of its choosing (that would let it reach internal services).
+HOSTED_OWN_KEY_PROVIDERS = {"openai", "anthropic", "gemini", "google"}
+
+def model_connection(cfg=None, settings=None, workspace_id="local"):
+    """Decide which model connection a workspace's tasks use, from its SAVED AI mode.
+
+    managed     -> the platform's connection (server configuration and the platform key).
+    self_hosted -> the workspace's own provider, model, address and key. It never falls back to the platform key.
+                   Where the workspace has not chosen a provider yet, the server's provider, model and address are
+                   used (so existing local setups keep working), still with the workspace's own key.
+    Returns a dict with mode, provider, api_url, model, api_key and refusal (None when nothing forbids the call)."""
+    cfg=cfg if cfg is not None else load_config(); settings=dict(settings or {})
+    mode=str(settings.get("api_mode") or ("managed" if DEPLOYMENT_MODE!="local" else "self_hosted"))
+    if mode=="managed":
+        provider=str(cfg.get("llm_provider") or "ollama")
+        if DEPLOYMENT_MODE!="local" and provider=="managed": provider=""
+        return {"mode":"managed","provider":provider,"api_url":(cfg.get("llm_api_url") or "").rstrip("/"),
+                "model":str(cfg.get("llm_model") or ""),
+                "api_key":cfg.get("llm_api_key","") or (load_model_credential("local",provider) if provider else ""),
+                "refusal":None if provider else "The platform has no AI model configured yet."}
+    chosen=settings.get("llm_provider")
+    provider=str((chosen if chosen and chosen!="managed" else cfg.get("llm_provider")) or "ollama")
+    model=str((settings.get("llm_model") if chosen and chosen!="managed" else None) or cfg.get("llm_model") or "")
+    api_url=str((settings.get("llm_api_url") if chosen and chosen!="managed" else None) or cfg.get("llm_api_url") or "").rstrip("/")
+    refusal=None
+    if DEPLOYMENT_MODE!="local":
+        api_url=""                                                           # fixed public endpoint for the provider
+        if provider not in HOSTED_OWN_KEY_PROVIDERS:
+            refusal="A local or custom model address can only be used in the desktop app. Choose OpenAI, Anthropic or Gemini with your own key, or use the platform's AI."
+    api_key=load_model_credential(workspace_id,provider) if provider else ""
+    if not api_key and DEPLOYMENT_MODE=="local" and provider==cfg.get("llm_provider"):
+        api_key=cfg.get("llm_api_key","")                                    # on the desktop the server key is the owner's own key
+    return {"mode":"self_hosted","provider":provider,"api_url":api_url,"model":model,"api_key":api_key,"refusal":refusal}
+
+def workspace_ai_settings(workspace_id):
+    try: return dict(load_workspace(workspace_id=workspace_id).get("settings") or {})
+    except Exception: return {}
+
+def runtime_model_catalog(connection=None):
+    """Return candidate models with truthful availability for the connection a workspace's tasks will use."""
+    cfg=load_config(); connection=connection or model_connection(cfg,workspace_ai_settings("local"),"local")
+    catalog=model_public_catalog(); provider=connection["provider"]
     available_ids=set()
+    if connection.get("refusal"):
+        for item in catalog: item["available"]=False
+        return catalog
     if provider=="ollama":
         try:
-            base=(cfg.get("llm_api_url") or "http://127.0.0.1:11434").rstrip("/")
+            base=(connection.get("api_url") or "http://127.0.0.1:11434").rstrip("/")
             with urllib.request.urlopen(base+"/api/tags",timeout=1.5) as response:
                 payload=json.loads(response.read().decode("utf-8"))
             installed={str(item.get("name") or item.get("model") or "") for item in payload.get("models",[])}
             available_ids={item["id"] for item in catalog if item["provider"]=="ollama" and item["model"] in installed}
         except Exception:
             available_ids=set()
-    configured_model=str(cfg.get("llm_model") or "").strip()
+    configured_model=str(connection.get("model") or "").strip()
     if configured_model and provider!="ollama":
         configured_id=provider+":"+configured_model
         if not any(item["id"]==configured_id for item in catalog):
             catalog.append({"id":configured_id,"provider":provider,"model":configured_model,"label":configured_model,
                 "source":"configured","cost_tier":"provider","capabilities":sorted(set().union(*TASK_CAPABILITIES.values())),"context_window":0})
-        if cfg.get("llm_api_key") or model_credential_status("local",provider).get("credential_configured"): available_ids.add(configured_id)
+        if connection.get("api_key"): available_ids.add(configured_id)
     for item in catalog: item["available"]=item["id"] in available_ids
     return catalog
 
@@ -806,9 +849,11 @@ def agent_runtime(user, body, task="chat"):
     overrides={"workspace_id":user["workspace_id"]}
     if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
     provider,api_url,api_key,model,_route=resolve_task_runtime(task,load_config(),overrides)
+    refusal=model_connection(load_config(),workspace_ai_settings(user["workspace_id"]),user["workspace_id"])["refusal"]
     ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status()
     reason=None
-    if not ai_allowed: reason=ai_msg
+    if refusal: reason=refusal
+    elif not ai_allowed: reason=ai_msg
     elif not model or not (api_url if provider=="ollama" else api_key):
         reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
@@ -908,16 +953,21 @@ class _AgentStores:
         return [i for i in self._workspace.get("seeds",[]) if str(i.get("status","")).lower() not in closed][:limit]
 
 def resolve_task_runtime(task, cfg=None, settings=None):
-    """Resolve an available task route and its matching provider connection."""
-    cfg=cfg or load_config(); settings=settings or {}
-    route=select_task_model(task,catalog=[item for item in runtime_model_catalog() if item.get("available")],
-        preferred_model_id=settings.get("preferred_model_id") or cfg.get("preferred_model_id",""),
-        selection_mode=settings.get("model_selection_mode") or cfg.get("model_selection_mode","auto"))
-    provider=cfg.get("llm_provider","ollama"); model=cfg.get("llm_model","llama3")
+    """Resolve an available task route and its provider connection, following the workspace's saved AI mode.
+    `settings` may carry workspace_id and per-request overrides (preferred model)."""
+    cfg=cfg or load_config(); overrides=dict(settings or {})
+    workspace_id=overrides.get("workspace_id","local")
+    saved=workspace_ai_settings(workspace_id); saved.update({k:v for k,v in overrides.items() if k!="workspace_id"})
+    connection=model_connection(cfg,saved,workspace_id)
+    if connection["refusal"]: return connection["provider"],"","","",None
+    available=[item for item in runtime_model_catalog(connection) if item.get("available")]
+    # An empty list must stay empty: select_task_model treats an empty catalog as "use the built-in defaults".
+    route=select_task_model(task,catalog=available,
+        preferred_model_id=saved.get("preferred_model_id") or cfg.get("preferred_model_id",""),
+        selection_mode=saved.get("model_selection_mode") or cfg.get("model_selection_mode","auto")) if available else None
+    provider=connection["provider"]; model=connection["model"] or ("llama3" if provider=="ollama" else "")
     if route and route.get("provider")==provider: model=route["model"]
-    workspace_id=settings.get("workspace_id","local")
-    api_key=cfg.get("llm_api_key","") or load_model_credential(workspace_id,provider)
-    return provider,(cfg.get("llm_api_url") or "").rstrip("/"),api_key,model,route
+    return provider,connection["api_url"],connection["api_key"],model,route
 
 def save_config(config_data):
     try:
@@ -1557,7 +1607,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
-            self._send_json({"models":runtime_model_catalog(),"tasks":sorted(TASK_CAPABILITIES),
+            connection=model_connection(load_config(),settings,user["workspace_id"])
+            self._send_json({"models":runtime_model_catalog(connection),"tasks":sorted(TASK_CAPABILITIES),
+                "connection":{"mode":connection["mode"],"provider":connection["provider"],"refusal":connection["refusal"],
+                    "key_configured":bool(connection["api_key"])},
                 "selection_mode":settings.get("model_selection_mode","auto"),
                 "preferred_model_id":settings.get("preferred_model_id","")})
             return
@@ -3527,8 +3580,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
-            available=[item for item in runtime_model_catalog() if item.get("available")]
-            selected=select_task_model(body.get("task"),catalog=available,preferred_model_id=body.get("preferred_model_id") or settings.get("preferred_model_id",""),
+            available=[item for item in runtime_model_catalog(model_connection(load_config(),settings,user["workspace_id"])) if item.get("available")]
+            selected=None if not available else select_task_model(body.get("task"),catalog=available,preferred_model_id=body.get("preferred_model_id") or settings.get("preferred_model_id",""),
                 selection_mode=body.get("selection_mode") or settings.get("model_selection_mode","auto"))
             if not selected: self._send_json({"error":"No eligible model is available"},503); return
             self._send_json({"selected_model":selected})
