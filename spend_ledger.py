@@ -29,6 +29,10 @@ def _connect():
     db.execute("CREATE INDEX IF NOT EXISTS ai_spend_month ON ai_spend(month, billed)")
     if "call_id" not in {row[1] for row in db.execute("PRAGMA table_info(ai_spend)")}:
         db.execute("ALTER TABLE ai_spend ADD COLUMN call_id TEXT")
+    if "status" not in {row[1] for row in db.execute("PRAGMA table_info(ai_spend)")}:
+        # pending: a platform-paid call reserved before it was sent; settled: its real cost is known;
+        # resolved: an operator settled a call whose real cost was never learned, at its reserved amount.
+        db.execute("ALTER TABLE ai_spend ADD COLUMN status TEXT NOT NULL DEFAULT 'settled'")
     # One row per call: writing the same call again (a retried recovery) changes nothing.
     db.execute("CREATE UNIQUE INDEX IF NOT EXISTS ai_spend_call ON ai_spend(call_id)")
     return db
@@ -49,6 +53,42 @@ def record(provider, model, prompt_tokens, completion_tokens, cost_usd, billed="
         db.execute("INSERT OR IGNORE INTO ai_spend(created_at,month,provider,model,caller,prompt_tokens,completion_tokens,cost_usd,billed,call_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
                    (when.isoformat(), month_key(when), str(provider or ""), str(model or ""), str(caller or ""), int(prompt_tokens or 0),
                     int(completion_tokens or 0), float(cost_usd or 0.0), "platform" if billed == "platform" else "own_key", call_id))
+
+
+def reserve(call_id, provider, model, caller, reserved_cost, when=None):
+    """Write a pending row for a platform-paid call BEFORE it is sent. Raises if it cannot be written; the caller must
+    then not send the call. A pending row counts toward the month at its reserved (upper-estimate) cost."""
+    when = when or _now()
+    with closing(_connect()) as db, db:
+        db.execute("INSERT INTO ai_spend(created_at,month,provider,model,caller,prompt_tokens,completion_tokens,cost_usd,billed,call_id,status) "
+                   "VALUES(?,?,?,?,?,0,0,?, 'platform', ?, 'pending')",
+                   (when.isoformat(), month_key(when), str(provider or ""), str(model or ""), str(caller or ""), float(reserved_cost or 0.0), call_id))
+
+
+def settle(call_id, prompt_tokens, completion_tokens, cost_usd, **row):
+    """Replace a reservation with the call's real cost. Idempotent. If no reservation exists (a held own record), insert it."""
+    with closing(_connect()) as db, db:
+        changed = db.execute("UPDATE ai_spend SET prompt_tokens=?, completion_tokens=?, cost_usd=?, status='settled' WHERE call_id=? AND status='pending'",
+                             (int(prompt_tokens or 0), int(completion_tokens or 0), float(cost_usd or 0.0), call_id)).rowcount
+    if not changed:
+        record(row.get("provider"), row.get("model"), prompt_tokens, completion_tokens, cost_usd, row.get("billed", "platform"), row.get("caller", ""),
+               when=row.get("when"), call_id=call_id)
+
+
+def pending_calls():
+    with closing(_connect()) as db:
+        return [r[0] for r in db.execute("SELECT call_id FROM ai_spend WHERE status='pending'")]
+
+
+def resolve_unsettled(in_flight=()):
+    """Operator action: settle pending calls that no running request owns at their reserved cost. Returns how many."""
+    owned = set(in_flight)
+    resolved = 0
+    with closing(_connect()) as db, db:
+        for (call_id,) in db.execute("SELECT call_id FROM ai_spend WHERE status='pending'").fetchall():
+            if call_id in owned or (_held_dir() / (call_id + ".json")).exists(): continue
+            resolved += db.execute("UPDATE ai_spend SET status='resolved' WHERE call_id=? AND status='pending'", (call_id,)).rowcount
+    return resolved
 
 
 def month_total(billed="platform", month=None):
@@ -107,8 +147,8 @@ def flush_held():
     for path in _held_files():
         try:
             item = json.loads(path.read_text(encoding="utf-8"))
-            record(item["provider"], item["model"], item["prompt_tokens"], item["completion_tokens"], item["cost_usd"], item["billed"],
-                   item["caller"], when=datetime.fromisoformat(item["created_at"]), call_id=item["call_id"])
+            settle(item["call_id"], item["prompt_tokens"], item["completion_tokens"], item["cost_usd"], provider=item["provider"], model=item["model"],
+                   billed=item["billed"], caller=item["caller"], when=datetime.fromisoformat(item["created_at"]))
         except FileNotFoundError:
             continue                                                    # another request recorded and removed it
         except Exception:
@@ -123,8 +163,8 @@ def flush_held():
     with _MEMORY_LOCK:
         for call_id, item in list(_MEMORY_HELD.items()):
             try:
-                record(item["provider"], item["model"], item["prompt_tokens"], item["completion_tokens"], item["cost_usd"], item["billed"],
-                       item["caller"], when=datetime.fromisoformat(item["created_at"]), call_id=call_id)
+                settle(call_id, item["prompt_tokens"], item["completion_tokens"], item["cost_usd"], provider=item["provider"], model=item["model"],
+                       billed=item["billed"], caller=item["caller"], when=datetime.fromisoformat(item["created_at"]))
             except Exception:
                 cleared = False; continue
             del _MEMORY_HELD[call_id]

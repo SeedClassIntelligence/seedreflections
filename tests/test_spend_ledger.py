@@ -44,9 +44,13 @@ class LedgerTests(unittest.TestCase):
         self.assertFalse(allowed); self.assertEqual(code, "AI_BUDGET_EXCEEDED")
 
     def test_every_call_in_the_month_counts_not_only_the_last_500(self):
-        for _ in range(600): server.record_llm_usage("openai", "gpt-4o-mini", 1000, 1000, "test", "platform")
+        with patch.object(server, "invoke_model", lambda *a, **k: {"text": "ok", "prompt_tokens": 1000, "completion_tokens": 1000}):
+            for _ in range(600):
+                server.metered_complete("openai", "", "k", "gpt-4o-mini", [{"role": "user", "content": "hi"}], "platform", "test")
+                server.record_llm_usage("openai", "gpt-4o-mini", 1000, 1000, "test", "platform")
         self.assertEqual(len(server.TELEMETRY_LOG), 500)                  # the in-memory list is only recent activity
         self.assertEqual(spend_ledger.month_total("platform")["requests"], 600)
+        self.assertEqual(spend_ledger.pending_calls(), [])                 # every reservation was settled
 
     def test_the_budget_is_per_calendar_month(self):
         last_month = datetime(2001, 1, 31, 23, 59, tzinfo=timezone.utc)
@@ -68,10 +72,11 @@ class LedgerTests(unittest.TestCase):
             self.assertTrue(server.check_ai_gateway_status("self_hosted")[0])     # own keys are not the platform's cost
 
     def test_no_text_or_account_is_stored(self):
-        server.record_llm_usage("openai", "gpt-4o-mini", 10, 10, "workspace_agent", "platform")
+        with patch.object(server, "invoke_model", lambda *a, **k: {"text": "secret answer", "prompt_tokens": 10, "completion_tokens": 10}):
+            server.metered_complete("openai", "", "k", "gpt-4o-mini", [{"role": "user", "content": "secret prompt"}], "platform", "workspace_agent")
         with sqlite3.connect(archive_store.DB_PATH) as db:
             columns = [row[1] for row in db.execute("PRAGMA table_info(ai_spend)")]
-        self.assertEqual(columns, ["id", "created_at", "month", "provider", "model", "caller", "prompt_tokens", "completion_tokens", "cost_usd", "billed", "call_id"])
+        self.assertEqual(columns, ["id", "created_at", "month", "provider", "model", "caller", "prompt_tokens", "completion_tokens", "cost_usd", "billed", "call_id", "status"])
 
 
 class HeldSpendTests(unittest.TestCase):
@@ -136,6 +141,23 @@ class HeldSpendTests(unittest.TestCase):
         spend_ledger.flush_held()
         self.assertEqual(len(self.ledger_rows()), 10); self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 6.0)
         self.assertFalse(spend_ledger.has_unrecorded())
+
+
+class ResolveScriptTests(unittest.TestCase):
+    def test_the_operator_script_lists_then_resolves_pending_calls_at_their_reserved_cost(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as data:
+            with patch.object(archive_store, "DB_PATH", Path(data) / "archive.db"):
+                spend_ledger.reserve("orphan", "openai", "gpt-4o-mini", "workspace_agent", 0.25)
+            env = {**os.environ, "SEED_REFLECTIONS_DATA_DIR": data}
+            script = str(Path(__file__).resolve().parents[1] / "scripts" / "resolve_ai_spend.py")
+            listed = subprocess.run([sys.executable, script], capture_output=True, text=True, env=env, timeout=60)
+            self.assertIn("reserved $0.2500", listed.stdout); self.assertIn("--resolve", listed.stdout)
+            done = subprocess.run([sys.executable, script, "--resolve"], capture_output=True, text=True, env=env, timeout=60)
+            self.assertIn("Resolved 1", done.stdout)
+            with patch.object(archive_store, "DB_PATH", Path(data) / "archive.db"):
+                self.assertEqual(spend_ledger.pending_calls(), [])
+                self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 0.25)
 
 
 if __name__ == "__main__":

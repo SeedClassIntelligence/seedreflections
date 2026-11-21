@@ -186,7 +186,7 @@ class SpendingTests(HostedTests):
 
 
 class UnrecordedSpendTests(HostedTests):
-    """A platform-paid call whose cost cannot be written must not let further platform-paid calls through."""
+    """A platform-paid call is reserved in the ledger before it is sent. No unrecorded paid call can be followed by another."""
 
     def setUp(self):
         super().setUp()
@@ -195,6 +195,7 @@ class UnrecordedSpendTests(HostedTests):
 
     def tearDown(self):
         server.spend_ledger._MEMORY_HELD.clear()
+        with server._IN_FLIGHT_LOCK: server._IN_FLIGHT.clear()
         super().tearDown()
 
     def expensive_chat(self, token):
@@ -204,44 +205,65 @@ class UnrecordedSpendTests(HostedTests):
         with patch.object(server, "invoke_model", model):
             return self.call("POST", "/api/v2/chat", {"prompt": "hello"}, token)[1]
 
-    def test_a_failed_ledger_write_stops_the_next_paid_call_even_after_a_restart_and_is_recorded_once_writable(self):
+    def restart(self):
+        """What a new process would have: only what is on disk."""
+        server.spend_ledger._MEMORY_HELD.clear(); server.TELEMETRY_LOG.clear()
+        with server._IN_FLIGHT_LOCK: server._IN_FLIGHT.clear()
+
+    def test_if_the_reservation_cannot_be_written_the_provider_is_never_called(self):
         managed = self.person("kim"); self.settings(managed, api_mode="managed")
-        own = self.person("lee"); self.settings(own, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="lee-secret")
-        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")):         # writes fail, reads still work
-            self.assertEqual(self.expensive_chat(managed)["mode"], "model")                          # the first call had already gone out
-            self.assertEqual(server.platform_spend(), 0.0)                                             # ...and is not in the ledger
-            second = self.expensive_chat(managed)
-            self.assertEqual(second["mode"], "records_only"); self.assertIn("could not be recorded", second["reason"])
-            self.assertEqual(len(self.calls), 1)                                                       # no second paid call
-            server.spend_ledger._MEMORY_HELD.clear(); server.TELEMETRY_LOG.clear()                    # a restart: memory is gone
-            self.assertEqual(self.expensive_chat(managed)["mode"], "records_only"); self.assertEqual(len(self.calls), 1)
-            self.assertEqual(self.chat(own)["mode"], "model")                                          # own keys are not the platform's cost
-            self.assertEqual(self.calls[-1]["api_key"], "lee-secret")
-        # The ledger works again: the held cost is written, and it is over the $1 cap, so paid calls stay stopped for that reason.
-        before = len(self.calls)
-        result = self.expensive_chat(managed)
-        self.assertEqual(result["mode"], "records_only"); self.assertIn("budget", result["reason"].lower())
-        self.assertEqual(len(self.calls), before)
-        self.assertAlmostEqual(server.platform_spend(), 3.75)
-        self.assertFalse(server.spend_ledger.has_unrecorded())
+        with patch.object(server.spend_ledger, "reserve", side_effect=OSError("disk full")):
+            result = self.expensive_chat(managed)
+        self.assertEqual(result["mode"], "records_only"); self.assertIn("not sent", result["reason"])
+        self.assertEqual(self.calls, [])
 
-    def test_if_even_the_hold_file_cannot_be_written_the_hold_stays_in_memory(self):
-        managed = self.person("mia"); self.settings(managed, api_mode="managed")
-        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")), \
-             patch.object(server.spend_ledger.os, "replace", side_effect=OSError("disk full")):
-            self.expensive_chat(managed)
-            self.assertEqual(self.expensive_chat(managed)["mode"], "records_only")
+    def test_ledger_and_hold_both_failing_then_a_restart_never_allows_a_second_paid_call(self):
+        managed = self.person("lee"); self.settings(managed, api_mode="managed")
+        own = self.person("max"); self.settings(own, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="max-secret")
+        with patch.object(server.spend_ledger, "settle", side_effect=OSError("disk full")), \
+             patch.object(server.spend_ledger.os, "replace", side_effect=OSError("disk full")):          # settling fails, and so does the hold file
+            self.assertEqual(self.expensive_chat(managed)["mode"], "model")                             # reserved, then sent
         self.assertEqual(len(self.calls), 1)
+        self.restart()                                                                                   # the in-memory hold is gone
+        second = self.expensive_chat(managed)
+        self.assertEqual(second["mode"], "records_only"); self.assertIn("could not be recorded", second["reason"])
+        self.assertEqual(len(self.calls), 1)                                                             # no second paid call
+        self.assertGreater(server.platform_spend(), 0.0)                                                  # the reservation still counts
+        self.assertEqual(self.chat(own)["mode"], "model")                                                 # own keys are not the platform's cost
+        # An administrator resolves it at its reserved cost; paid calls may then continue under the budget.
+        self.assertEqual(server.spend_ledger.resolve_unsettled(server.in_flight_calls()), 1)
+        self.assertEqual(server.spend_ledger.pending_calls(), [])
+        self.assertTrue(server.check_ai_gateway_status("managed")[0])
 
-    def test_the_off_switch_still_stops_everything_while_spend_is_held(self):
+    def test_a_settlement_that_fails_is_held_and_written_later_exactly_once(self):
         managed = self.person("noa"); self.settings(managed, api_mode="managed")
-        own = self.person("oli"); self.settings(own, api_mode="self_hosted", llm_provider="openai", llm_model="own-model", llm_api_key="oli-secret")
-        with patch.object(server.spend_ledger, "record", side_effect=OSError("disk full")):
+        real_settle = server.spend_ledger.settle
+        with patch.object(server.spend_ledger, "settle", side_effect=OSError("database is locked")):
             self.expensive_chat(managed)
-            server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
-            self.assertEqual(self.chat(own)["mode"], "records_only")
-            self.assertIn("paused", self.chat(own)["reason"].lower())
+            blocked = self.expensive_chat(managed)
+            self.assertEqual(blocked["mode"], "records_only")
         self.assertEqual(len(self.calls), 1)
+        self.restart()                                                                                   # the hold file survives
+        result = self.expensive_chat(managed)                                                             # settles the held $3.75: now over the $1 cap
+        self.assertEqual(result["mode"], "records_only"); self.assertIn("budget", result["reason"].lower())
+        self.assertAlmostEqual(server.platform_spend(), 3.75); self.assertEqual(server.spend_ledger.month_total("platform")["requests"], 1)
+        self.assertFalse(server.spend_ledger.has_unrecorded()); self.assertEqual(server.spend_ledger.pending_calls(), [])
+
+    def test_a_call_in_progress_does_not_block_other_requests(self):
+        managed = self.person("oli"); self.settings(managed, api_mode="managed")
+        server.save_config({**server.load_config(), "ai_monthly_budget_usd": 100.0})
+        seen = []
+        def model(*args, **kwargs):
+            seen.append(server.check_ai_gateway_status("managed")[0])      # another request checking while this call is out
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 1, "completion_tokens": 1}
+        with patch.object(server, "invoke_model", model):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)
+        self.assertEqual(seen, [True])
+
+    def test_the_off_switch_still_stops_everything(self):
+        own = self.person("pam"); self.settings(own, api_mode="self_hosted", llm_provider="openai", llm_model="own-model", llm_api_key="pam-secret")
+        server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
+        self.assertEqual(self.chat(own)["mode"], "records_only"); self.assertEqual(self.calls, [])
 
 
 class LocalTests(Base):
