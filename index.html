@@ -281,6 +281,7 @@
     .pcard-btn:hover{border-color:var(--green);color:var(--green)}
     .pcard-btn.primary{background:var(--green);color:#000;border-color:var(--green)}
     .pcard-btn.primary:hover{background:#4ade80;filter:none}
+    .pcard-btn[aria-disabled="true"]{cursor:default;opacity:.65}
     .pricing-note{margin-top:24px;font-size:13px;color:var(--text3)}
     .pricing-note a{color:var(--text3);text-decoration:underline}
 
@@ -558,7 +559,7 @@
     <div style="text-align:center;margin-bottom:36px;">
       <div class="eyebrow">See It In Action</div>
       <h2 class="section-h2">From scattered conversations to <span class="hl">organized, evidence-backed work.</span></h2>
-      <p class="section-p" style="margin:12px auto 0;text-align:center;">The real product flow: bring work in, review what matters, and continue inside the Workspace.</p>
+      <p class="section-p" style="margin:12px auto 0;text-align:center;">The product flow: bring work in, review what matters, and continue inside the Workspace. The animation uses illustrative sample data.</p>
     </div>
 
     <!-- Demo Player -->
@@ -871,7 +872,7 @@
 <div class="proof">
   <div class="proof-item"><div class="proof-num">1</div><div class="proof-label">workspace for conversations, sources, and artifacts</div></div>
   <div class="proof-item"><div class="proof-num">4</div><div class="proof-label">ways to add work: upload, paste, bridge, or connect</div></div>
-  <div class="proof-item"><div class="proof-num">100%</div><div class="proof-label">of confirmed findings remain traceable to source evidence</div></div>
+  <div class="proof-item"><div class="proof-num">Linked</div><div class="proof-label">reviewed findings point back to their source evidence</div></div>
   <div class="proof-item"><div class="proof-num">You</div><div class="proof-label">decide what becomes durable project memory</div></div>
 </div>
 <div style="text-align:center;padding:8px 5%;font-size:11px;color:var(--text3)">No universal cloud-history claim: access depends on exports, user-authorized local sources, or a permitted integration.</div>
@@ -1096,7 +1097,7 @@
          
          <div style="text-align:center;padding:10px 20px;">
            <div style="font-size:16px;font-weight:800;color:var(--green);line-height:1.4">
-             AI can identify possibilities.<br>
+             Explicit ideas are flagged for review.<br>
              <span style="color:var(--text);font-size:14px;font-weight:600;">You decide what becomes durable project memory.</span>
            </div>
          </div>
@@ -1191,7 +1192,7 @@
     </div>
     <!-- Pro Tier — featured -->
     <div class="pcard featured">
-      <div class="pcard-popular">Most Popular</div>
+      <div class="pcard-popular">Higher capacity</div>
       <div class="pcard-label">Pro Tier</div>
       <div class="pcard-price">$9<sub>/mo</sub></div>
       <div class="pcard-tagline">More room to build durable project memory.</div>
@@ -1204,7 +1205,7 @@
         <li>Dynamic source coverage</li>
         <li>Focused context and Markdown export</li>
       </ul>
-      <a href="auth.html?mode=signup&plan=pro" class="pcard-btn primary">Get Pro Tier →</a>
+      <span class="pcard-btn" id="pro-checkout" aria-disabled="true">Paid checkout coming soon</span>
     </div>
     <!-- Master Tier -->
     <div class="pcard">
@@ -1219,10 +1220,10 @@
         <li>Artifacts, evidence, and focused exports</li>
         <li>Subject to infrastructure and safety limits</li>
       </ul>
-      <a href="auth.html?mode=signup&plan=master" class="pcard-btn">Get Master Tier →</a>
+      <span class="pcard-btn" id="master-checkout" aria-disabled="true">Paid checkout coming soon</span>
     </div>
   </div>
-  <p class="pricing-note">Paid checkout is available only when production billing is enabled and ready. Team collaboration and integration delivery are deployment-controlled capabilities, not unverified tier promises.</p>
+  <p class="pricing-note" id="pricing-availability">Paid checkout is not available on this deployment yet. Start with Free. Team collaboration and integrations depend on deployment configuration.</p>
 </section>
 
 
@@ -1281,16 +1282,21 @@
   }
 })();
 
-// Checkout — direct Stripe payment links (no backend required)
-const CHECKOUT_URLS = {
-  free: 'https://buy.stripe.com/test_seed_reflections_free',
-  pro: 'https://buy.stripe.com/test_seed_reflections_pro',
-  master:  'https://buy.stripe.com/test_seed_reflections_master',
-};
-function handleCheckout(plan) {
-  const url = CHECKOUT_URLS[plan];
-  if (url) { location.href = url; }
-}
+// A paid signup link appears only when this deployment advertises billing.
+SeedReflectionsPlatform.billingCheckoutReady()
+  .then(ready => {
+    if (!ready) return;
+    for (const plan of ['pro', 'master']) {
+      const placeholder = document.getElementById(plan + '-checkout');
+      const link = document.createElement('a');
+      link.href = 'auth.html?mode=signup&plan=' + plan;
+      link.className = 'pcard-btn' + (plan === 'pro' ? ' primary' : '');
+      link.textContent = 'Get ' + (plan === 'pro' ? 'Pro' : 'Master') + ' Tier →';
+      placeholder.replaceWith(link);
+    }
+    document.getElementById('pricing-availability').textContent = 'Paid checkout is enabled on this deployment. Team collaboration and integrations depend on deployment configuration.';
+  })
+  .catch(() => {});
 
 // Snippet select
 function selectSnippet(card) {

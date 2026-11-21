@@ -183,12 +183,12 @@
           <div class="plan-opt-info"><h4>Free Plan</h4><p>50 reflections / mo, 20 seeds capacity</p></div>
           <div class="plan-opt-price">$0</div>
         </div>
-        <div class="plan-opt" id="plan-pro" onclick="selectPlan('pro')">
+        <div class="plan-opt" id="plan-pro" onclick="selectPlan('pro')" style="display:none">
           <div class="plan-opt-radio"></div>
           <div class="plan-opt-info"><h4>Pro Tier</h4><p>250 reflections / mo, unlimited seeds</p></div>
           <div class="plan-opt-price">$9/mo</div>
         </div>
-        <div class="plan-opt" id="plan-master" onclick="selectPlan('master')">
+        <div class="plan-opt" id="plan-master" onclick="selectPlan('master')" style="display:none">
           <div class="plan-opt-radio"></div>
           <div class="plan-opt-info"><h4>Master Tier</h4><p>Unlimited reflections (application quota)</p></div>
           <div class="plan-opt-price">$20/mo</div>
@@ -242,6 +242,7 @@
 <script src="js/platform.js"></script>
 <script>
   let selectedPlan = 'free';
+  let billingAvailable = false;
   let selectedAccountType = 'consumer';
   let nextUrl = '/consumer';
   let hasExplicitNext = false;
@@ -300,9 +301,25 @@
     // If coming with a plan pre-selected
     const plan = params.get('plan');
     if (plan) {
-      selectPlan(plan);
+      selectPlan('free');
       document.getElementById('plan-select').classList.add('show');
     }
+    SeedReflectionsPlatform.billingCheckoutReady()
+      .then(ready => {
+        billingAvailable = ready;
+        if (billingAvailable) {
+          document.getElementById('plan-pro').style.display = '';
+          document.getElementById('plan-master').style.display = '';
+          if (plan === 'pro' || plan === 'master') selectPlan(plan);
+        } else if (plan === 'pro' || plan === 'master') {
+          showError('Paid checkout is not available here yet. You can create a Free account.');
+        }
+      })
+      .catch(() => {
+        if (plan === 'pro' || plan === 'master') {
+          showError('Paid checkout could not be verified. You can create a Free account.');
+        }
+      });
 
     // Only redirect if explicitly requested or already authenticated and NOT trying to access auth directly
     if (params.has('redirect') && SeedReflectionsPlatform.isLoggedIn()) {
@@ -423,6 +440,8 @@
 
   // ── Plan selection ────────────────────────────────────────────────────────────
   function selectPlan(plan) {
+    if (!['free', 'pro', 'master'].includes(plan)) return;
+    if (plan !== 'free' && !billingAvailable) return;
     selectedPlan = plan;
     ['free','pro','master'].forEach(p => {
       var el = document.getElementById('plan-'+p);
@@ -490,7 +509,12 @@
         try {
           const url = await SeedReflectionsPlatform.getCheckoutUrl(selectedPlan, 'monthly');
           location.href = url;
-        } catch { routeUser(); }
+        } catch (err) {
+          showError('Your Free account was created, but paid checkout did not start. ' + (err.message || 'Please try again from your account.'));
+          btn.disabled = false;
+          btn.textContent = 'Continue to your workspace →';
+          btn.onclick = function(event) { event.preventDefault(); routeUser(); };
+        }
       } else {
         routeUser();
       }

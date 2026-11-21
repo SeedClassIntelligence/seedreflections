@@ -34,11 +34,12 @@ The Workspace is an **operating surface**, not a generic AI playground: durable 
 
 ## Capabilities and Constraints
 
-**AI model: confirmed direction.** By default, users work on **SeedReflections' own AI service running underneath the product**; they do not need to bring anything. As an **optional addition**, a user may supply their own model API key, and may **bring their own coding assistant or agent** into the platform. A model key supplies inference only. It never implies access to a provider's private history, and it never implies tools, browsing, coding or file access: those exist only where SeedReflections has built, permissioned and made them user-visible.
+**AI model: confirmed direction.** The intended default is **SeedReflections' own AI service running underneath the product**; a user may alternatively supply a supported provider API key. A model key supplies inference only. It never implies access to a provider's private history, or tools, browsing, coding or file access: those require separately built and permissioned product capabilities.
 
-**Status of that direction (verified against code, Nov 11 2026):**
-- Built: task-aware model routing over a catalog (local open models via Ollama; configured providers); bring-your-own key with OS-backed or session-only storage.
-- **Not built / unverified:** a managed inference service that SeedReflections operates for all users (the code has only a default settings label `managed`); bring-your-own-agent/coding-assistant integration; tool adapters (the Gmail / Drive / Calendar connect route returns `authorization_handoff_unavailable`); a source-grounded persistent working conversation (current Workspace chat sees at most 40,000 characters of one transcript, and the v2 chat route returns a fixed summary).
+**Status of that direction (verified against code and hosted configuration, Nov 20 2026):**
+- Built: the saved Managed or own-key setting controls model selection for supported AI routes; task-aware routing uses configured and available models. Hosted own-key mode supports OpenAI, Anthropic and Gemini at fixed provider endpoints. Local installations can use configured local models. Hosted own keys are encrypted server-side. The platform spending ledger and emergency off-switch govern outbound AI calls.
+- Current hosted deployment: Managed AI has no provider key and is not available to users. Billing is disabled. The live site can ingest, organize, search and review sources without model-assisted work. A user with a supported provider key can select own-key mode for supported AI tasks.
+- **Not built / unverified:** a managed inference service provisioned for all users; bring-your-own-agent/coding-assistant integration; broad coding or agent tool execution inside the Workspace; tool adapters whose authorization handoff remains unavailable; comprehensive source-grounded persistent conversations over an entire large archive. These require separate end-to-end proof before public claims.
 
 **Durable constraints (confirmed):**
 - Human review is mandatory. Machine findings are suggestions; accepting, editing, deferring or dismissing is always the user's act.
@@ -69,7 +70,7 @@ Name: SeedReflections (Seed-Class Intelligence). The public home page set the or
 2. **Show the gaps.** What was not processed matters as much as what was.
 3. **The user's own context is the asset.** Work continues from preserved project memory rather than restarting elsewhere.
 4. **Capability is claimed only when built.** Models, tools and connectors are named for what they actually do.
-5. **Own AI by default, open by choice.** The service works out of the box; bringing a key or an agent is a deliberate, protected option.
+5. **A model when configured, a usable archive without one.** Managed AI is the intended default once provisioned; own-key mode is a protected alternative. Source recovery and human review remain usable without AI inference.
 
 ## Accessibility & Inclusion
 

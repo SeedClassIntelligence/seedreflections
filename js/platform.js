@@ -382,30 +382,28 @@
 
   // ── Subscription helpers ──────────────────────────────────────────────────
 
-  async function getCheckoutUrl(plan, interval) {
-    const STATIC_CHECKOUT_URLS = {
-      free: 'https://buy.stripe.com/test_seed_reflections_free',
-      pro: 'https://buy.stripe.com/test_seed_reflections_pro',
-      master: 'https://buy.stripe.com/test_seed_reflections_master'
-    };
-
-    const pKey = (plan || '').toLowerCase();
-
-    if (_isDemoMode()) {
-      return STATIC_CHECKOUT_URLS[pKey] || '#demo';
-    }
+  async function billingCheckoutReady() {
     try {
-      const r = await apiRequest('/subscriptions/checkout', {
-        method: 'POST',
-        body: { plan, interval: interval || 'monthly' },
-      });
-      if (r.ok) {
-        const { checkout_url } = await r.json();
-        return checkout_url;
-      }
-    } catch(e) {}
-    
-    return STATIC_CHECKOUT_URLS[pKey] || '#demo';
+      const capabilities = await fetch(`${V2_BASE}/capabilities`, {cache: 'no-store'});
+      if (!capabilities.ok || (await capabilities.json()).billing !== true) return false;
+      const readiness = await fetch(`${V2_BASE}/readiness`, {cache: 'no-store'});
+      const data = await readiness.json();
+      const billing = data.checks?.find(check => check.name === 'billing');
+      return billing?.passed === true && billing.detail !== 'disabled';
+    } catch { return false; }
+  }
+
+  async function getCheckoutUrl(plan, interval) {
+    if (_isDemoMode()) throw new Error('Paid checkout is unavailable in demo mode.');
+    const r = await apiRequest('/subscriptions/checkout', {
+      method: 'POST',
+      body: { plan, interval: interval || 'monthly' },
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.checkout_url) {
+      throw new Error(data.error || 'Paid checkout is unavailable. Your account remains on Free.');
+    }
+    return data.checkout_url;
   }
 
   async function getBillingPortalUrl() {
@@ -557,7 +555,7 @@
     // Usage
     getUsage,
     // Subscription
-    getCheckoutUrl, getBillingPortalUrl,
+    billingCheckoutReady, getCheckoutUrl, getBillingPortalUrl,
     // Files
     saveReflection, listReflections,
     // Reflect
