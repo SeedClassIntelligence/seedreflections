@@ -46,15 +46,16 @@ def _openai_url(api_url):
     return url + "/chat/completions" if url.endswith("/v1") else url + "/v1/chat/completions"
 
 
-def complete(provider, api_url, api_key, model, messages, timeout=90, max_tokens=1200):
-    """Return {"text", "prompt_tokens", "completion_tokens"} for one completion."""
+def complete(provider, api_url, api_key, model, messages, timeout=90, max_tokens=1200, json_mode=True):
+    """Return {"text", "prompt_tokens", "completion_tokens"} for one completion. json_mode asks providers that support it for JSON."""
     provider = (provider or "ollama").lower()
     if not model:
         raise ModelCallError("No model is selected.")
     if provider == "ollama":
         base = (api_url or "http://127.0.0.1:11434").rstrip("/")
-        data = _post(base + "/api/chat", {"model": model, "messages": messages, "stream": False, "format": "json"},
-                     {}, timeout)
+        payload = {"model": model, "messages": messages, "stream": False}
+        if json_mode: payload["format"] = "json"
+        data = _post(base + "/api/chat", payload, {}, timeout)
         return {"text": str((data.get("message") or {}).get("content") or ""),
                 "prompt_tokens": int(data.get("prompt_eval_count") or 0),
                 "completion_tokens": int(data.get("eval_count") or 0)}
@@ -79,7 +80,7 @@ def complete(provider, api_url, api_key, model, messages, timeout=90, max_tokens
         base = (api_url or "https://generativelanguage.googleapis.com").rstrip("/")
         data = _post(f"{base}/v1beta/models/{model}:generateContent",
                      {"system_instruction": {"parts": [{"text": system}]}, "contents": contents,
-                      "generationConfig": {"maxOutputTokens": max_tokens, "responseMimeType": "application/json"}},
+                      "generationConfig": {"maxOutputTokens": max_tokens, **({"responseMimeType": "application/json"} if json_mode else {})}},
                      {"x-goog-api-key": api_key}, timeout)
         parts = (((data.get("candidates") or [{}])[0].get("content") or {}).get("parts")) or []
         usage = data.get("usageMetadata") or {}

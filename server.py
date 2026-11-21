@@ -95,6 +95,10 @@ if DEPLOYMENT_MODE not in {"local","hosted","enterprise"}: raise RuntimeError("I
 # running locally turns them on for a demo, and they never run in hosted or enterprise mode. Real signing goes through
 # the Seed Signature authority (seed_signature.py).
 LOCAL_SIGNING_DEMO = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_LOCAL_SIGNING_DEMO") == "1"
+# The /api/v1 AI routes (and their bare aliases) predate accounts. They exist only on the desktop, where the one
+# workspace is the device owner's, so they resolve that workspace's saved AI mode. On the hosted service they are closed.
+LEGACY_AI_WORKSPACE = "local"
+LEGACY_AI_ALIASES = {"/reflect", "/reflect_selected", "/seeds/chat"}
 LEGACY_SIGNING_PATHS = {"/api/seed/create","/api/v1/api/seed/create","/api/v1/seed/create","/widget/sign","/widget/sign/submit","/sdk/seed-signature-widget.js"}
 WEB_ALLOW_PRIVATE = DEPLOYMENT_MODE == "local" and os.environ.get("SEED_REFLECTIONS_WEB_ALLOW_PRIVATE") == "1"
 # Behind the Caddy proxy every connection arrives from the proxy, so sign-in rate limits would be shared by all
@@ -489,12 +493,20 @@ def record_stripe_event(event_type, event_id, customer_email, plan, details=""):
 
 
 
-def check_ai_gateway_status():
-    """Check if platform AI gateway is allowed to make outbound LLM calls.
-    Returns: (is_allowed, error_code, error_message, current_spend, budget_cap)
-    """
+def platform_spend():
+    """Estimated spend on the platform's own AI account. Calls made with a person's own key are not the platform's cost."""
+    return sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG if item.get("billed", "platform") == "platform")
+
+def check_ai_gateway_status(mode="managed"):
+    """May this call go out? Returns (is_allowed, error_code, error_message, current_spend, budget_cap).
+
+    The emergency off-switch stops EVERY outbound AI call from this server, whoever's key it uses: it exists for
+    incidents (a leak, abuse, a provider problem) where the operator needs the server to stop sending text to AI
+    providers at once. The monthly budget cap protects the platform's own AI account, so it applies only to calls the
+    platform pays for (managed mode); a person's own key is limited by their plan's reflection quota, not this cap.
+    On the desktop app the operator and the person are the same, every key is theirs, and the cap they set applies to all calls."""
     cfg = load_config()
-    current_spend = sum(item.get("estimated_cost_usd", 0.0) for item in TELEMETRY_LOG)
+    current_spend = platform_spend()
     budget_cap = float(cfg.get("ai_monthly_budget_usd", 50.0))
     hard_stop = bool(cfg.get("ai_budget_hard_stop", True))
     killswitch = bool(cfg.get("ai_killswitch_enabled", False))
@@ -502,13 +514,13 @@ def check_ai_gateway_status():
     if killswitch:
         return False, "AI_KILLSWITCH_ACTIVE", "Platform AI Gateway is temporarily paused by administrator (Emergency Killswitch active).", round(current_spend, 4), budget_cap
 
-    if hard_stop and current_spend >= budget_cap:
+    if (mode == "managed" or DEPLOYMENT_MODE == "local") and hard_stop and current_spend >= budget_cap:
         return False, "AI_BUDGET_EXCEEDED", f"Platform monthly AI budget cap reached (${current_spend:.4f} / ${budget_cap:.2f} USD). Outbound LLM queries paused to prevent overages.", round(current_spend, 4), budget_cap
 
     return True, None, None, round(current_spend, 4), budget_cap
 
-def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_tag="chat"):
-    """Track LLM token consumption and estimated API spend."""
+def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_tag="chat", billed="platform"):
+    """Track LLM token consumption and estimated API spend. billed: "platform" (managed) or "own_key"."""
     total_tokens = prompt_tokens + completion_tokens
     # Estimated rates per 1M tokens (USD)
     rates = {
@@ -529,7 +541,8 @@ def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_t
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "total_tokens": total_tokens,
-        "estimated_cost_usd": round(est_cost, 6)
+        "estimated_cost_usd": round(est_cost, 6),
+        "billed": "platform" if billed == "platform" else "own_key"
     }
     TELEMETRY_LOG.append(event)
     # Retain last 500 events in memory
@@ -752,26 +765,76 @@ def load_config():
             cfg[k] = v
     return cfg
 
-def runtime_model_catalog():
-    """Return candidate models with truthful runtime availability."""
-    cfg=load_config(); catalog=model_public_catalog(); provider=cfg.get("llm_provider","ollama")
+# Providers a person may use with their own key on the hosted service. Each has a fixed public endpoint; a hosted
+# account cannot point the server at an address of its choosing (that would let it reach internal services).
+HOSTED_OWN_KEY_PROVIDERS = {"openai", "anthropic", "gemini", "google"}
+
+def model_connection(cfg=None, settings=None, workspace_id="local"):
+    """Decide which model connection a workspace's tasks use, from its SAVED AI mode.
+
+    managed     -> the platform's connection (server configuration and the platform key).
+    self_hosted -> the workspace's own provider, model, address and key. It never falls back to the platform key.
+                   Where the workspace has not chosen a provider yet, the server's provider, model and address are
+                   used (so existing local setups keep working), still with the workspace's own key.
+    Returns a dict with mode, provider, api_url, model, api_key and refusal (None when nothing forbids the call)."""
+    cfg=cfg if cfg is not None else load_config(); settings=dict(settings or {})
+    mode=str(settings.get("api_mode") or ("managed" if DEPLOYMENT_MODE!="local" else "self_hosted"))
+    if mode=="managed":
+        provider=str(cfg.get("llm_provider") or "ollama")
+        if DEPLOYMENT_MODE!="local" and provider=="managed": provider=""
+        return {"mode":"managed","provider":provider,"api_url":(cfg.get("llm_api_url") or "").rstrip("/"),
+                "model":str(cfg.get("llm_model") or ""),
+                "api_key":cfg.get("llm_api_key","") or (load_model_credential("local",provider) if provider else ""),
+                "refusal":None if provider else "The platform has no AI model configured yet."}
+    chosen=settings.get("llm_provider")
+    chosen=chosen if chosen and chosen!="managed" else None
+    provider=str(chosen or cfg.get("llm_provider") or "ollama")
+    # The server's model and address belong to the server's provider; they are inherited only for that same provider.
+    inherit=provider==cfg.get("llm_provider")
+    model=str((settings.get("llm_model") if chosen else None) or (cfg.get("llm_model") if inherit else "") or "")
+    api_url=str((settings.get("llm_api_url") if chosen else None) or (cfg.get("llm_api_url") if inherit else "") or "").rstrip("/")
+    refusal=None
+    if DEPLOYMENT_MODE!="local":
+        api_url=""                                                           # fixed public endpoint for the provider
+        if provider not in HOSTED_OWN_KEY_PROVIDERS:
+            refusal="A local or custom model address can only be used in the desktop app. Choose OpenAI, Anthropic or Gemini with your own key, or use the platform's AI."
+    api_key=load_model_credential(workspace_id,provider) if provider else ""
+    if not api_key and DEPLOYMENT_MODE=="local" and provider==cfg.get("llm_provider"):
+        api_key=cfg.get("llm_api_key","")                                    # on the desktop the server key is the owner's own key
+    return {"mode":"self_hosted","provider":provider,"api_url":api_url,"model":model,"api_key":api_key,"refusal":refusal}
+
+def workspace_ai_settings(workspace_id):
+    try: return dict(load_workspace(workspace_id=workspace_id).get("settings") or {})
+    except Exception: return {}
+
+def runtime_model_catalog(connection=None):
+    """Return candidate models with truthful availability for the connection a workspace's tasks will use."""
+    cfg=load_config(); connection=connection or model_connection(cfg,workspace_ai_settings("local"),"local")
+    catalog=model_public_catalog(); provider=connection["provider"]
     available_ids=set()
+    if connection.get("refusal"):
+        for item in catalog: item["available"]=False
+        return catalog
     if provider=="ollama":
         try:
-            base=(cfg.get("llm_api_url") or "http://127.0.0.1:11434").rstrip("/")
+            base=(connection.get("api_url") or "http://127.0.0.1:11434").rstrip("/")
             with urllib.request.urlopen(base+"/api/tags",timeout=1.5) as response:
                 payload=json.loads(response.read().decode("utf-8"))
             installed={str(item.get("name") or item.get("model") or "") for item in payload.get("models",[])}
+            configured=str(connection.get("model") or "").strip()
+            if configured in installed and not any(item["provider"]=="ollama" and item["model"]==configured for item in catalog):
+                catalog.append({"id":"ollama:"+configured,"provider":"ollama","model":configured,"label":configured,"source":"configured",
+                    "cost_tier":"local","capabilities":sorted(set().union(*TASK_CAPABILITIES.values())),"context_window":0})
             available_ids={item["id"] for item in catalog if item["provider"]=="ollama" and item["model"] in installed}
         except Exception:
             available_ids=set()
-    configured_model=str(cfg.get("llm_model") or "").strip()
+    configured_model=str(connection.get("model") or "").strip()
     if configured_model and provider!="ollama":
         configured_id=provider+":"+configured_model
         if not any(item["id"]==configured_id for item in catalog):
             catalog.append({"id":configured_id,"provider":provider,"model":configured_model,"label":configured_model,
                 "source":"configured","cost_tier":"provider","capabilities":sorted(set().union(*TASK_CAPABILITIES.values())),"context_window":0})
-        if cfg.get("llm_api_key") or model_credential_status("local",provider).get("credential_configured"): available_ids.add(configured_id)
+        if connection.get("api_key"): available_ids.add(configured_id)
     for item in catalog: item["available"]=item["id"] in available_ids
     return catalog
 
@@ -806,11 +869,14 @@ def agent_runtime(user, body, task="chat"):
     overrides={"workspace_id":user["workspace_id"]}
     if body.get("model_id"): overrides.update({"preferred_model_id":str(body["model_id"])[:200],"model_selection_mode":"manual"})
     provider,api_url,api_key,model,_route=resolve_task_runtime(task,load_config(),overrides)
-    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status()
+    refusal=model_connection(load_config(),workspace_ai_settings(user["workspace_id"]),user["workspace_id"])["refusal"]
+    billing=task_billing(user["workspace_id"])
+    ai_allowed,_code,ai_msg,_spend,_cap=check_ai_gateway_status("managed" if billing=="platform" else "self_hosted")
     reason=None
-    if not ai_allowed: reason=ai_msg
+    if refusal: reason=refusal
+    elif not ai_allowed: reason=ai_msg
     elif not model or not (api_url if provider=="ollama" else api_key):
-        reason="No model is connected for this workspace yet. Add a provider and key in Settings, or ask your administrator to connect one."
+        reason="No model is available for this workspace right now. Check the AI settings, or ask your administrator to connect one."
     elif agent_daily_limit_reached(user["workspace_id"]): reason="The daily assistant limit for this workspace has been reached."
     return provider,api_url,api_key,model,reason
 
@@ -908,16 +974,58 @@ class _AgentStores:
         return [i for i in self._workspace.get("seeds",[]) if str(i.get("status","")).lower() not in closed][:limit]
 
 def resolve_task_runtime(task, cfg=None, settings=None):
-    """Resolve an available task route and its matching provider connection."""
-    cfg=cfg or load_config(); settings=settings or {}
-    route=select_task_model(task,catalog=[item for item in runtime_model_catalog() if item.get("available")],
-        preferred_model_id=settings.get("preferred_model_id") or cfg.get("preferred_model_id",""),
-        selection_mode=settings.get("model_selection_mode") or cfg.get("model_selection_mode","auto"))
-    provider=cfg.get("llm_provider","ollama"); model=cfg.get("llm_model","llama3")
-    if route and route.get("provider")==provider: model=route["model"]
-    workspace_id=settings.get("workspace_id","local")
-    api_key=cfg.get("llm_api_key","") or load_model_credential(workspace_id,provider)
-    return provider,(cfg.get("llm_api_url") or "").rstrip("/"),api_key,model,route
+    """Resolve an available task route and its provider connection, following the workspace's saved AI mode.
+    `settings` may carry workspace_id and per-request overrides (preferred model)."""
+    cfg=cfg or load_config(); overrides=dict(settings or {})
+    workspace_id=overrides.get("workspace_id","local")
+    saved=workspace_ai_settings(workspace_id); saved.update({k:v for k,v in overrides.items() if k!="workspace_id"})
+    connection=model_connection(cfg,saved,workspace_id)
+    if connection["refusal"]: return connection["provider"],"","","",None
+    available=[item for item in runtime_model_catalog(connection) if item.get("available")]
+    # An empty list must stay empty: select_task_model treats an empty catalog as "use the built-in defaults".
+    route=select_task_model(task,catalog=available,
+        preferred_model_id=saved.get("preferred_model_id") or cfg.get("preferred_model_id",""),
+        selection_mode=saved.get("model_selection_mode") or cfg.get("model_selection_mode","auto")) if available else None
+    provider=connection["provider"]
+    # Nothing is called unless the same model list the person sees says a model is available.
+    if not route or route.get("provider")!=provider: return provider,"","","",None
+    return provider,connection["api_url"],connection["api_key"],route["model"],route
+
+def legacy_model_text(provider, api_url, api_key, model, messages, billed, caller, json_mode=True, timeout=120):
+    """One model call for the older desktop AI routes, through the same invocation code as the assistant, so every
+    provider a person can save (Ollama, OpenAI, OpenAI-compatible, Anthropic, Gemini) works the same way. The caller has
+    already applied the gateway check. Returns (text, error); text is "" when nothing could be called."""
+    if not model: return "", "No model is available. Check the AI settings."
+    try:
+        result=invoke_model(provider,api_url,api_key,model,messages,timeout=timeout,json_mode=json_mode)
+    except ModelCallError as exc:
+        return "", str(exc)
+    except Exception:
+        return "", "The model provider could not be reached."
+    record_llm_usage(provider,model,int(result.get("prompt_tokens") or 0),int(result.get("completion_tokens") or 0),caller_tag=caller,billed=billed)
+    return str(result.get("text") or "").strip(), None
+
+def parse_seed_list(text):
+    """The extraction prompt asks for a JSON array; accept it bare, fenced, or wrapped in an object."""
+    text=(text or "").strip()
+    if text.startswith("```"):
+        text=text.split("\n",1)[-1]
+        if text.endswith("```"): text=text[:-3]
+    try: parsed=json.loads(text)
+    except ValueError: return []
+    if isinstance(parsed,list): return [item for item in parsed if isinstance(item,dict)]
+    if isinstance(parsed,dict):
+        for value in parsed.values():
+            if isinstance(value,list): return [item for item in value if isinstance(item,dict)]
+        return [parsed]
+    return []
+
+def task_billing(workspace_id="local"):
+    """Who pays for this workspace's AI calls: "platform" in managed mode, "own_key" otherwise. On the desktop app the
+    owner pays for every call, so all of it counts toward the budget they set."""
+    if DEPLOYMENT_MODE=="local": return "platform"
+    mode=model_connection(load_config(),workspace_ai_settings(workspace_id),workspace_id)["mode"]
+    return "platform" if mode=="managed" else "own_key"
 
 def save_config(config_data):
     try:
@@ -1557,7 +1665,10 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
-            self._send_json({"models":runtime_model_catalog(),"tasks":sorted(TASK_CAPABILITIES),
+            connection=model_connection(load_config(),settings,user["workspace_id"])
+            self._send_json({"models":runtime_model_catalog(connection),"tasks":sorted(TASK_CAPABILITIES),
+                "connection":{"mode":connection["mode"],"provider":connection["provider"],"refusal":connection["refusal"],
+                    "key_configured":bool(connection["api_key"])},
                 "selection_mode":settings.get("model_selection_mode","auto"),
                 "preferred_model_id":settings.get("preferred_model_id","")})
             return
@@ -3104,7 +3215,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             self._send_json({"error":"Not found"},404); return
         if path == "/mcp":
             self._handle_mcp(); return
-        if DEPLOYMENT_MODE != "local" and path.startswith("/api/v1/"):
+        if DEPLOYMENT_MODE != "local" and (path.startswith("/api/v1/") or path in LEGACY_AI_ALIASES):
             self._send_json({"error":"Legacy local API is unavailable in hosted mode; use authenticated /api/v2 routes."},403)
             return
         permission_exempt={"/api/v2/auth/signup","/api/v2/auth/login","/api/v2/integrations/import",
@@ -3527,8 +3638,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             user=self._runtime_user()
             if not user: self._send_json({"error":"Authentication required"},401); return
             workspace=load_workspace(workspace_id=user["workspace_id"]); settings=workspace.get("settings") or {}
-            available=[item for item in runtime_model_catalog() if item.get("available")]
-            selected=select_task_model(body.get("task"),catalog=available,preferred_model_id=body.get("preferred_model_id") or settings.get("preferred_model_id",""),
+            available=[item for item in runtime_model_catalog(model_connection(load_config(),settings,user["workspace_id"])) if item.get("available")]
+            selected=None if not available else select_task_model(body.get("task"),catalog=available,preferred_model_id=body.get("preferred_model_id") or settings.get("preferred_model_id",""),
                 selection_mode=body.get("selection_mode") or settings.get("model_selection_mode","auto"))
             if not selected: self._send_json({"error":"No eligible model is available"},503); return
             self._send_json({"selected_model":selected})
@@ -3711,7 +3822,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     result=run_agent(prompt,stores,lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),history=history,
                         context_text=context_text,extra_factory=extra,
                         preload_sources=([{"conversation_id":report["source"]["conversation_id"],"title":report["source"]["title"]}] if report["source"] else None))
-                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session")
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"work_session",task_billing(user["workspace_id"]))
                     answer=result["answer"]
                     meta={"mode":"model","model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages,"context":report,
                           "drafts":[{"artifact_id":d["artifact_id"],"title":d["title"],"type":d["type"]} for d in drafts],
@@ -3759,7 +3870,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                         lambda msgs: invoke_model(provider,api_url,api_key,model,msgs),
                         history=chat_history,extra_factory=web_extra,
                         active_idea=({"title":seed.get("title"),"intent":seed.get("intent") or seed.get("summary"),"next_action":seed.get("next_action")} if seed else None))
-                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent")
+                    record_llm_usage(provider,model,result["usage"]["prompt_tokens"],result["usage"]["completion_tokens"],"workspace_agent",task_billing(user["workspace_id"]))
                     self._send_json({"answer":result["answer"],"grounded":True,"active_seed_id":active_id,"mode":"model",
                         "model":f"{provider}:{model}","steps":result["steps"],"sources":result["sources"],"web_sources":web_pages})
                     return
@@ -5367,7 +5478,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
                 
                 cfg = load_config()
-                provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
+                provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+                legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
                 
                 seeds_to_append = []
                 assimilated = []
@@ -5420,114 +5532,12 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     extracted_seeds = []
                     
                     # ── LLM Provider: Ollama (local open-source LLMs) ──
-                    ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+                    ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
                     if not ai_allowed:
                         extracted_seeds = []
-                    elif provider == "ollama" and api_url:
-                        try:
-                            req_payload = json.dumps({
-                                "model": model or "llama3",
-                                "messages": [{"role": "user", "content": prompt}],
-                                "stream": False,
-                                "format": "json"
-                            }).encode("utf-8")
-                            req = urllib.request.Request(f"{api_url}/api/chat", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                content_res = res_data.get("message", {}).get("content", "").strip()
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"Ollama reflect failed for '{title}': {e}")
-
-                    # ── LLM Provider: OpenAI / OpenAI-compatible (LM Studio, Together, etc.) ──
-                    elif provider in ("openai", "openai_compatible") and api_key:
-                        try:
-                            endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                            if not endpoint_url.endswith("/chat/completions"):
-                                if endpoint_url.endswith("/v1"):
-                                    endpoint_url = endpoint_url + "/chat/completions"
-                                elif endpoint_url.endswith("/v1/"):
-                                    endpoint_url = endpoint_url + "chat/completions"
-                                else:
-                                    endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                            req_payload = json.dumps({
-                                "model": model or "gpt-4o-mini",
-                                "messages": [{"role": "user", "content": prompt}]
-                            }).encode("utf-8")
-                            req = urllib.request.Request(
-                                endpoint_url, 
-                                data=req_payload, 
-                                headers={
-                                    "Content-Type": "application/json", 
-                                    "Authorization": f"Bearer {api_key}",
-                                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                                }, 
-                                method="POST"
-                            )
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                usage_info = res_data.get("usage", {})
-                                p_tok = usage_info.get("prompt_tokens", len(prompt) // 4)
-                                c_tok = usage_info.get("completion_tokens", 100)
-                                record_llm_usage(provider, model, p_tok, c_tok, caller_tag="reflect")
-                                content_res = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                                # Strip markdown code fences if present
-                                content_res = content_res.strip()
-                                if content_res.startswith("```"):
-                                    content_res = content_res.split("\n", 1)[-1]
-                                    if content_res.endswith("```"):
-                                        content_res = content_res[:-3]
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"OpenAI-compatible reflect failed for '{title}': {e}")
-
-                    # ── LLM Provider: Gemini ──
-                    elif provider == "gemini" and api_key:
-                        try:
-                            gemini_model = model or "gemini-2.5-flash"
-                            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
-                            req_payload = json.dumps({
-                                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                                "generationConfig": {"responseMimeType": "application/json"}
-                            }).encode("utf-8")
-                            req = urllib.request.Request(gemini_url, data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                            with urllib.request.urlopen(req, timeout=120) as resp:
-                                res_data = json.loads(resp.read().decode("utf-8"))
-                                content_res = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                                if content_res.startswith("```"):
-                                    content_res = content_res.split("\n", 1)[-1]
-                                    if content_res.endswith("```"):
-                                        content_res = content_res[:-3]
-                                parsed = json.loads(content_res)
-                                if isinstance(parsed, dict):
-                                    for k in parsed:
-                                        if isinstance(parsed[k], list):
-                                            extracted_seeds = parsed[k]
-                                            break
-                                    else:
-                                        extracted_seeds = [parsed]
-                                elif isinstance(parsed, list):
-                                    extracted_seeds = parsed
-                        except Exception as e:
-                            print(f"Gemini reflect failed for '{title}': {e}")
+                    else:
+                        text, _error = legacy_model_text(provider, api_url, api_key, model, [{"role": "user", "content": prompt}], legacy_billing, "reflect")
+                        extracted_seeds = parse_seed_list(text)
 
                     if not extracted_seeds:
                         lines = transcript.split("\n")
@@ -6039,7 +6049,8 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     return
 
             cfg = load_config()
-            provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg)
+            provider,api_url,api_key,model,model_route = resolve_task_runtime("extract",cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+            legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
 
             extracted_seeds = []
             extraction_method = "heuristics_fallback"
@@ -6055,7 +6066,7 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
             )
 
             # Check AI Gateway killswitch and budget limits
-            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
             if not ai_allowed:
                 extraction_method = f"heuristics_fallback ({ai_code})"
                 TELEMETRY_LOG.append({
@@ -6069,113 +6080,11 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
                     "caller": f"reflect:blocked_{ai_code}"
                 })
 
-            # Try to query LLM if configured and gateway is operational
-            if ai_allowed and provider == "ollama" and api_url:
-                try:
-                    req_payload = json.dumps({
-                        "model": model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "stream": False,
-                        "format": "json"
-                    }).encode("utf-8")
-                    
-                    req = urllib.request.Request(
-                        f"{api_url}/api/chat",
-                        data=req_payload,
-                        headers={"Content-Type": "application/json"},
-                        method="POST"
-                    )
-                    
-                    with urllib.request.urlopen(req, timeout=8) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("message", {}).get("content", "").strip()
-                        extracted_seeds = json.loads(content)
-                        extraction_method = f"ollama_local_{model}"
-                except Exception as e:
-                    print(f"Ollama call failed, falling back to heuristics: {e}")
-
-            elif provider in ("openai", "openai_compatible") and api_key:
-                try:
-                    endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                    if not endpoint_url.endswith("/chat/completions"):
-                        if endpoint_url.endswith("/v1"):
-                            endpoint_url = endpoint_url + "/chat/completions"
-                        elif endpoint_url.endswith("/v1/"):
-                            endpoint_url = endpoint_url + "chat/completions"
-                        else:
-                            endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [{"role": "user", "content": prompt}]
-                    }).encode("utf-8")
-                    
-                    req = urllib.request.Request(
-                        endpoint_url,
-                        data=req_payload,
-                        headers={
-                            "Content-Type": "application/json",
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        },
-                        method="POST"
-                    )
-                    
-                    with urllib.request.urlopen(req, timeout=120) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                        content = content.strip()
-                        if content.startswith("```"):
-                            content = content.split("\n", 1)[-1]
-                            if content.endswith("```"):
-                                content = content[:-3]
-                        parsed = json.loads(content)
-                        if isinstance(parsed, dict):
-                            for k in parsed:
-                                if isinstance(parsed[k], list):
-                                    extracted_seeds = parsed[k]
-                                    break
-                            else:
-                                extracted_seeds = [parsed]
-                        else:
-                            extracted_seeds = parsed
-                        extraction_method = f"{provider}_cloud_{model}"
-                except Exception as e:
-                    print(f"OpenAI/compatible call failed, falling back to heuristics: {e}")
-
-            elif provider == "gemini" and api_key:
-                try:
-                    gemini_model = model or "gemini-2.5-flash"
-                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}"
-                    req_payload = json.dumps({
-                        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                        "generationConfig": {"responseMimeType": "application/json"}
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        gemini_url,
-                        data=req_payload,
-                        headers={"Content-Type": "application/json"},
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=120) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        content = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                        if content.startswith("```"):
-                            content = content.split("\n", 1)[-1]
-                            if content.endswith("```"):
-                                content = content[:-3]
-                        parsed = json.loads(content)
-                        if isinstance(parsed, dict):
-                            for k in parsed:
-                                if isinstance(parsed[k], list):
-                                    extracted_seeds = parsed[k]
-                                    break
-                            else:
-                                extracted_seeds = [parsed]
-                        elif isinstance(parsed, list):
-                            extracted_seeds = parsed
-                        extraction_method = f"gemini_{gemini_model}"
-                except Exception as e:
-                    print(f"Gemini call failed, falling back to heuristics: {e}")
+            # Query the model only when the gateway allows it (the emergency off-switch stops every provider)
+            if ai_allowed:
+                text, model_error = legacy_model_text(provider, api_url, api_key, model, [{"role": "user", "content": prompt}], legacy_billing, "reflect")
+                extracted_seeds = parse_seed_list(text)
+                if extracted_seeds: extraction_method = f"{provider}_{model}"
 
             # Heuristics Fallback Parser
             if not extracted_seeds:
@@ -6336,106 +6245,19 @@ class SeedReflectionAPIHandler(BaseHTTPRequestHandler):
 
             cfg = load_config()
             requested_task=body.get("task") or ("code" if body.get("coding") else "chat")
-            provider,api_url,api_key,model,model_route = resolve_task_runtime(requested_task,cfg)
+            provider,api_url,api_key,model,model_route = resolve_task_runtime(requested_task,cfg,{"workspace_id":LEGACY_AI_WORKSPACE})
+            legacy_billing = task_billing(LEGACY_AI_WORKSPACE)
 
             answer = ""
 
-            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status()
+            ai_allowed, ai_code, ai_msg, _, _ = check_ai_gateway_status("managed" if legacy_billing=="platform" else "self_hosted")
             if not ai_allowed:
                 answer = f"**[AI Gateway Paused]**\n\nNotice: {ai_msg}\n\nThe administrator has activated budget caps or emergency pause for outbound LLM calls."
-            elif provider == "ollama" and api_url:
-                try:
-                    req_payload = json.dumps({
-                        "model": model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ],
-                        "stream": False
-                    }).encode("utf-8")
-                    req = urllib.request.Request(f"{api_url}/api/chat", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"Ollama chat failed: {e}")
-
-            elif ai_allowed and provider == "openai" and api_key:
-                try:
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        "https://api.openai.com/v1/chat/completions", 
-                        data=req_payload, 
-                        headers={
-                            "Content-Type": "application/json", 
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        }, 
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"OpenAI chat failed: {e}")
- 
-            elif ai_allowed and provider == "openai_compatible" and api_key:
-                try:
-                    endpoint_url = api_url or "https://api.openai.com/v1/chat/completions"
-                    if not endpoint_url.endswith("/chat/completions"):
-                        if endpoint_url.endswith("/v1"):
-                            endpoint_url = endpoint_url + "/chat/completions"
-                        elif endpoint_url.endswith("/v1/"):
-                            endpoint_url = endpoint_url + "chat/completions"
-                        else:
-                            endpoint_url = endpoint_url.rstrip("/") + "/v1/chat/completions"
-                    req_payload = json.dumps({
-                        "model": model or "gpt-4o-mini",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        endpoint_url, 
-                        data=req_payload, 
-                        headers={
-                            "Content-Type": "application/json", 
-                            "Authorization": f"Bearer {api_key}",
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        }, 
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=30) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        usage_info = res_data.get("usage", {})
-                        p_tok = usage_info.get("prompt_tokens", len(prompt + system_prompt) // 4)
-                        c_tok = usage_info.get("completion_tokens", 80)
-                        record_llm_usage(provider, model, p_tok, c_tok, caller_tag="chat")
-                        answer = res_data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                except Exception as e:
-                    print(f"OpenAI-compatible chat failed: {e}")
-
-            elif provider == "gemini" and api_key:
-                try:
-                    req_payload = json.dumps({
-                        "contents": [
-                            {"role": "user", "parts": [{"text": f"System context:\n{system_prompt}\n\nUser Question:\n{prompt}"}]}
-                        ]
-                    }).encode("utf-8")
-                    gemini_model = model or "gemini-2.5-flash"
-                    req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={api_key}", data=req_payload, headers={"Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(req, timeout=15) as resp:
-                        res_data = json.loads(resp.read().decode("utf-8"))
-                        answer = res_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                except Exception as e:
-                    print(f"Gemini chat failed: {e}")
+            else:
+                answer, model_error = legacy_model_text(provider, api_url, api_key, model,
+                    [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}], legacy_billing, "chat", json_mode=False, timeout=30)
+                if not answer:
+                    answer = f"**[No AI answer]**\n\n{model_error or 'The model returned nothing.'}\n\n"
 
             if not answer:
                 answer = f"**[Offline Local Mode]**\n\nI parsed your prompt: *'{prompt}'*\n"

@@ -14,6 +14,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import archive_store
 import model_invoke
 import server
+sys.path.insert(0, os.path.dirname(__file__))
+from support import FakeOllama
 import tenant_archive_store
 import workspace_agent
 
@@ -209,12 +211,13 @@ class ChatEndpointTests(unittest.TestCase):
         archive_store.initialize()
         archive_store.import_text("We decided to launch fortnightly as the default.", title="Pricing tiers")
         server.TELEMETRY_LOG.clear()
+        self.ollama = FakeOllama(["m"]).__enter__()
         sock = socket.socket(); sock.bind(("127.0.0.1", 0)); self.port = sock.getsockname()[1]; sock.close()
         self.httpd = server.HTTPServer(("127.0.0.1", self.port), server.SeedReflectionAPIHandler)
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
     def tearDown(self):
-        self.httpd.shutdown(); self.httpd.server_close()
+        self.httpd.shutdown(); self.httpd.server_close(); self.ollama.__exit__()
         for p in self.patches:
             p.stop()
         self.temp.cleanup()
@@ -230,11 +233,11 @@ class ChatEndpointTests(unittest.TestCase):
         server.save_config({**server.load_config(), "llm_provider": "openai", "llm_model": "", "llm_api_key": ""})
         result = self.chat()
         self.assertEqual(result["mode"], "records_only")
-        self.assertIn("No model is connected", result["reason"])
+        self.assertIn("No model is available", result["reason"])
 
     def test_with_a_model_the_agent_answers_from_the_archive_and_usage_is_recorded(self):
         server.save_config({**server.load_config(), "llm_provider": "ollama", "llm_model": "m",
-                            "llm_api_url": "http://127.0.0.1:1", "ai_killswitch_enabled": False})
+                            "llm_api_url": self.ollama.url, "ai_killswitch_enabled": False})
         conversation_id = archive_store.list_conversations(query="fortnightly")[0]["id"]
         script = iter(['{"tool": "search_archive", "args": {"query": "fortnightly"}}',
                        json.dumps({"tool": "read_conversation", "args": {"conversation_id": conversation_id}}),
@@ -248,7 +251,7 @@ class ChatEndpointTests(unittest.TestCase):
 
     def test_killswitch_blocks_the_model_and_falls_back_honestly(self):
         server.save_config({**server.load_config(), "llm_provider": "ollama", "llm_model": "m",
-                            "llm_api_url": "http://127.0.0.1:1", "ai_killswitch_enabled": True})
+                            "llm_api_url": self.ollama.url, "ai_killswitch_enabled": True})
         called = []
         with patch.object(server, "invoke_model", lambda *a, **k: called.append(1)):
             result = self.chat()
@@ -258,7 +261,7 @@ class ChatEndpointTests(unittest.TestCase):
 
     def test_provider_failure_falls_back_without_leaking_details(self):
         server.save_config({**server.load_config(), "llm_provider": "ollama", "llm_model": "m",
-                            "llm_api_url": "http://127.0.0.1:1", "ai_killswitch_enabled": False})
+                            "llm_api_url": self.ollama.url, "ai_killswitch_enabled": False})
 
         def down(*a, **k):
             raise model_invoke.ModelCallError("The model provider could not be reached.")
