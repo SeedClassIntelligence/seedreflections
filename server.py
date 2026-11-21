@@ -562,13 +562,14 @@ def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_t
         "estimated_cost_usd": round(est_cost, 6),
         "billed": "platform" if billed == "platform" else "own_key"
     }
+    call_id = spend_ledger.new_call_id()                              # one id per call: holds and retries never double-count
     try:
-        spend_ledger.record(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag)
+        spend_ledger.record(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag, call_id=call_id)
     except Exception as exc:
         print(f"Warning: AI spend could not be written to the ledger: {exc}")
         if event["billed"] == "platform":
             # Keep the cost so it is not forgotten, and stop further platform-paid calls until it is in the ledger.
-            spend_ledger.hold(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag)
+            spend_ledger.hold(provider, model, prompt_tokens, completion_tokens, event["estimated_cost_usd"], event["billed"], caller_tag, call_id=call_id)
     TELEMETRY_LOG.append(event)
     # Retain last 500 events in memory (recent activity view only; the budget uses the ledger)
     if len(TELEMETRY_LOG) > 500:

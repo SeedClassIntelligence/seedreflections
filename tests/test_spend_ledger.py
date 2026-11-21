@@ -4,6 +4,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+import threading
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,7 +71,71 @@ class LedgerTests(unittest.TestCase):
         server.record_llm_usage("openai", "gpt-4o-mini", 10, 10, "workspace_agent", "platform")
         with sqlite3.connect(archive_store.DB_PATH) as db:
             columns = [row[1] for row in db.execute("PRAGMA table_info(ai_spend)")]
-        self.assertEqual(columns, ["id", "created_at", "month", "provider", "model", "caller", "prompt_tokens", "completion_tokens", "cost_usd", "billed"])
+        self.assertEqual(columns, ["id", "created_at", "month", "provider", "model", "caller", "prompt_tokens", "completion_tokens", "cost_usd", "billed", "call_id"])
+
+
+class HeldSpendTests(unittest.TestCase):
+    """Spend held after a failed write is recorded exactly once, whatever fails part-way and however many requests hold at once."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.patch = patch.object(archive_store, "DB_PATH", Path(self.temp.name) / "archive.db"); self.patch.start()
+        spend_ledger._MEMORY_HELD.clear()
+
+    def tearDown(self):
+        spend_ledger._MEMORY_HELD.clear(); self.patch.stop(); remove_temp(self.temp)
+
+    def ledger_rows(self):
+        with sqlite3.connect(archive_store.DB_PATH) as db:
+            return db.execute("SELECT call_id, cost_usd FROM ai_spend ORDER BY call_id").fetchall()
+
+    def hold(self, call_id, dollars=0.60):
+        spend_ledger.hold("openai", "m", 0, 0, dollars, "platform", "test", call_id=call_id)
+
+    def test_a_failure_half_way_through_recovery_never_counts_a_call_twice(self):
+        self.hold("call-a"); self.hold("call-b")
+        real = spend_ledger.record
+        def first_only(*args, **kwargs):
+            if kwargs.get("call_id") == "call-b": raise sqlite3.OperationalError("database is locked")
+            return real(*args, **kwargs)
+        with patch.object(spend_ledger, "record", side_effect=first_only):
+            self.assertFalse(spend_ledger.flush_held())                  # a: written; b: still held
+        self.assertTrue(spend_ledger.has_unrecorded())
+        self.assertTrue(spend_ledger.flush_held())                       # the retry
+        self.assertEqual(self.ledger_rows(), [("call-a", 0.60), ("call-b", 0.60)])
+        self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 1.20)
+        self.assertFalse(spend_ledger.has_unrecorded())
+
+    def test_a_call_written_but_whose_hold_file_could_not_be_removed_is_not_counted_again(self):
+        self.hold("call-a")
+        with patch.object(Path, "unlink", side_effect=PermissionError("in use")):
+            self.assertFalse(spend_ledger.flush_held())                   # recorded, file left behind
+        self.assertTrue(spend_ledger.flush_held())
+        self.assertEqual(self.ledger_rows(), [("call-a", 0.60)])
+
+    def test_simultaneous_holds_are_all_kept_and_each_recorded_once(self):
+        ids = [f"call-{n:02d}" for n in range(20)]
+        start = threading.Barrier(len(ids))
+        def worker(call_id):
+            start.wait(); self.hold(call_id)
+        threads = [threading.Thread(target=worker, args=(call_id,)) for call_id in ids]
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
+        self.assertTrue(spend_ledger.flush_held())
+        self.assertEqual(self.ledger_rows(), [(call_id, 0.60) for call_id in ids])
+        self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 12.0)
+
+    def test_two_recoveries_running_at_once_record_each_call_once(self):
+        for n in range(10): self.hold(f"call-{n}")
+        start = threading.Barrier(2)
+        def recover():
+            start.wait(); spend_ledger.flush_held()
+        threads = [threading.Thread(target=recover) for _ in range(2)]
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
+        spend_ledger.flush_held()
+        self.assertEqual(len(self.ledger_rows()), 10); self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 6.0)
+        self.assertFalse(spend_ledger.has_unrecorded())
 
 
 if __name__ == "__main__":
