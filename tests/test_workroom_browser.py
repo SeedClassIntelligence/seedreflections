@@ -359,6 +359,49 @@ class WorkroomBrowserTests(unittest.TestCase):
             self.assertTrue(0 <= top < 844, top)
             self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth")); self.assertEqual(errors, []); browser.close()
 
+    def test_public_and_dashboard_prompt_engine_share_the_same_guided_flow(self):
+        with sync_playwright() as pw:
+            for size in (DESKTOP, PHONE):
+                browser, page, errors = self.page(pw, size, tab="prompt")
+                generated = []
+                for location in ("dashboard", "public"):
+                    if location == "public":
+                        page.goto(f"http://127.0.0.1:{self.runtime.port}/prompts.html", wait_until="domcontentloaded")
+                    page.locator("#wiz-step-1.active").wait_for()
+                    self.assertEqual(page.locator("#prompt-builder-host .wiz-card").count(), 4)
+                    page.locator("#card-type-recovery").click()
+                    page.locator("#btn-wiz-next").click()
+                    page.locator('label[for="wplat-claude"]').click()
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#wiz-intent").fill("Recover the launch decision")
+                    page.locator("#btn-wiz-next").click()
+                    text = page.locator("#wiz-console-output").inner_text()
+                    self.assertIn("Recover the launch decision", text)
+                    generated.append(text.split("---GENERATOR-SIGNATURE---")[0])
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#card-type-snippet").click()
+                    self.assertEqual(page.locator(".snippet-select-card").count(), 7)
+                    page.locator("#scard-snip-7").click()
+                    page.locator("#btn-wiz-next").click()
+                    self.assertIn("PROJECT BOOTSTRAP", page.locator("#wiz-console-output").inner_text())
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#card-type-system").click()
+                    page.locator("#btn-wiz-next").click()
+                    page.locator('label[for="wplat-gemini"]').click()
+                    page.locator("#btn-wiz-next").click()
+                    self.assertIn("Gemini", page.locator("#wiz-console-title").inner_text())
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#card-type-new_thread").click()
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#btn-wiz-next").click()
+                    page.locator("#wiz-intent").fill("Design the onboarding flow")
+                    page.locator("#btn-wiz-next").click()
+                    self.assertIn("Design the onboarding flow", page.locator("#wiz-console-output").inner_text())
+                    self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"))
+                self.assertEqual(generated[0], generated[1])
+                self.assertEqual(errors, [])
+                browser.close()
+
 
 if __name__ == "__main__":
     unittest.main()

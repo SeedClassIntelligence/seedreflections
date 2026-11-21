@@ -692,14 +692,6 @@ a{color:var(--accent);text-decoration:none}
 .modal-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 .modal-section h3{font-size:14px;font-weight:700;margin-bottom:10px}
 
-/* ── Snippets Grid ──────────────────────────────────────────────────── */
-.snippets-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.snippet-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:14px;position:relative}
-.snippet-card h4{font-size:13px;font-weight:700;margin-bottom:6px}
-.snippet-card p{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
-.snippet-card pre{background:var(--bg-deep);border-radius:6px;padding:10px;font-size:12px;color:var(--text-muted);overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:8px;max-height:120px;overflow-y:auto}
-.snippet-card .btn{position:absolute;top:10px;right:10px}
-
 /* ── Account Section Layout ─────────────────────────────────────────── */
 .account-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .account-grid-full{grid-column:1/-1}
@@ -778,7 +770,6 @@ a{color:var(--accent);text-decoration:none}
 @media(max-width:900px){
   .garden-grid,.intel-grid{grid-template-columns:1fr}
   .platform-grid{grid-template-columns:1fr 1fr}
-  .snippets-grid{grid-template-columns:1fr}
   .hero h1{font-size:26px}
 }
 @media(max-width:600px){
@@ -1226,7 +1217,7 @@ body{background:#06080f;color:var(--text)}
 .app-primary-nav,.library-subnav{background:#0d1117}
 .section{background:#06080f;color:var(--text)}
 .section-title,.journey-title{color:#f0f6fc}.workspace-intro,.journey-copy{color:#8b949e}
-.card,.intake-card,.review-queue,.archive-detail,.import-ledger,.platform-card,.overview-stat,.candidate-card,.tool-card,.tools-policy>div,.snippet-card{background:#0d1117!important;border-color:#21262d!important;color:#f0f6fc!important}
+.card,.intake-card,.review-queue,.archive-detail,.import-ledger,.platform-card,.overview-stat,.candidate-card,.tool-card,.tools-policy>div{background:#0d1117!important;border-color:#21262d!important;color:#f0f6fc!important}
 .card-header,.review-queue-head,.import-ledger-head,.archive-detail-head{background:#161b22;border-color:#21262d}
 .btn-ghost{background:#161b22;color:#c9d1d9;border-color:#30363d}.btn-ghost:hover{background:#1c2128;color:#fff;border-color:#3fb950}
 .btn-primary{background:#3fb950;color:#fff}.btn-primary:hover{background:#3fb950}
@@ -1280,7 +1271,6 @@ body{background:#06080f;color:var(--text)}
 .overview-stat strong{font-size:29px}.overview-stat span{font-size:12px}.overview-stat button{font-size:12px;cursor:pointer}
 .tool-info b{font-size:14px}.tool-info p,.tools-policy span,.tools-manager-head p{font-size:12px;line-height:1.55}.tool-state,.tool-action{font-size:12px}
 .tools-group-title{font-size:12px}.tools-policy b{font-size:13px}
-.snippet-card h4{font-size:15px}.snippet-card p,.snippet-card pre{font-size:12px;line-height:1.6}
 .section input::placeholder,.section textarea::placeholder{color:#8b949e}
 .nav-caption{color:#8b949e}
 .app-primary-tab:focus-visible,.library-view-tab:focus-visible,.btn:focus-visible,.source-method:focus-visible{outline:2px solid #3fb950;outline-offset:2px}
@@ -1496,6 +1486,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 #brief-needs-you.is-clear{background:transparent}#brief-needs-you.is-clear .brief-label{color:#8b949e}
 @media(max-width:700px){.brief-row{grid-template-columns:1fr;gap:8px}.brief-row button{justify-self:start}}
 </style>
+<link rel="stylesheet" href="assets/prompt-engine.css">
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -2264,13 +2255,8 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 <!-- ── Settings Modal ──────────────────────────────────────────────── -->
 <div class="section" id="section-prompt" style="display:none">
   <div class="journey-shell">
-    <div class="section-head"><div><div class="journey-kicker">Prompt Engine</div><div class="section-title">Carry intent between AI platforms.</div><p class="workspace-intro">Build recovery prompts, system instructions, new-thread handoffs, or use the complete set of seven universal continuity snippets.</p></div><a class="btn btn-primary" href="index.html#section-generator">Open guided prompt builder</a></div>
-    <div class="source-methods" style="margin-bottom:22px"><span class="source-method active">Recovery Prompt</span><span class="source-method">System Prompt</span><span class="source-method">New Thread</span><span class="source-method">Pre-made Snippets</span></div>
-    <h3 aria-level="2" style="margin-bottom:5px">Seven universal SCIA utility prompts</h3>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">The same canonical prompt set presented by the public Prompt Engine—available inside your workspace.</p>
-    <div class="snippets-grid" id="snippets-grid">
-      <!-- rendered by JS -->
-    </div>
+    <div class="section-head"><div><div class="journey-kicker">Prompt Engine</div><div class="section-title">Build a prompt that carries your intent.</div><p class="workspace-intro">Choose a recovery prompt, system instructions, a new-thread starter, or one of seven continuity snippets. Build it here, then copy it wherever you work.</p></div></div>
+    <div class="prompt-builder-host" id="prompt-builder-host">Loading prompt builder…</div>
   </div>
 </div>
 
@@ -2614,7 +2600,6 @@ async function boot() {
   await loadConnectedSources();
   await loadApiIntegrations();
   await loadLLMConfig();
-  buildSnippetsGrid();
 }
 
 async function loadProductOverview() {
@@ -6847,61 +6832,6 @@ async function confirmLocalRestore(restoreToken) {
   } catch (error) { result.textContent = error.message; result.className = 'coverage-partial'; button.disabled = false; }
 }
 
-/* ── Snippets ──────────────────────────────────────────────────────── */
-function buildSnippetsGrid() {
-  var snippets = [
-    {
-      title: 'Plant a Seed', desc: 'State the goal and constraints at the start so the model has a durable intent boundary.',
-      prompt: '🌱 SEED PLANT — SCIA v4.0\\n\\nMy intent for this conversation:\\n[YOUR GOAL HERE]\\n\\nKey constraints: [any limits]\\nSuccess looks like: [what done means]\\n\\nPlease confirm you\'ve received this seed and repeat it back before we begin.'
-    },
-    {
-      title: 'Recover Ideas', desc: 'Find ideas, projects, and questions that were started but not completed.',
-      prompt: '🔍 SEED RECOVERY — SCIA v4.0\\n\\nReview this conversation and identify:\\n1. Every idea I mentioned but didn\'t complete\\n2. Every project I started but abandoned\\n3. Every question I raised but never answered\\n\\nFor each, give me: what it was, why it matters, and the single next action to pick it up.'
-    },
-    {
-      title: 'Coherence Check', desc: 'Compare the current direction with the original goal and identify drift.',
-      prompt: '📊 COHERENCE CHECK — SCIA v4.0\\n\\nOriginal goal: [paste your opening message]\\n\\nAre we still working toward that goal?\\nWhat have we drifted from?\\nWhat should we do next to get back on track?'
-    },
-    {
-      title: 'Handoff Summary', desc: 'Produce a portable session bundle for continuing in another conversation or model.',
-      prompt: '📋 SESSION HANDOFF — SCIA v4.0\\n\\nGenerate a handoff summary I can paste into a new conversation:\\n1. My original goal\\n2. What we accomplished\\n3. What\'s still unfinished\\n4. The exact next step\\n5. Any important context a new session needs'
-    },
-    {
-      title: 'Priority Recovery', desc: 'Rank abandoned ideas by impact, effort, and urgency.',
-      prompt: '🎯 PRIORITY RECOVERY — SCIA v4.0\\n\\nFrom this conversation, list every abandoned idea.\\nScore each on:\\n- Impact (1-10): how much does completing this matter?\\n- Effort (1-10): how hard is it?\\n- Urgency (high/medium/low)\\n\\nSort by Impact/Effort ratio. Tell me what to do first.'
-    },
-    {
-      title: 'Provenance Stamp', desc: 'Request an alignment and provenance receipt with the response.',
-      prompt: '✍️ PROVENANCE STAMP REQUEST — SCIA v4.0\\n\\nPlease end your response with a Provenance Stamp block:\\n\\n[SEED-SIG]\\nContent-Hash: {first 8 chars of SHA-256 of response}\\nIntent-Preserved: {yes/partial/no}\\nDrift-Score: {0-100, where 0 = perfect alignment}\\nNext-Seed: {the logical next question or action}\\n[/SEED-SIG]'
-    },
-    {
-      title: 'Project Bootstrap', desc: 'Turn a fresh idea into milestones, dependencies, and success criteria.',
-      prompt: '🚀 PROJECT BOOTSTRAP — SCIA v4.0\\n\\nIdea: [YOUR IDEA]\\n\\nHelp me structure this as a Seed Reflections project:\\n1. Core intent (one sentence)\\n2. Top 5 seeds (specific, actionable tasks)\\n3. Dependencies between seeds\\n4. What to build first and why\\n5. Success criteria for the whole project'
-    }
-  ];
-
-  var grid = document.getElementById('snippets-grid');
-  var html = '';
-
-  snippets.forEach(function(s, i) {
-    html += '<div class="snippet-card">';
-    html += '<button class="btn btn-ghost btn-sm" onclick="copySnippet(' + i + ')" style="position:absolute;top:10px;right:10px">📋 Copy</button>';
-    html += '<h4>' + s.title + '</h4>';
-    html += '<p>' + s.desc + '</p>';
-    html += '<pre id="snippet-' + i + '">' + escHtml(s.prompt) + '</pre>';
-    html += '</div>';
-  });
-
-  grid.innerHTML = html;
-}
-
-function copySnippet(index) {
-  var el = document.getElementById('snippet-' + index);
-  if (el) {
-    navigator.clipboard.writeText(el.textContent).then(function(){ showToast('Snippet copied!'); });
-  }
-}
-
 function showSourceMethod(method) {
   document.querySelectorAll('.source-method').forEach(function(button){ button.classList.toggle('active',button.dataset.sourceMethod===method); button.setAttribute('aria-pressed',button.dataset.sourceMethod===method?'true':'false'); });
   document.querySelectorAll('.source-method-panel').forEach(function(panel){ panel.classList.toggle('active',panel.dataset.sourcePanel===method); });
@@ -6994,6 +6924,7 @@ document.addEventListener('DOMContentLoaded', function() {
   switchDashTab(savedTab);
 });
 </script>
+<script src="assets/prompt-engine.js"></script>
 <script src="assets/a11y.js"></script>
 <script src="assets/dialogs.js"></script>
 </body>

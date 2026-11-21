@@ -1,0 +1,80 @@
+/* One prompt builder on the public page and inside the Workspace. */
+.prompt-builder-host {
+  --bg: #06080f;
+  --bg-card: #0d1117;
+  --bg-raised: #1c2128;
+  --border: #21262d;
+  --border-hi: #30363d;
+  --text: #f0f6fc;
+  --text2: #c9d1d9;
+  --text3: #8b949e;
+  --green: #3fb950;
+  --green-dim: rgba(63,185,80,.1);
+  --amber: #d29922;
+  --font-mono: 'JetBrains Mono', monospace;
+  color: var(--text);
+  container-type: inline-size;
+}
+.prompt-builder-host .console-card { background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;max-width:1040px;margin:32px auto 0;box-shadow:0 16px 48px rgba(0,0,0,.4);text-align:left }
+.prompt-builder-host .console-body { padding:24px }
+.prompt-builder-host .wiz-progress-bar { background:var(--border);height:6px;border-radius:3px;overflow:hidden;margin-top:8px }
+.prompt-builder-host .wiz-progress-fill { background:var(--green);height:100%;width:25%;transition:width .3s ease }
+.prompt-builder-host .wiz-step { display:none;margin-top:20px;animation:promptFadeIn .3s ease }
+.prompt-builder-host .wiz-step.active { display:block }
+@keyframes promptFadeIn { from { opacity:0;transform:translateY(8px) } to { opacity:1;transform:translateY(0) } }
+.prompt-builder-host .wiz-cards { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px }
+.prompt-builder-host .wiz-card { background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;position:relative }
+.prompt-builder-host .wiz-card:hover { border-color:var(--border-hi) }
+.prompt-builder-host .wiz-card:focus-visible,.prompt-builder-host .snippet-select-card:focus-visible { outline:2px solid var(--green);outline-offset:2px }
+.prompt-builder-host .wiz-card.active { border-color:var(--green);background:var(--green-dim) }
+.prompt-builder-host .wiz-card-icon { font-size:28px;margin-bottom:12px }
+.prompt-builder-host .wiz-card-title { font-size:14px;font-weight:700;color:var(--text) }
+.prompt-builder-host .wiz-card-desc { font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4 }
+.prompt-builder-host .snippets-subgrid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:20px;grid-column:1/-1 }
+.prompt-builder-host .snippet-select-card { background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .15s }
+.prompt-builder-host .snippet-select-card:hover { border-color:var(--border-hi) }
+.prompt-builder-host .snippet-select-card.active { border-color:var(--green);background:var(--green-dim) }
+.prompt-builder-host .snippet-select-title { font-size:12px;font-weight:700;color:var(--text) }
+.prompt-builder-host .snippet-select-desc { font-size:10px;color:var(--text3);margin-top:2px }
+.prompt-builder-host .wiz-footer { display:flex;justify-content:space-between;gap:12px;margin-top:24px;padding-top:16px;border-top:1.5px solid var(--border) }
+.prompt-builder-host .form-section { background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px }
+.prompt-builder-host .form-section-title { font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:8px }
+.prompt-builder-host .form-section-title span { font-size:16px }
+.prompt-builder-host .intent-input { width:100%;min-height:80px;resize:vertical;font-size:14px;line-height:1.5;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px 12px;outline:none;font-family:inherit }
+.prompt-builder-host .intent-input:focus { border-color:var(--green) }
+.prompt-builder-host .intent-hint { font-size:11px;color:var(--text3);margin-top:6px }
+.prompt-builder-host .platform-grid,.prompt-builder-host .length-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px }
+.prompt-builder-host .platform-option,.prompt-builder-host .length-option { position:absolute;opacity:0;width:1px;height:1px }
+.prompt-builder-host .platform-option + label,.prompt-builder-host .length-option + label { display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 6px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text3);text-align:center }
+.prompt-builder-host .platform-option + label:hover,.prompt-builder-host .length-option + label:hover { border-color:var(--border-hi);color:var(--text) }
+.prompt-builder-host .platform-option:checked + label,.prompt-builder-host .length-option:checked + label { border-color:var(--green);color:var(--green);background:var(--green-dim) }
+.prompt-builder-host .platform-option:focus-visible + label,.prompt-builder-host .length-option:focus-visible + label { outline:2px solid var(--green);outline-offset:2px }
+.prompt-builder-host .length-option + label .len-icon { font-size:16px }
+.prompt-builder-host .length-option + label .len-sub { font-size:11px;font-weight:400;margin-top:2px }
+.prompt-builder-host .chunking-note { background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:var(--amber);display:none;gap:8px;align-items:flex-start }
+.prompt-builder-host .focus-grid { display:grid;grid-template-columns:1fr;gap:8px }
+.prompt-builder-host .focus-item { display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);padding:10px 14px;border-radius:8px;cursor:pointer;font-size:12px }
+.prompt-builder-host .focus-item input[type="checkbox"] { width:14px;height:14px;accent-color:var(--green);cursor:pointer }
+.prompt-builder-host .focus-item:hover { border-color:var(--border-hi) }
+.prompt-builder-host .focus-item.checked { border-color:var(--green);background:var(--green-dim) }
+.prompt-builder-host .focus-text { flex:1;color:var(--text2) }
+.prompt-builder-host .focus-item.checked .focus-text { color:var(--green);font-weight:600 }
+.prompt-builder-host .output-console { background:#03070b;border:1px solid var(--border);border-radius:8px;font-family:var(--font-mono);font-size:12.5px;color:var(--text2);line-height:1.7;overflow:hidden;margin-top:14px }
+.prompt-builder-host .output-console-header { background:#070d14;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px }
+.prompt-builder-host .output-console-body { padding:16px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-word }
+.prompt-builder-host .btn { display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 24px;border-radius:9px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;text-decoration:none;white-space:normal }
+.prompt-builder-host .btn-sm { padding:8px 16px;font-size:13px }
+.prompt-builder-host .btn-green { background:var(--green);color:#000;border:1px solid var(--green) }
+.prompt-builder-host .btn-outline { border:1px solid var(--border-hi);background:transparent;color:var(--text2) }
+.prompt-builder-host .btn:hover { filter:brightness(1.1) }
+.prompt-builder-host .btn-outline:hover { border-color:var(--green);color:var(--green);filter:none }
+@container (max-width:800px) {
+  .prompt-builder-host .wiz-cards { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .prompt-builder-host .snippets-subgrid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+@container (max-width:500px) {
+  .prompt-builder-host .wiz-cards,.prompt-builder-host .snippets-subgrid { grid-template-columns:1fr }
+  .prompt-builder-host .platform-grid,.prompt-builder-host .length-grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .prompt-builder-host .console-body { padding:18px 14px }
+  .prompt-builder-host .output-console-header { flex-wrap:wrap }
+}

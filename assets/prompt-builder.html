@@ -1,0 +1,215 @@
+    <div class="console-card">
+      <!-- Wizard Progress Header -->
+      <div style="padding:20px 24px 12px;border-bottom:1.5px solid var(--border);background:var(--bg-raised)">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">
+          <span>SCIA Prompt Wizard</span>
+          <span id="wiz-step-indicator">Step 1 of 4</span>
+        </div>
+        <div class="wiz-progress-bar">
+          <div class="wiz-progress-fill" id="wiz-progress-fill" style="width:25%;"></div>
+        </div>
+      </div>
+
+      <div class="console-body" style="padding:28px 24px;">
+
+        <!-- STEP 1: Choose Prompt Type -->
+        <div class="wiz-step active" id="wiz-step-1">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Select prompt type:</h3>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:18px">Choose what type of seed-reflection prompt you'd like to construct.</p>
+
+          <div class="wiz-cards">
+            <div class="wiz-card active" id="card-type-recovery" onclick="selectPromptType('recovery')">
+              <div class="wiz-card-icon">🔍</div>
+              <div class="wiz-card-title">Recovery Prompt</div>
+              <div class="wiz-card-desc">Scan an existing chat log to extract forgotten seeds &amp; drift points.</div>
+            </div>
+
+            <div class="wiz-card" id="card-type-system" onclick="selectPromptType('system')">
+              <div class="wiz-card-icon">🧠</div>
+              <div class="wiz-card-title">System Prompt</div>
+              <div class="wiz-card-desc">Configure custom system instructions to make chats seed-aware automatically.</div>
+            </div>
+
+            <div class="wiz-card" id="card-type-new_thread" onclick="selectPromptType('new_thread')">
+              <div class="wiz-card-icon">💬</div>
+              <div class="wiz-card-title font-mono">New Thread</div>
+              <div class="wiz-card-desc">Create a starter prompt to begin a clean, context-contained chat.</div>
+            </div>
+
+            <div class="wiz-card" id="card-type-snippet" onclick="selectPromptType('snippet')">
+              <div class="wiz-card-icon">📋</div>
+              <div class="wiz-card-title">Pre-made Snippet</div>
+              <div class="wiz-card-desc">Select one of the 7 universal pre-made SCIA utility prompts.</div>
+            </div>
+          </div>
+
+          <!-- Snippet Sub-Selection (slides out when snippet is chosen) -->
+          <div class="snippets-subgrid" id="snippets-subgrid" style="display:none;">
+            <div class="snippet-select-card active" id="scard-snip-1" onclick="selectSnippetCard(1)">
+              <div class="snippet-select-title">1. Plant a Seed</div>
+              <div class="snippet-select-desc">Lock in intent before starting.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-2" onclick="selectSnippetCard(2)">
+              <div class="snippet-select-title">🔍 2. Recover Ideas</div>
+              <div class="snippet-select-desc">Scan thread for lost threads.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-3" onclick="selectSnippetCard(3)">
+              <div class="snippet-select-title">📊 3. Coherence Check</div>
+              <div class="snippet-select-desc">Audit alignment mid-session.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-4" onclick="selectSnippetCard(4)">
+              <div class="snippet-select-title">📋 4. Handoff Summary</div>
+              <div class="snippet-select-desc">Handoff summary for new chat.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-5" onclick="selectSnippetCard(5)">
+              <div class="snippet-select-title">🎯 5. Priority Recovery</div>
+              <div class="snippet-select-desc">Score seeds by effort/impact.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-6" onclick="selectSnippetCard(6)">
+              <div class="snippet-select-title">✍️ 6. Provenance Stamp</div>
+              <div class="snippet-select-desc">Append validation signature.</div>
+            </div>
+            <div class="snippet-select-card" id="scard-snip-7" onclick="selectSnippetCard(7)">
+              <div class="snippet-select-title">🚀 7. Project Bootstrap</div>
+              <div class="snippet-select-desc">Generate starting milestones.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Configure Platform & Length -->
+        <div class="wiz-step" id="wiz-step-2">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configure platform &amp; parameters:</h3>
+
+          <div class="form-section">
+            <div class="form-section-title"><span>🤖</span> Target AI Platform</div>
+            <div class="platform-grid">
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-chatgpt" value="ChatGPT" class="platform-option" checked onchange="selectPlatformVal('ChatGPT')">
+                <label for="wplat-chatgpt"><span class="plat-icon">💬</span>ChatGPT</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-claude" value="Claude" class="platform-option" onchange="selectPlatformVal('Claude')">
+                <label for="wplat-claude"><span class="plat-icon">🔮</span>Claude</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-gemini" value="Gemini" class="platform-option" onchange="selectPlatformVal('Gemini')">
+                <label for="wplat-gemini"><span class="plat-icon">♊</span>Gemini</label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-platform" id="wplat-other" value="AI assistant" class="platform-option" onchange="selectPlatformVal('AI assistant')">
+                <label for="wplat-other"><span class="plat-icon">🌐</span>Other</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section" id="wiz-length-block" style="margin-top:16px;">
+            <div class="form-section-title"><span>📏</span> Conversation Size (For Context Allocation)</div>
+            <div class="length-grid">
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-short" value="short" class="length-option" checked onchange="selectLengthVal('short')">
+                <label for="wlen-short"><span class="len-icon">📄</span>Short<span class="len-sub">&lt;10K tokens</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-medium" value="medium" class="length-option" onchange="selectLengthVal('medium')">
+                <label for="wlen-medium"><span class="len-icon">📋</span>Medium<span class="len-sub">10K–50K</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-long" value="long" class="length-option" onchange="selectLengthVal('long')">
+                <label for="wlen-long"><span class="len-icon">📚</span>Long<span class="len-sub">50K–200K</span></label>
+              </div>
+              <div>
+                <input type="radio" name="wiz-length" id="wlen-xlarge" value="xlarge" class="length-option" onchange="selectLengthVal('xlarge')">
+                <label for="wlen-xlarge"><span class="len-icon">🌊</span>V. Long<span class="len-sub">500K+</span></label>
+              </div>
+            </div>
+            <div class="chunking-note" id="wchunking-note">
+              <span>⚠️</span>
+              <div><strong>Large conversation context.</strong> Wizard will inject specialized context-chunking and rolling-state prompts.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Focus Areas & Goal Description -->
+        <div class="wiz-step" id="wiz-step-3">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Describe your goal &amp; focus areas:</h3>
+
+          <div class="form-section">
+            <div class="form-section-title"><span>🎯</span> Describe your goal or seed (optional context)</div>
+            <textarea class="intent-input" id="wiz-intent" placeholder="What are you trying to recover, outline, or build? (e.g. 'Plan next steps for the habit tracker UI' or 'Identify why we stalled on authentication development')"></textarea>
+            <div class="intent-hint">Adds specific parameters and constraints to focus model outputs.</div>
+          </div>
+
+          <div class="form-section" id="wiz-focus-block" style="margin-top:16px;">
+            <div class="form-section-title"><span>🔍</span> Select target focus areas (What matters most)</div>
+            <div class="focus-grid">
+              <label class="focus-item checked" id="wfocus-stuck-label">
+                <input type="checkbox" id="wfocus-stuck" value="stuck" checked onchange="toggleFocusStyle('wfocus-stuck-label', this)">
+                <span class="focus-icon">🧱</span>
+                <span class="focus-text">Find where we got stuck and why</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-code-label">
+                <input type="checkbox" id="wfocus-code" value="code" checked onchange="toggleFocusStyle('wfocus-code-label', this)">
+                <span class="focus-icon">💾</span>
+                <span class="focus-text">Recover code &amp; content we built</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-ideas-label">
+                <input type="checkbox" id="wfocus-ideas" value="ideas" checked onchange="toggleFocusStyle('wfocus-ideas-label', this)">
+                <span class="focus-icon">💡</span>
+                <span class="focus-text">Find other ideas mentioned but forgotten</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-next-label">
+                <input type="checkbox" id="wfocus-next" value="next" checked onchange="toggleFocusStyle('wfocus-next-label', this)">
+                <span class="focus-icon">🎯</span>
+                <span class="focus-text">Get actionable next steps</span>
+              </label>
+              <label class="focus-item checked" id="wfocus-drift-label">
+                <input type="checkbox" id="wfocus-drift" value="drift" checked onchange="toggleFocusStyle('wfocus-drift-label', this)">
+                <span class="focus-icon">🌊</span>
+                <span class="focus-text">Identify drift points and causes</span>
+              </label>
+              <label class="focus-item" id="wfocus-decisions-label">
+                <input type="checkbox" id="wfocus-decisions" value="decisions" onchange="toggleFocusStyle('wfocus-decisions-label', this)">
+                <span class="focus-icon">⚖️</span>
+                <span class="focus-text">List decisions made and rationale</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: Output Custom Prompt Terminal -->
+        <div class="wiz-step" id="wiz-step-4">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Your custom prompt is ready!</h3>
+          <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px">Copy the compiled instructions block below and paste it directly into your AI chat window.</p>
+
+          <div class="output-console">
+            <div class="output-console-header">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff5f57"></span>
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#febc2e"></span>
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#28c840"></span>
+                <span style="margin-left:8px;font-size:11px;color:var(--text3)" id="wiz-console-title">Prompt Compiler</span>
+              </div>
+              <button class="btn btn-green btn-sm" id="btn-wiz-copy" onclick="copyWizardOutputPrompt()">📋 Copy Prompt</button>
+            </div>
+
+            <div class="output-console-body" id="wiz-console-output">Compiling...</div>
+          </div>
+
+          <div class="card" style="margin-top:16px;padding:16px;">
+            <h4 style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">💡 Usage Guidance:</h4>
+            <ul style="font-size:12px;color:var(--text2);line-height:1.6;margin-left:18px;list-style:disc;" id="wiz-usage-guidelines">
+              <li>Open a new conversation thread on the target AI assistant.</li>
+              <li>Paste the full compiled prompt first.</li>
+              <li>Then paste your conversation transcript history after it.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Wizard Navigation Footer -->
+        <div class="wiz-footer">
+          <button class="btn btn-outline btn-sm" id="btn-wiz-prev" onclick="prevWizStep()" style="visibility:hidden">← Back</button>
+          <button class="btn btn-green btn-sm" id="btn-wiz-next" onclick="nextWizStep()">Next: Platform Details ➔</button>
+        </div>
+
+      </div>
+    </div>
