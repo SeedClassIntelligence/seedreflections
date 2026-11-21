@@ -137,6 +137,39 @@ class WorkroomBrowserTests(unittest.TestCase):
                 self.assertEqual(page.evaluate("() => [localStorage.getItem('active_dash_tab'), INBOX.status]"), ["review", "relationships"], label)
                 self.assertEqual(errors, [], label); browser.close()
 
+    # ---- Settings ----
+    def test_settings_shows_only_true_things(self):
+        with sync_playwright() as pw:
+            for label, size in (("desktop", DESKTOP), ("phone", PHONE)):
+                browser, page, errors = self.page(pw, size, tab="account")
+                text = " ".join(page.inner_text("#section-account").split())
+                for invented in ("4.2 MB", "Disk Space", "28 seeds", "Allow AI model training", "Anonymized analytics", "Consent Control Center", "Delete Account Permanently"):
+                    self.assertNotIn(invented, text, label)                                             # placeholder numbers and switches that did nothing
+                self.assertEqual(page.locator("#section-account input[type=checkbox][id^=priv-]").count(), 0, label)
+                ideas = page.evaluate("() => ALL_SEEDS.length")
+                self.assertEqual(page.inner_text("#u-seeds-text"), f"{ideas} idea" + ("" if ideas == 1 else "s"), label)
+                self.assertIn("No AI training.", text, label); self.assertEqual(page.get_attribute("#privacy-facts a", "href"), "/privacy.html", label)
+                self.assertNotIn("billing cycle anniversary", text, label); self.assertIn("calendar month", text, label)   # the server resets by calendar month
+                self.assertNotIn("storage allocation", text, label)
+                self.assertNotIn("bypass reflection limits", text, label); self.assertIn("Plan limits apply whichever AI option you use", text, label)
+                self.assertNotIn("Platform AI — Active", page.content(), label)                             # nowhere, including the old modal
+                page.select_option("#acc-api-mode", "self_hosted")
+                self.assertFalse(page.is_visible("#platform-ai-note"), label)
+                page.evaluate("() => { SAVED_API_MODE = 'self_hosted'; }"); page.select_option("#acc-api-mode", "managed")
+                self.assertIn("not saved yet", page.inner_text("#platform-ai-title"), label)                # choosing is not the same as saving
+                unsaved = page.inner_text("#platform-ai-detail")
+                self.assertIn("still determines which model runs", unsaved, label); self.assertNotIn("to use it", unsaved, label)   # saving does not change routing yet
+                page.evaluate("() => { SAVED_API_MODE = 'managed'; AVAILABLE_MODEL_COUNT = 0; renderPlatformAiNote(); }")
+                self.assertIn("No models appear", page.inner_text("#platform-ai-detail"), label)
+                page.evaluate("() => { AVAILABLE_MODEL_COUNT = 2; renderPlatformAiNote(); }")
+                note = page.inner_text("#platform-ai-note")
+                self.assertIn("2 models appear in the server's model list", note, label)
+                self.assertIn("not by this choice", note, label)                                             # the runtime does not read this setting yet
+                for promise in ("ready", "Active", "can run", "available for your tasks"):
+                    self.assertNotIn(promise, note, label)                                                   # reports what was checked, promises nothing
+                self.assertFalse(page.evaluate("() => document.documentElement.scrollWidth > innerWidth"), label)
+                self.assertEqual(errors, [], label); browser.close()
+
     # ---- Work home ----
     def test_work_home_says_what_is_waiting_where_you_left_off_and_what_to_start(self):
         with sync_playwright() as pw:

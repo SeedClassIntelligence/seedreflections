@@ -718,7 +718,7 @@ a{color:var(--accent);text-decoration:none}
 .plan-tier-features{font-size:12px;color:var(--text-muted);list-style:none;padding:0;margin-top:6px}
 .plan-tier-features li{margin-bottom:4px;display:flex;align-items:center;gap:6px}
 
-.privacy-toggle-list{display:flex;flex-direction:column;gap:14px}
+.privacy-facts{margin:0 0 16px;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}.privacy-facts li{font-size:14px;line-height:1.55;color:#c9d1d9;padding-left:14px;border-left:2px solid #30363d}.privacy-facts strong{color:#f0f6fc}.privacy-toggle-list{display:flex;flex-direction:column;gap:14px}
 .privacy-toggle-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg-elevated);padding:14px;border-radius:8px;border:1px solid var(--border)}
 .privacy-toggle-item input[type="checkbox"]{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
 .privacy-toggle-info{flex:1}
@@ -2071,24 +2071,12 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
         
         <div class="usage-metric">
           <div class="usage-metric-label">
-            <span>Saved Idea Seeds</span>
-            <span id="u-seeds-text">28 seeds</span>
-          </div>
-          <div class="usage-metric-bar">
-            <div class="usage-metric-fill" id="u-seeds-fill" style="background:var(--purple);width:45%"></div>
+            <span>Saved ideas</span>
+            <span id="u-seeds-text">–</span>
           </div>
         </div>
-        
-        <div class="usage-metric">
-          <div class="usage-metric-label">
-            <span>Disk Space Used</span>
-            <span id="u-space-text">4.2 MB / 10 MB</span>
-          </div>
-          <div class="usage-metric-bar">
-            <div class="usage-metric-fill" id="u-space-fill" style="background:var(--cyan);width:42%"></div>
-          </div>
-        </div>
-        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px">Usage limits reset monthly on your billing cycle anniversary. Upgrading your tier instantly increases reflections limits and storage allocation.</p>
+
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px">Reflection counts start again at the beginning of each calendar month. A higher plan raises the monthly reflection limit.</p>
       </div>
     </div>
     
@@ -2162,11 +2150,11 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 
         <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-primary btn-sm" onclick="saveAccLLMConfig()">Save AI Configuration</button></div>
 
-        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-top:12px;">
+        <div id="platform-ai-note" style="display:none;align-items:center;gap:12px;padding:14px 16px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-top:12px;">
           <span style="font-size:22px;">🤖</span>
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);">Platform AI — Active</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">Seed Reflections handles AI infrastructure on your behalf. Reflections, analysis, and chat are all powered by the platform engine.</div>
+            <div id="platform-ai-title" style="font-size:13px;font-weight:600;color:var(--text);">Platform managed AI</div>
+            <div id="platform-ai-detail" style="font-size:12px;color:var(--text-muted);margin-top:3px;">Checking…</div>
           </div>
         </div>
 
@@ -2205,7 +2193,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     <div class="card">
       <div class="card-header"><h3 aria-level="2">Billing Plans & Subscriptions</h3></div>
       <div class="card-body">
-        <p style="font-size:12.5px;color:var(--text-muted)">Configure your platform tier plan. Self-hosted key users bypass reflection limits entirely.</p>
+        <p style="font-size:12.5px;color:var(--text-muted)">Plan limits apply whichever AI option you use, including your own key or a local model.</p>
         
         <div class="plan-selection">
           <div class="plan-tier-card" id="plan-tier-free" onclick="selectBillingPlan('free')">
@@ -2258,62 +2246,18 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
       </div>
     </div>
 
-    <!-- Row 3: Full Width Privacy Data Management -->
-    <div class="card account-grid-full">
-      <div class="card-header"><h3 aria-level="2">Privacy & Consent Control Center</h3></div>
+    <!-- Row 3: Privacy, stated as facts (the earlier switches were saved but nothing acted on them) -->
+    <div class="card account-grid-full" id="privacy-facts">
+      <div class="card-header"><h3 aria-level="2">Privacy</h3></div>
       <div class="card-body">
-        <div class="privacy-toggle-list">
-          <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-analytics" aria-label="Anonymized analytics reporting">
-            <div class="privacy-toggle-info">
-              <div class="privacy-toggle-title">Anonymized analytics reporting</div>
-              <div class="privacy-toggle-desc">Allow sharing of anonymous usage statistics (reflections speeds, error rates) to help improve platform indexing stability.</div>
-            </div>
-          </div>
-
-          <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-store-transcripts" aria-label="Persist conversation transcripts on the server">
-            <div class="privacy-toggle-info">
-              <div class="privacy-toggle-title">Persist conversation transcripts on the server</div>
-              <div class="privacy-toggle-desc">Store complete chat histories on the server database to enable cross-platform recall, session continuity checks, and drift diagnostics later.</div>
-            </div>
-          </div>
-
-          <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-sign-seeds" aria-label="Trust-state signing for seed extraction">
-            <div class="privacy-toggle-info">
-              <div class="privacy-toggle-title">Trust-state signing for seed extraction</div>
-              <div class="privacy-toggle-desc">Automatically sign generated seeds with localized keys, verifying code-lineage parameters when exported to external developer environments.</div>
-            </div>
-          </div>
-
-          <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-ai-training" aria-label="Allow AI model training data usage">
-            <div class="privacy-toggle-info">
-              <div class="privacy-toggle-title">Allow AI model training data usage</div>
-              <div class="privacy-toggle-desc">Allow the system to use your ingested transcripts to train local offline fine-tuned models for smarter feature extraction. Turn off to opt out.</div>
-            </div>
-          </div>
-
-          <div class="privacy-toggle-item">
-            <input type="checkbox" id="priv-marketing" aria-label="Receive marketing and product updates">
-            <div class="privacy-toggle-info">
-              <div class="privacy-toggle-title">Receive marketing and product updates</div>
-              <div class="privacy-toggle-desc">Subscribe to receiving occasional announcements regarding new features, platform templates, and integration capabilities.</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-          <div>
-            <button class="btn btn-ghost btn-sm" onclick="exportAllSeeds()">💾 Export Seed Database</button>
-            <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="document.getElementById('ws-file-input').click()">📤 Import Backup File</button>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="deleteAccountAction()">🗑️ Delete Account Permanently</button>
-        </div>
+        <ul class="privacy-facts">
+          <li><strong>No AI training.</strong> SeedReflections does not build, train or fine-tune AI models, and does not use your content for that purpose.</li>
+          <li><strong>Your history stays yours.</strong> Imported conversations are kept in this workspace so you can search and reuse them. Download all of it at any time from Data &amp; portability.</li>
+        </ul>
+        <a class="btn btn-ghost btn-sm" href="/privacy.html" target="_blank" rel="noopener">Read the Privacy Policy</a>
       </div>
     </div>
-    
+
   </div>
 </div>
 
@@ -2337,13 +2281,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
     <h2>⚙️ Platform Settings</h2>
     <div class="modal-section" style="margin-top:0;padding-top:0;border:none">
       <h3>AI Engine</h3>
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;margin-bottom:4px;">
-        <span style="font-size:18px;">✅</span>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);">Platform AI — Active</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Your reflections are powered by the Seed Reflections platform AI engine. No configuration needed.</div>
-        </div>
-      </div>
+      <p style="font-size:12px;color:var(--text-muted)">AI settings and their status are in Settings.</p>
     </div>
     <div class="modal-section">
       <h3>Data Portability</h3>
@@ -3457,6 +3395,7 @@ function renderGarden() {
     var el=document.getElementById(w[0]+'-words'); if(el) el.textContent=plural(summary[w[0]],w[1],w[2]);
   });
   updateNeedsYou();
+  var seedsUsage=document.getElementById('u-seeds-text'); if(seedsUsage) seedsUsage.textContent=ALL_SEEDS.length+(ALL_SEEDS.length===1?' idea':' ideas');
 
   // Render pipeline
   var pipeline = document.getElementById('lifecycle-pipeline');
@@ -6412,6 +6351,7 @@ async function loadAccountSettings() {
     
     // API Operational mode
     document.getElementById('acc-api-mode').value = cfg.api_mode || 'self_hosted';
+    SAVED_API_MODE = cfg.api_mode || 'self_hosted';
     document.getElementById('acc-llm-provider').value = cfg.llm_provider || 'ollama';
     document.getElementById('acc-llm-model').value = cfg.llm_model || '';
     document.getElementById('acc-llm-url').value = cfg.llm_api_url || '';
@@ -6423,13 +6363,6 @@ async function loadAccountSettings() {
     // Billing Plan
     var plan = cfg.user_plan || 'free';
     highlightPlanCard(plan);
-    
-    // Privacy Consent Toggles
-    document.getElementById('priv-analytics').checked = cfg.privacy_analytics !== false;
-    document.getElementById('priv-store-transcripts').checked = cfg.privacy_store_transcripts !== false;
-    document.getElementById('priv-sign-seeds').checked = cfg.privacy_sign_seeds !== false;
-    document.getElementById('priv-ai-training').checked = cfg.privacy_ai_training !== false;
-    document.getElementById('priv-marketing').checked = cfg.privacy_marketing_emails === true;
     
     toggleApiModeFields();
     toggleModelSelectionFields();
@@ -6585,12 +6518,13 @@ async function loadModelCatalog(selectedId) {
   try {
     var response = await productFetch('/models'), data = await response.json();
     var available=(data.models || []).filter(function(m){return m.available;});
+    AVAILABLE_MODEL_COUNT = response.ok ? available.length : null; renderPlatformAiNote();
     select.innerHTML = available.map(function(m){
       var caps=(m.capabilities||[]).join(', ');
       return '<option value="'+escapeHtml(m.id)+'">'+escapeHtml(m.label)+' · '+escapeHtml(caps)+'</option>';
     }).join('') || '<option value="">No available models — configure or start a provider</option>';
     if (selectedId) select.value=selectedId;
-  } catch(e) { select.innerHTML='<option value="">Model catalog unavailable</option>'; }
+  } catch(e) { select.innerHTML='<option value="">Model catalog unavailable</option>'; AVAILABLE_MODEL_COUNT = null; renderPlatformAiNote(); }
 }
 
 function toggleModelSelectionFields() {
@@ -6598,11 +6532,35 @@ function toggleModelSelectionFields() {
   document.getElementById('preferred-model-block').style.display=manual?'block':'none';
 }
 
+/* The platform-AI note reports what is true: the SAVED mode and whether the model catalog has an available model.
+   Choosing Managed in the dropdown without saving says it is not applied yet. */
+var SAVED_API_MODE = null, AVAILABLE_MODEL_COUNT = null;
+function renderPlatformAiNote() {
+  var note = document.getElementById('platform-ai-note'); if (!note) return;
+  var chosen = document.getElementById('acc-api-mode').value;
+  if (chosen === 'self_hosted') { note.style.display = 'none'; return; }
+  note.style.display = 'flex';
+  var title = document.getElementById('platform-ai-title'), detail = document.getElementById('platform-ai-detail');
+  if (SAVED_API_MODE !== 'managed') {
+    title.textContent = 'Platform managed AI: not saved yet';
+    detail.textContent = 'Save AI Configuration to keep this preference. The server\'s configuration still determines which model runs.';
+  } else {
+    // Only what was checked: the saved mode, and what the server's model list shows. The task runtime does not read
+    // this setting yet, so nothing here claims that a task will run.
+    title.textContent = 'Platform managed AI: saved';
+    var listed = AVAILABLE_MODEL_COUNT === null ? 'The model list could not be checked.'
+      : (AVAILABLE_MODEL_COUNT === 0 ? 'No models appear in the server\'s model list.'
+      : AVAILABLE_MODEL_COUNT + (AVAILABLE_MODEL_COUNT === 1 ? ' model appears' : ' models appear') + ' in the server\'s model list.');
+    detail.textContent = listed + ' Which model runs a task is set by the server\'s configuration, not by this choice.';
+  }
+}
+
 function toggleApiModeFields() {
   var mode = document.getElementById('acc-api-mode').value;
   var block = document.getElementById('self-hosted-settings-block');
   if (block) block.style.display = (mode === 'self_hosted') ? 'block' : 'none';
   
+  renderPlatformAiNote();
   var badge = document.getElementById('api-mode-badge');
   badge.textContent = mode === 'self_hosted' ? 'Self-Hosted' : 'Managed';
   badge.style.background = mode === 'self_hosted' ? 'var(--cyan-glow)' : 'var(--green-glow)';
@@ -6629,36 +6587,6 @@ function toggleAccProviderFields() {
     lblKey.style.display = 'block';
     keyEl.placeholder = provider === 'gemini' ? 'AIza...' : (provider === 'anthropic' ? 'sk-ant-...' : 'sk-...');
   }
-}
-
-// Bind checkbox listeners to auto-save privacy choices
-function setupPrivacyListeners() {
-  var toggles = [
-    { id: 'priv-analytics', key: 'privacy_analytics' },
-    { id: 'priv-store-transcripts', key: 'privacy_store_transcripts' },
-    { id: 'priv-sign-seeds', key: 'privacy_sign_seeds' },
-    { id: 'priv-ai-training', key: 'privacy_ai_training' },
-    { id: 'priv-marketing', key: 'privacy_marketing_emails' }
-  ];
-  
-  toggles.forEach(function(t) {
-    document.getElementById(t.id).addEventListener('change', async function() {
-      var payload = {};
-      payload[t.key] = this.checked;
-      try {
-        await productFetch('/settings', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
-        });
-        showToast('Privacy preference updated.');
-      } catch(e) {}
-    });
-  });
-}
-
-function deleteAccountAction() {
-  showToast('Account deletion is dormant until re-authentication and verified erasure are enabled. Nothing was deleted.');
 }
 
 /* ── Settings Configurations ───────────────────────────────────────── */
@@ -7058,7 +6986,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadAccountSettings();
   loadTeamSettings();
   acceptPendingTeamInvitation();
-  setupPrivacyListeners();
   var journeyVersion = localStorage.getItem('seed_reflections_journey_version');
   var savedTab = journeyVersion === '4' ? (localStorage.getItem('active_dash_tab') || 'workspace') : 'workspace';
   localStorage.setItem('seed_reflections_journey_version', '4');
