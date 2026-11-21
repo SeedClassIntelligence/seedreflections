@@ -13,6 +13,7 @@ import sys
 import tempfile
 import threading
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -185,6 +186,141 @@ class SpendingTests(HostedTests):
             self.assertEqual(status, 403, path)
 
 
+class UnrecordedSpendTests(HostedTests):
+    """A platform-paid call is reserved in the ledger before it is sent. No unrecorded paid call can be followed by another."""
+
+    def setUp(self):
+        super().setUp()
+        server.save_config({**server.load_config(), "ai_monthly_budget_usd": 1.0, "ai_budget_hard_stop": True})
+        server.spend_ledger._MEMORY_HELD.clear()
+
+    def tearDown(self):
+        server.spend_ledger._MEMORY_HELD.clear()
+        with server._IN_FLIGHT_LOCK: server._IN_FLIGHT.clear()
+        super().tearDown()
+
+    def expensive_chat(self, token):
+        def model(provider, api_url, api_key, model_name, messages, **kwargs):
+            self.calls.append({"provider": provider, "api_key": api_key})
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 0, "completion_tokens": 18_750_000}   # $3.75 at the default rate
+        with patch.object(server, "invoke_model", model):
+            return self.call("POST", "/api/v2/chat", {"prompt": "hello"}, token)[1]
+
+    def restart(self):
+        """What a new process would have: only what is on disk."""
+        server.spend_ledger._MEMORY_HELD.clear(); server.TELEMETRY_LOG.clear()
+        with server._IN_FLIGHT_LOCK: server._IN_FLIGHT.clear()
+
+    def test_if_the_reservation_cannot_be_written_the_provider_is_never_called(self):
+        managed = self.person("kim"); self.settings(managed, api_mode="managed")
+        with patch.object(server.spend_ledger, "reserve", side_effect=OSError("disk full")):
+            result = self.expensive_chat(managed)
+        self.assertEqual(result["mode"], "records_only"); self.assertIn("not sent", result["reason"])
+        self.assertEqual(self.calls, [])
+
+    def test_ledger_and_hold_both_failing_then_a_restart_never_allows_a_second_paid_call(self):
+        managed = self.person("lee"); self.settings(managed, api_mode="managed")
+        own = self.person("max"); self.settings(own, api_mode="self_hosted", llm_provider="anthropic", llm_model="own-model", llm_api_key="max-secret")
+        with patch.object(server.spend_ledger, "settle", side_effect=OSError("disk full")), \
+             patch.object(server.spend_ledger.os, "replace", side_effect=OSError("disk full")):          # settling fails, and so does the hold file
+            self.assertEqual(self.expensive_chat(managed)["mode"], "model")                             # reserved, then sent
+        self.assertEqual(len(self.calls), 1)
+        self.restart()                                                                                   # the in-memory hold is gone
+        second = self.expensive_chat(managed)
+        self.assertEqual(second["mode"], "records_only"); self.assertIn("could not be recorded", second["reason"])
+        self.assertEqual(len(self.calls), 1)                                                             # no second paid call
+        self.assertGreater(server.platform_spend(), 0.0)                                                  # the reservation still counts
+        self.assertEqual(self.chat(own)["mode"], "model")                                                 # own keys are not the platform's cost
+        # An administrator resolves it at its reserved cost; paid calls may then continue under the budget.
+        self.assertEqual(server.spend_ledger.resolve_unsettled(server.in_flight_calls()), 0)                # too recent: may still be running
+        self.assertEqual(server.spend_ledger.resolve_unsettled(server.in_flight_calls(), min_age_seconds=0), 1)
+        self.assertEqual(server.spend_ledger.pending_calls(), [])
+        self.assertTrue(server.check_ai_gateway_status("managed")[0])
+
+    def test_a_settlement_that_fails_is_held_and_written_later_exactly_once(self):
+        managed = self.person("noa"); self.settings(managed, api_mode="managed")
+        real_settle = server.spend_ledger.settle
+        with patch.object(server.spend_ledger, "settle", side_effect=OSError("database is locked")):
+            self.expensive_chat(managed)
+            blocked = self.expensive_chat(managed)
+            self.assertEqual(blocked["mode"], "records_only")
+        self.assertEqual(len(self.calls), 1)
+        self.restart()                                                                                   # the hold file survives
+        result = self.expensive_chat(managed)                                                             # settles the held $3.75: now over the $1 cap
+        self.assertEqual(result["mode"], "records_only"); self.assertIn("budget", result["reason"].lower())
+        self.assertAlmostEqual(server.platform_spend(), 3.75); self.assertEqual(server.spend_ledger.month_total("platform")["requests"], 1)
+        self.assertFalse(server.spend_ledger.has_unrecorded()); self.assertEqual(server.spend_ledger.pending_calls(), [])
+
+    def test_a_call_in_progress_does_not_block_other_requests(self):
+        managed = self.person("oli"); self.settings(managed, api_mode="managed")
+        server.save_config({**server.load_config(), "ai_monthly_budget_usd": 100.0})
+        seen = []
+        def model(*args, **kwargs):
+            seen.append(server.check_ai_gateway_status("managed")[0])      # another request checking while this call is out
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 1, "completion_tokens": 1}
+        with patch.object(server, "invoke_model", model):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)
+        self.assertEqual(seen, [True])
+
+    def ledger_row(self):
+        from contextlib import closing
+        with closing(server.spend_ledger._connect()) as db:
+            return db.execute("SELECT status, cost_usd, completion_tokens FROM ai_spend WHERE billed='platform' ORDER BY id DESC LIMIT 1").fetchone()
+
+    def test_a_provider_timeout_leaves_the_reservation_pending_and_stops_the_next_paid_call(self):
+        managed = self.person("tia"); self.settings(managed, api_mode="managed")
+        sent = []
+        def timeout(request, timeout=None):
+            sent.append(request.full_url); raise TimeoutError("timed out")              # the request went out; no answer came back
+        with patch("model_invoke.urllib.request.urlopen", timeout):
+            first = self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)[1]
+            self.assertEqual(first["mode"], "records_only")
+            status, cost, _ = self.ledger_row()
+            self.assertEqual(status, "pending"); self.assertGreater(cost, 0.0)           # still counted at its estimate, not $0
+            second = self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)[1]
+        self.assertIn("could not be recorded", second["reason"])
+        self.assertEqual(len(sent), 1)                                                   # no second paid call
+        self.assertGreater(server.platform_spend(), 0.0)
+
+    def test_a_refused_connection_charges_nothing_and_does_not_block(self):
+        managed = self.person("uma"); self.settings(managed, api_mode="managed")
+        with patch("model_invoke.urllib.request.urlopen", side_effect=urllib.error.URLError(ConnectionRefusedError("refused"))):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)
+        self.assertEqual(self.ledger_row()[:2], ("settled", 0.0))                         # the request never reached the provider
+        self.assertTrue(server.check_ai_gateway_status("managed")[0])
+
+    def test_the_operator_script_does_not_resolve_a_call_that_is_still_running(self):
+        import subprocess
+        managed = self.person("val"); self.settings(managed, api_mode="managed")
+        script = str(Path(__file__).resolve().parents[1] / "scripts" / "resolve_ai_spend.py")
+        env = {**os.environ, "SEED_REFLECTIONS_DATA_DIR": str(server.spend_ledger.archive_store.DB_PATH.parent)}
+        outputs = []
+        def model(*args, **kwargs):
+            outputs.append(subprocess.run([sys.executable, script, "--resolve"], capture_output=True, text=True, env=env, timeout=60).stdout)
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 0, "completion_tokens": 18_750_000}
+        with patch.object(server, "invoke_model", model):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)
+        self.assertIn("Resolved 0", outputs[0])                                           # the running call was left alone
+        self.assertEqual(self.ledger_row(), ("settled", 3.75, 18_750_000))                # and settled with its real cost
+
+    def test_a_late_answer_corrects_a_call_already_resolved_at_its_estimate(self):
+        managed = self.person("wes"); self.settings(managed, api_mode="managed")
+        def model(*args, **kwargs):
+            # An administrator forces resolution while the call is still out (as a separate process would: no in-flight list).
+            self.assertEqual(server.spend_ledger.resolve_unsettled((), min_age_seconds=0), 1)
+            self.assertEqual(self.ledger_row()[0], "resolved")
+            return {"text": '{"answer": "ok"}', "prompt_tokens": 0, "completion_tokens": 18_750_000}
+        with patch.object(server, "invoke_model", model):
+            self.call("POST", "/api/v2/chat", {"prompt": "hello"}, managed)
+        self.assertEqual(self.ledger_row(), ("settled", 3.75, 18_750_000))                # real usage replaced the estimate
+        self.assertAlmostEqual(server.platform_spend(), 3.75)
+
+    def test_the_off_switch_still_stops_everything(self):
+        own = self.person("pam"); self.settings(own, api_mode="self_hosted", llm_provider="openai", llm_model="own-model", llm_api_key="pam-secret")
+        server.save_config({**server.load_config(), "ai_killswitch_enabled": True})
+        self.assertEqual(self.chat(own)["mode"], "records_only"); self.assertEqual(self.calls, [])
+
+
 class LocalTests(Base):
     MODE = "local"
 
@@ -297,7 +433,7 @@ class LegacyDesktopRouteTests(Base):
 
     def test_legacy_chat_says_why_when_the_provider_fails(self):
         self.own_provider("anthropic")
-        with patch("model_invoke.urllib.request.urlopen", side_effect=OSError("down")):
+        with patch("model_invoke.urllib.request.urlopen", side_effect=urllib.error.URLError(ConnectionRefusedError("refused"))):
             body = self.call("POST", "/api/v1/seeds/chat", {"prompt": "hello"})[1]
         self.assertIn("could not be reached", body["answer"]); self.assertNotIn("Offline Local Mode", body["answer"])
 

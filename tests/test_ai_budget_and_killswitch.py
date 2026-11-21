@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 import json
 import os
 import sys
@@ -33,6 +35,8 @@ class TestAIBudgetAndKillswitch(unittest.TestCase):
 
         self.original_telemetry = list(server.TELEMETRY_LOG)
         server.TELEMETRY_LOG.clear()
+        self.ledger_patch = patch.object(server.spend_ledger.archive_store, "DB_PATH", Path(self.temp_dir.name) / "archive.db")
+        self.ledger_patch.start()                                      # the spend ledger lives in the (temporary) archive database
 
         # Fixture with sample database
         self.initial_fixture = {
@@ -88,6 +92,7 @@ class TestAIBudgetAndKillswitch(unittest.TestCase):
         self.httpd.server_close()
         server.DATA_FILE = self.original_data_file
         server.CONFIG_FILE = self.original_config_file
+        self.ledger_patch.stop()
         server.TELEMETRY_LOG.clear()
         server.TELEMETRY_LOG.extend(self.original_telemetry)
         self.temp_dir.cleanup()
@@ -176,16 +181,7 @@ class TestAIBudgetAndKillswitch(unittest.TestCase):
         server.save_config(cfg)
 
         # Simulate spend of $12.00 USD in telemetry
-        server.TELEMETRY_LOG.append({
-            "timestamp": datetime.now().isoformat(),
-            "provider": "openai",
-            "model": "gpt-4o",
-            "prompt_tokens": 1000000,
-            "completion_tokens": 1000000,
-            "total_tokens": 2000000,
-            "estimated_cost_usd": 12.00,
-            "caller": "test"
-        })
+        server.spend_ledger.record("openai", "gpt-4o", 1000000, 1000000, 12.00, "platform", "test")
 
         is_allowed, code, msg, spend, cap = server.check_ai_gateway_status()
         self.assertFalse(is_allowed)
@@ -208,16 +204,7 @@ class TestAIBudgetAndKillswitch(unittest.TestCase):
         cfg["ai_killswitch_enabled"] = False
         server.save_config(cfg)
 
-        server.TELEMETRY_LOG.append({
-            "timestamp": datetime.now().isoformat(),
-            "provider": "openai",
-            "model": "gpt-4o",
-            "prompt_tokens": 1000000,
-            "completion_tokens": 1000000,
-            "total_tokens": 2000000,
-            "estimated_cost_usd": 12.00,
-            "caller": "test"
-        })
+        server.spend_ledger.record("openai", "gpt-4o", 1000000, 1000000, 12.00, "platform", "test")
 
         is_allowed, code, msg, spend, cap = server.check_ai_gateway_status()
         self.assertTrue(is_allowed)
