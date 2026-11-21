@@ -6,12 +6,20 @@ endpoints, Anthropic and Gemini. This module never logs or returns a key, and er
 messages never include the request URL or the provider's response body.
 """
 import json
+import socket
 import urllib.error
 import urllib.request
 
 
 class ModelCallError(Exception):
-    """A provider call failed. The message is safe to show to the user."""
+    """A provider call failed. The message is safe to show to the user.
+
+    charge_unknown is True when the request may have reached the provider and been processed (a timeout, a dropped
+    connection, an unreadable reply): the provider may have charged for it. It is False when the request certainly was
+    not processed (no key, connection refused, address not found) or the provider answered with an error status."""
+    def __init__(self, message, charge_unknown=False):
+        super().__init__(message)
+        self.charge_unknown = charge_unknown
 
 
 def _post(url, payload, headers, timeout):
@@ -23,10 +31,15 @@ def _post(url, payload, headers, timeout):
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as error:
         raise ModelCallError(f"The model provider returned HTTP {error.code}.") from None
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except urllib.error.URLError as error:
+        never_sent = isinstance(error.reason, (ConnectionRefusedError, socket.gaierror))
+        raise ModelCallError("The model provider could not be reached.", charge_unknown=not never_sent) from None
+    except (ConnectionRefusedError, socket.gaierror):
         raise ModelCallError("The model provider could not be reached.") from None
+    except (TimeoutError, OSError):
+        raise ModelCallError("The model provider did not answer in time.", charge_unknown=True) from None
     except ValueError:
-        raise ModelCallError("The model provider returned an unreadable response.") from None
+        raise ModelCallError("The model provider returned an unreadable response.", charge_unknown=True) from None
 
 
 def _merge_same_role(messages):

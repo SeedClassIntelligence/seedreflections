@@ -582,23 +582,36 @@ def metered_complete(provider, api_url, api_key, model, messages, billed, caller
             print(f"Warning: AI spend could not be reserved; the call was not sent: {exc}")
             raise SpendNotReserved("AI spending could not be recorded, so the AI call was not sent.") from None
         with _IN_FLIGHT_LOCK: _IN_FLIGHT.add(call_id)
-    usage = {"prompt_tokens": 0, "completion_tokens": 0}
     try:
         result = invoke_model(provider, api_url, api_key, model, messages, **kwargs)
-        usage = {"prompt_tokens": int(result.get("prompt_tokens") or 0), "completion_tokens": int(result.get("completion_tokens") or 0)}
-        return result
-    finally:
-        cost = round(estimate_cost(model, usage["prompt_tokens"], usage["completion_tokens"]), 6)
+    except Exception as exc:
+        charge_known = isinstance(exc, ModelCallError) and not exc.charge_unknown
         if billed == "platform":
-            try:
-                spend_ledger.settle(call_id, usage["prompt_tokens"], usage["completion_tokens"], cost)
-            except Exception as exc:
-                print(f"Warning: AI spend could not be settled; holding it: {exc}")
-                spend_ledger.hold(provider, model, usage["prompt_tokens"], usage["completion_tokens"], cost, billed, caller, call_id=call_id)
+            if charge_known:
+                _settle_or_hold(call_id, provider, model, caller, 0, 0)      # certainly not processed: nothing was charged
+            else:
+                # The provider may have processed (and charged for) this call, but no usage came back. Leave the
+                # reservation pending: it keeps counting at its estimate and pauses paid calls until an administrator
+                # resolves it (or a late answer settles it).
+                print(f"Warning: AI call {call_id} ended without usage; its charge is unknown and it stays pending.")
             with _IN_FLIGHT_LOCK: _IN_FLIGHT.discard(call_id)
-        else:
-            try: spend_ledger.record(provider, model, usage["prompt_tokens"], usage["completion_tokens"], cost, "own_key", caller, call_id=call_id)
-            except Exception as exc: print(f"Warning: own-key AI usage could not be written: {exc}")
+        raise
+    prompt_tokens, completion_tokens = int(result.get("prompt_tokens") or 0), int(result.get("completion_tokens") or 0)
+    if billed == "platform":
+        _settle_or_hold(call_id, provider, model, caller, prompt_tokens, completion_tokens)
+        with _IN_FLIGHT_LOCK: _IN_FLIGHT.discard(call_id)
+    else:
+        try: spend_ledger.record(provider, model, prompt_tokens, completion_tokens, round(estimate_cost(model, prompt_tokens, completion_tokens), 6), "own_key", caller, call_id=call_id)
+        except Exception as exc: print(f"Warning: own-key AI usage could not be written: {exc}")
+    return result
+
+def _settle_or_hold(call_id, provider, model, caller, prompt_tokens, completion_tokens):
+    cost = round(estimate_cost(model, prompt_tokens, completion_tokens), 6)
+    try:
+        spend_ledger.settle(call_id, prompt_tokens, completion_tokens, cost)
+    except Exception as exc:
+        print(f"Warning: AI spend could not be settled; holding it: {exc}")
+        spend_ledger.hold(provider, model, prompt_tokens, completion_tokens, cost, "platform", caller, call_id=call_id)
 
 def record_llm_usage(provider, model, prompt_tokens, completion_tokens, caller_tag="chat", billed="platform"):
     """Recent-activity telemetry (in memory). Spend for the budget is written per call by metered_complete."""

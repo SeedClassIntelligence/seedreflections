@@ -148,16 +148,18 @@ class ResolveScriptTests(unittest.TestCase):
         import subprocess
         with tempfile.TemporaryDirectory() as data:
             with patch.object(archive_store, "DB_PATH", Path(data) / "archive.db"):
-                spend_ledger.reserve("orphan", "openai", "gpt-4o-mini", "workspace_agent", 0.25)
+                spend_ledger.reserve("orphan", "openai", "gpt-4o-mini", "workspace_agent", 0.25, when=datetime(2000, 1, 1, tzinfo=timezone.utc))
+                spend_ledger.reserve("recent", "openai", "gpt-4o-mini", "workspace_agent", 0.10)      # may still be running: left alone
             env = {**os.environ, "SEED_REFLECTIONS_DATA_DIR": data}
             script = str(Path(__file__).resolve().parents[1] / "scripts" / "resolve_ai_spend.py")
             listed = subprocess.run([sys.executable, script], capture_output=True, text=True, env=env, timeout=60)
             self.assertIn("reserved $0.2500", listed.stdout); self.assertIn("--resolve", listed.stdout)
             done = subprocess.run([sys.executable, script, "--resolve"], capture_output=True, text=True, env=env, timeout=60)
-            self.assertIn("Resolved 1", done.stdout)
+            self.assertIn("Resolved 1", done.stdout); self.assertIn("younger than 15 minutes", done.stdout)
             with patch.object(archive_store, "DB_PATH", Path(data) / "archive.db"):
-                self.assertEqual(spend_ledger.pending_calls(), [])
-                self.assertAlmostEqual(spend_ledger.month_total("platform")["cost_usd"], 0.25)
+                self.assertEqual(spend_ledger.pending_calls(), ["recent"])
+                self.assertAlmostEqual(spend_ledger.month_total("platform", "2000-01")["cost_usd"], 0.25)
+            self.assertIn("docker compose -f docker-compose.prod.yml exec seed-reflections", Path(script).read_text())
 
 
 if __name__ == "__main__":

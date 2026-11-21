@@ -66,9 +66,11 @@ def reserve(call_id, provider, model, caller, reserved_cost, when=None):
 
 
 def settle(call_id, prompt_tokens, completion_tokens, cost_usd, **row):
-    """Replace a reservation with the call's real cost. Idempotent. If no reservation exists (a held own record), insert it."""
+    """Replace a reservation with the call's real cost. Idempotent. A call an administrator already resolved at its
+    estimate is corrected to the real cost when that arrives late, so real usage is never discarded. If no reservation
+    exists, insert the call."""
     with closing(_connect()) as db, db:
-        changed = db.execute("UPDATE ai_spend SET prompt_tokens=?, completion_tokens=?, cost_usd=?, status='settled' WHERE call_id=? AND status='pending'",
+        changed = db.execute("UPDATE ai_spend SET prompt_tokens=?, completion_tokens=?, cost_usd=?, status='settled' WHERE call_id=? AND status IN ('pending','resolved')",
                              (int(prompt_tokens or 0), int(completion_tokens or 0), float(cost_usd or 0.0), call_id)).rowcount
     if not changed:
         record(row.get("provider"), row.get("model"), prompt_tokens, completion_tokens, cost_usd, row.get("billed", "platform"), row.get("caller", ""),
@@ -80,13 +82,22 @@ def pending_calls():
         return [r[0] for r in db.execute("SELECT call_id FROM ai_spend WHERE status='pending'")]
 
 
-def resolve_unsettled(in_flight=()):
-    """Operator action: settle pending calls that no running request owns at their reserved cost. Returns how many."""
+# Longer than any model call can take (the longest provider timeout is 120 seconds), so a pending call this old is not
+# still running in the server.
+STALE_AFTER_SECONDS = 15 * 60
+
+
+def resolve_unsettled(in_flight=(), min_age_seconds=STALE_AFTER_SECONDS, now=None):
+    """Operator action: count pending calls at their reserved cost so paid calls can resume. Skips calls a running
+    request owns, calls younger than min_age_seconds (they may still be in progress in the server, which a separate
+    process cannot see), and calls whose settlement is held. Returns how many were resolved."""
     owned = set(in_flight)
+    cutoff = (now or _now()).timestamp() - min_age_seconds
     resolved = 0
     with closing(_connect()) as db, db:
-        for (call_id,) in db.execute("SELECT call_id FROM ai_spend WHERE status='pending'").fetchall():
+        for call_id, created_at in db.execute("SELECT call_id, created_at FROM ai_spend WHERE status='pending'").fetchall():
             if call_id in owned or (_held_dir() / (call_id + ".json")).exists(): continue
+            if datetime.fromisoformat(created_at).timestamp() > cutoff: continue
             resolved += db.execute("UPDATE ai_spend SET status='resolved' WHERE call_id=? AND status='pending'", (call_id,)).rowcount
     return resolved
 

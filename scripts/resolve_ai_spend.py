@@ -4,12 +4,13 @@
 A platform-paid AI call is written to the spending ledger as "pending" before it is sent and settled with its real cost
 afterwards. If the server stopped (or could not write) in between, the call stays pending and paid AI calls are paused.
 This counts each such call at its reserved cost (an upper estimate, so the budget is never understated) and lets paid
-calls resume. Check the AI provider's own usage page first if you want the exact figure.
+calls resume. Calls younger than 15 minutes are left alone, because they may still be running in the server; if a late
+answer arrives for a resolved call, its real cost replaces the estimate. Check the AI provider's own usage page first if you want the exact figure.
 
     python scripts/resolve_ai_spend.py            # list pending calls
     python scripts/resolve_ai_spend.py --resolve  # resolve them
 
-Run it where the server's data folder is (in the container: docker compose exec app python scripts/resolve_ai_spend.py)."""
+Run it where the server's data folder is (in the container: docker compose -f docker-compose.prod.yml exec seed-reflections python scripts/resolve_ai_spend.py)."""
 import sqlite3
 import sys
 from contextlib import closing
@@ -27,6 +28,9 @@ if not rows:
 for created_at, provider, model, caller, cost in rows:
     print(f"{created_at}  {provider}:{model}  {caller}  reserved ${cost:.4f}")
 if "--resolve" in sys.argv:
-    print(f"Resolved {spend_ledger.resolve_unsettled()} call(s) at their reserved cost.")
+    resolved = spend_ledger.resolve_unsettled()
+    print(f"Resolved {resolved} call(s) at their reserved cost.")
+    if resolved < len(rows):
+        print("Calls younger than 15 minutes were left pending; they may still be running. Run this again later.")
 else:
     print("Run again with --resolve to count these at their reserved cost and resume paid AI calls.")
